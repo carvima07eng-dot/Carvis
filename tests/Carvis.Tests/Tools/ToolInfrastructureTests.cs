@@ -81,7 +81,17 @@ public sealed class ToolSelectorTests : IDisposable
             new UndoTool(_ws.Journal),
             new OpenUrlTool(new DefaultShell()),
             new OpenProgramTool(new DefaultAppCatalog(new DefaultShell())),
+            new InstalledProgramsTool(new DefaultAppCatalog(new DefaultShell())),
         ]);
+    }
+
+    [Fact]
+    public async Task KeywordAloneBringsInTheTool()
+    {
+        // No category word and no embeddings: only the exact phrase "tengo instalado" points to it.
+        var tools = await new ToolSelector(_registry).SelectAsync("¿tengo instalado android studio?", []);
+
+        Assert.Contains(tools, t => t.Name == "programas_instalados");
     }
 
     public void Dispose() => _ws.Dispose();

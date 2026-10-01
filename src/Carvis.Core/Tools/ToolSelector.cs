@@ -180,7 +180,7 @@ public sealed class ToolSelector(
 
         // Rank: tools whose name and description share words with the message come first.
         return tools
-            .Select(t => (Tool: t, Score: Score(t, categories, similar, stems) is var basic and > 0 ? basic + KeywordScore(t, text) : 0))
+            .Select(t => (Tool: t, Score: Score(t, categories, similar, stems) + KeywordScore(t, text)))
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
             .Take(MaxTools)
