@@ -70,10 +70,8 @@ public partial class App : Application
         if (_window is null)
             return;
 
-        // With hide-on-focus-lost a visible window is the active one; IsActive alone
-        // is not reliable on every platform right after showing.
-        if (_window.IsVisible && (_window.IsActive || _window.HideOnFocusLost))
-            _window.Hide();
+        if (_window.IsInFront)
+            _window.Dismiss();
         else
             ShowWindow();
     }

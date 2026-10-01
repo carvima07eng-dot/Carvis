@@ -12,8 +12,8 @@
         SizeToContent="Height"
         SystemDecorations="None"
         CanResize="False"
-        ShowInTaskbar="False"
-        Topmost="True"
+        CanMaximize="False"
+        ShowInTaskbar="True"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         FontFamily="{StaticResource CarvisFont}">
@@ -71,6 +71,22 @@
       <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
     </Style>
 
+    <Style Selector="Button.caption">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.caption:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#1AFFFFFF" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+
     <Style Selector="Border.bubble">
       <Setter Property="Padding" Value="14,10" />
       <Setter Property="CornerRadius" Value="14" />
@@ -107,12 +123,25 @@
           CornerRadius="18" Margin="8"
           BoxShadow="0 10 30 0 #66000000"
           ClipToBounds="True">
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+
+      <!-- Title bar: drag to move -->
+      <Grid x:Name="TitleBar" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto"
+            Background="Transparent" Margin="16,8,8,0">
+        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <Image Source="/Assets/carvis.png" Width="18" Height="18" />
+          <TextBlock Text="Carvis" FontWeight="SemiBold" FontSize="13"
+                     Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="caption" Content="—"
+                ToolTip.Tip="Minimizar" Click="OnMinimizeClick" />
+        <Button Grid.Column="3" Classes="caption" Content="✕"
+                ToolTip.Tip="Ocultar en la bandeja del sistema" Click="OnHideClick" />
+      </Grid>
 
       <!-- Prompt -->
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="18,12,12,12">
-        <Image Source="/Assets/carvis.png" Width="28" Height="28" VerticalAlignment="Center" />
-        <TextBox x:Name="PromptBox" Grid.Column="1" Classes="prompt" Margin="10,0"
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="18,4,12,12">
+        <TextBox x:Name="PromptBox" Grid.Column="0" Classes="prompt" Margin="0,0,10,0"
                  Watermark="Pregúntale algo a Carvis…"
                  Text="{Binding Input}"
                  TextWrapping="Wrap" MaxHeight="120">
@@ -120,7 +149,7 @@
             <KeyBinding Gesture="Enter" Command="{Binding SendCommand}" />
           </TextBox.KeyBindings>
         </TextBox>
-        <Panel Grid.Column="2" VerticalAlignment="Center">
+        <Panel Grid.Column="1" VerticalAlignment="Center">
           <Button Classes="primary" Content="Enviar"
                   Command="{Binding SendCommand}"
                   IsVisible="{Binding !IsBusy}" />
@@ -131,7 +160,7 @@
       </Grid>
 
       <!-- Ollama / hotkey problems -->
-      <StackPanel Grid.Row="1" Spacing="6" Margin="18,0,18,12">
+      <StackPanel Grid.Row="2" Spacing="6" Margin="18,0,18,12">
         <Border Background="#3A2A12" BorderBrush="#F59E0B" BorderThickness="1"
                 CornerRadius="10" Padding="12,10"
                 IsVisible="{Binding HasStatusMessage}">
@@ -154,7 +183,7 @@
       </StackPanel>
 
       <!-- Conversation -->
-      <Border Grid.Row="2" BorderBrush="#1F2A3A" BorderThickness="0,1,0,0"
+      <Border Grid.Row="3" BorderBrush="#1F2A3A" BorderThickness="0,1,0,0"
               IsVisible="{Binding HasMessages}">
         <ScrollViewer x:Name="MessagesScroll" MaxHeight="380"
                       HorizontalScrollBarVisibility="Disabled">
@@ -179,7 +208,7 @@
       </Border>
 
       <!-- Footer -->
-      <Border Grid.Row="3" Background="#0DFFFFFF" Padding="18,6,10,6">
+      <Border Grid.Row="4" Background="#0DFFFFFF" Padding="18,6,10,6">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             <Ellipse Classes="status"

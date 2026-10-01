@@ -41,6 +41,9 @@ public sealed class AssistantSettings
 
 public sealed class WindowSettings
 {
+    /// <summary>Start in the system tray without showing the window.</summary>
     public bool StartHidden { get; set; }
-    public bool HideOnFocusLost { get; set; } = true;
+
+    /// <summary>Spotlight mode: always on top and hidden when it loses focus. Off = normal app window.</summary>
+    public bool HideOnFocusLost { get; set; }
 }
