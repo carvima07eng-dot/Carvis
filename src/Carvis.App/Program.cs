@@ -35,7 +35,11 @@ internal static class Program
         log.LogInformation("Carvis {Version} starting", typeof(Program).Assembly.GetName().Version);
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
             log.LogCritical(e.ExceptionObject as Exception, "Unhandled exception, the app will close");
+            if (e.ExceptionObject is Exception crash)
+                Services.CrashReporter.Save(bootstrap.Paths, crash, "AppDomain");
+        };
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
             log.LogError(e.Exception, "Unobserved task exception");
@@ -48,6 +52,12 @@ internal static class Program
         try
         {
             return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        catch (Exception ex)
+        {
+            log.LogCritical(ex, "Carvis crashed");
+            Services.CrashReporter.Save(bootstrap.Paths, ex, "UI");
+            throw;
         }
         finally
         {
