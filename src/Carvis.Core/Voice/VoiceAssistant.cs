@@ -71,6 +71,9 @@ public sealed class VoiceAssistant : IDisposable
     /// <summary>Raised from audio threads: marshal to the UI.</summary>
     public event Action<VoiceState>? StateChanged;
 
+    /// <summary>Microphone level from 0 to 1 while listening for a command (audio thread).</summary>
+    public event Action<float>? LevelChanged;
+
     /// <summary>What the user said (already without the wake word).</summary>
     public event Action<string>? CommandHeard;
 
@@ -199,6 +202,11 @@ public sealed class VoiceAssistant : IDisposable
 
     private void OnSamples(float[] samples)
     {
+        if (_listeningForCommand && LevelChanged is { } level)
+        {
+            // Speech is around 0.02–0.2 RMS; the square root makes quiet voices still visible.
+            level(Math.Clamp(MathF.Sqrt(VoiceActivityDetector.Rms(samples) * 6), 0, 1));
+        }
         lock (_lock)
         {
             if (State == VoiceState.Speaking && !_settings.InterruptByVoice)

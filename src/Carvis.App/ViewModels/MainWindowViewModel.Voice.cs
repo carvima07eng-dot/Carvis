@@ -17,6 +17,10 @@ public sealed partial class MainWindowViewModel
     [NotifyPropertyChangedFor(nameof(ShowVoiceIndicator))]
     private VoiceState _voiceState = VoiceState.Off;
 
+    /// <summary>Microphone level 0–1 while listening (drives the voice orb).</summary>
+    [ObservableProperty]
+    private double _micLevel;
+
     public bool IsVoiceEnabled => _settings.Voice.Enabled && _voice is not null;
     public bool IsListening => VoiceState is VoiceState.Listening;
     public bool IsSpeaking => VoiceState is VoiceState.Speaking;
@@ -24,10 +28,10 @@ public sealed partial class MainWindowViewModel
 
     public string VoiceText => VoiceState switch
     {
-        VoiceState.Listening => "Escuchando…",
-        VoiceState.Transcribing => "Entendiendo…",
-        VoiceState.Speaking => "Hablando…",
-        VoiceState.WaitingForWakeWord => "Di «Carvis»",
+        VoiceState.Listening => "Te escucho…",
+        VoiceState.Transcribing => "Un momento…",
+        VoiceState.Speaking => "Hablando",
+        VoiceState.WaitingForWakeWord => "Di «Carvis» cuando me necesites",
         _ => string.Empty,
     };
 
@@ -36,6 +40,7 @@ public sealed partial class MainWindowViewModel
         if (_voice is null)
             return;
         _voice.StateChanged += state => Dispatcher.UIThread.Post(() => VoiceState = state);
+        _voice.LevelChanged += level => Dispatcher.UIThread.Post(() => MicLevel = level);
         _voice.Problem += message => Dispatcher.UIThread.Post(() => AddNotice(message));
         _voice.CommandHeard += text => Dispatcher.UIThread.Post(() => _ = AskByVoiceAsync(text));
         _voice.Apply();
@@ -49,7 +54,7 @@ public sealed partial class MainWindowViewModel
             return;
         if (!_settings.Voice.Enabled)
         {
-            AddNotice("La voz está desactivada. Actívala y descarga los modelos en Ajustes → Voz.");
+            AddNotice("La voz está desactivada. Puedes activarla en Ajustes → Voz.");
             return;
         }
         _voice.Toggle();
