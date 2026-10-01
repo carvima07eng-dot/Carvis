@@ -8,7 +8,7 @@ namespace Carvis.Tests.Ollama;
 
 public class OllamaChatModelClientTests
 {
-    private readonly OllamaSettings _settings = new() { ChatModel = "qwen3:8b" };
+    private readonly OllamaSettings _settings = new() { ChatModel = "qwen3:8b", KeepAlive = "30m" };
 
     [Fact]
     public async Task StreamAsync_YieldsTheContentOfEachStreamedLine()
@@ -47,9 +47,25 @@ public class OllamaChatModelClientTests
         Assert.Equal("qwen3:8b", root.GetProperty("model").GetString());
         Assert.True(root.GetProperty("stream").GetBoolean());
         Assert.False(root.GetProperty("think").GetBoolean());
+        Assert.Equal("30m", root.GetProperty("keep_alive").GetString());
         Assert.Equal(
             [("system", "Eres Carvis."), ("user", "hola")],
             root.GetProperty("messages").EnumerateArray()
                 .Select(m => (m.GetProperty("role").GetString(), m.GetProperty("content").GetString())));
+    }
+
+    [Fact]
+    public async Task WarmUpAsync_SendsAnEmptyChatSoOllamaLoadsTheModel()
+    {
+        var handler = new StubHttpHandler((_, _) => StubHttpHandler.Text(
+            """{"model":"qwen3:8b","message":{"role":"assistant","content":""},"done":true,"done_reason":"load"}"""));
+        var client = new OllamaChatModelClient(OllamaClientFactory.Create(_settings, handler), _settings);
+
+        await client.WarmUpAsync();
+
+        using var json = JsonDocument.Parse(handler.Requests.Single().Body);
+        Assert.Equal("qwen3:8b", json.RootElement.GetProperty("model").GetString());
+        Assert.Equal(0, json.RootElement.GetProperty("messages").GetArrayLength());
+        Assert.Equal("30m", json.RootElement.GetProperty("keep_alive").GetString());
     }
 }

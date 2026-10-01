@@ -9,6 +9,7 @@ internal sealed class FakeChatModelClient : IChatModelClient
     private readonly Queue<Func<CancellationToken, IAsyncEnumerable<string>>> _responses = new();
 
     public List<IReadOnlyList<ChatMessage>> Requests { get; } = [];
+    public int WarmUps { get; private set; }
 
     public FakeChatModelClient Reply(params string[] chunks)
     {
@@ -26,6 +27,12 @@ internal sealed class FakeChatModelClient : IChatModelClient
     {
         Requests.Add(messages.ToList());
         return _responses.Dequeue()(cancellationToken);
+    }
+
+    public Task WarmUpAsync(CancellationToken cancellationToken = default)
+    {
+        WarmUps++;
+        return Task.CompletedTask;
     }
 
     private static async IAsyncEnumerable<string> ToAsync(IEnumerable<string> chunks)

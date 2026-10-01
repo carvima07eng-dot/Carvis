@@ -161,6 +161,17 @@ public class ChatServiceTests
         Assert.Equal(2, _client.Requests[1].Count); // system prompt + new message
     }
 
+    [Fact]
+    public async Task WarmUpAsync_LoadsTheModelWithoutTouchingTheHistory()
+    {
+        var service = CreateService();
+
+        await service.WarmUpAsync();
+
+        Assert.Equal(1, _client.WarmUps);
+        Assert.Empty(service.History);
+    }
+
     private static async IAsyncEnumerable<string> Failing()
     {
         await Task.Yield();

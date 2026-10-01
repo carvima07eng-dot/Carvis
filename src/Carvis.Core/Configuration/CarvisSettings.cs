@@ -20,6 +20,9 @@ public sealed class OllamaSettings
     /// <summary>qwen3 can "think" before answering; off by default for snappier replies.</summary>
     public bool EnableThinking { get; set; }
 
+    /// <summary>How long Ollama keeps the model loaded after the last message (e.g. "30m", "-1" = forever).</summary>
+    public string KeepAlive { get; set; } = "30m";
+
     public int RequestTimeoutSeconds { get; set; } = 300;
 }
 

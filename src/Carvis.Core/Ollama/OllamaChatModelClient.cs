@@ -21,6 +21,7 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
             Messages = messages.Select(ToOllama).ToList(),
             Stream = true,
             Think = settings.EnableThinking,
+            KeepAlive = settings.KeepAlive,
         };
 
         await foreach (var response in ollama.ChatAsync(request, cancellationToken))
@@ -29,6 +30,22 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
             var content = response?.Message?.Content;
             if (!string.IsNullOrEmpty(content))
                 yield return content;
+        }
+    }
+
+    public async Task WarmUpAsync(CancellationToken cancellationToken = default)
+    {
+        // Ollama loads the model and returns straight away when there are no messages.
+        var request = new ChatRequest
+        {
+            Model = settings.ChatModel,
+            Messages = [],
+            Stream = true,
+            KeepAlive = settings.KeepAlive,
+        };
+
+        await foreach (var _ in ollama.ChatAsync(request, cancellationToken))
+        {
         }
     }
 

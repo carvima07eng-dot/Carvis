@@ -13,6 +13,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IChatService _chat;
     private readonly IOllamaHealthCheck _healthCheck;
     private CancellationTokenSource? _sendCancellation;
+    private bool _isModelLoaded;
 
     public MainWindowViewModel(IChatService chat, IOllamaHealthCheck healthCheck, CarvisSettings settings)
     {
@@ -50,6 +51,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(ConnectionText))]
     private bool _isCheckingStatus;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ConnectionText))]
+    private bool _isLoadingModel;
+
     /// <summary>Problem shown in the banner, or null when everything is fine.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasStatusMessage))]
@@ -74,6 +79,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         ? "Comprobando…"
         : ConnectionState switch
         {
+            OllamaState.Ready when IsLoadingModel => "Cargando modelo…",
             OllamaState.Ready => "Conectado",
             OllamaState.ModelMissing => "Falta el modelo",
             _ => "Sin conexión",
@@ -159,6 +165,31 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         finally
         {
             IsCheckingStatus = false;
+        }
+
+        if (IsOllamaReady)
+            await LoadModelAsync();
+    }
+
+    // Loading qwen3:8b into the GPU takes a few seconds; do it before the first question.
+    private async Task LoadModelAsync()
+    {
+        if (_isModelLoaded || IsLoadingModel)
+            return;
+
+        IsLoadingModel = true;
+        try
+        {
+            await _chat.WarmUpAsync();
+            _isModelLoaded = true;
+        }
+        catch (Exception)
+        {
+            // Not critical: the first question will load the model instead.
+        }
+        finally
+        {
+            IsLoadingModel = false;
         }
     }
 

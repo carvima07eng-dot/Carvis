@@ -33,6 +33,8 @@ public sealed class ChatService : IChatService
         lock (_lock) _history.Clear();
     }
 
+    public Task WarmUpAsync(CancellationToken cancellationToken = default) => _client.WarmUpAsync(cancellationToken);
+
     public async IAsyncEnumerable<string> SendAsync(
         string userMessage,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
