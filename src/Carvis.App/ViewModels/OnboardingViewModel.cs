@@ -26,7 +26,7 @@ public sealed partial class ModelSetupViewModel(string name, string purpose) : V
     [ObservableProperty]
     private string? _status;
 
-    public string StateText => IsInstalled ? "✓ Instalado" : "Sin descargar";
+    public string StateText => IsInstalled ? "Instalado" : "Sin descargar";
 }
 
 /// <summary>The first-run assistant: Ollama, models, document folders and the shortcut.</summary>
@@ -63,7 +63,7 @@ public sealed partial class OnboardingViewModel : ViewModelBase
     public event Action? Finished;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanGoBack), nameof(NextLabel), nameof(StepText))]
+    [NotifyPropertyChangedFor(nameof(CanGoBack), nameof(NextLabel), nameof(StepText), nameof(StepProgress))]
     [NotifyPropertyChangedFor(nameof(IsStep0), nameof(IsStep1), nameof(IsStep2), nameof(IsStep3), nameof(IsStep4), nameof(IsStep5))]
     private int _step;
 
@@ -89,6 +89,7 @@ public sealed partial class OnboardingViewModel : ViewModelBase
     public bool CanGoBack => Step > 0;
     public string NextLabel => Step == LastStep ? "Empezar" : "Siguiente";
     public string StepText => $"Paso {Step + 1} de {LastStep + 1}";
+    public double StepProgress => (Step + 1) * 100.0 / (LastStep + 1);
 
     [RelayCommand]
     private async Task NextAsync()
@@ -116,7 +117,7 @@ public sealed partial class OnboardingViewModel : ViewModelBase
         OllamaStatus = "Comprobando…";
         var status = await _health.CheckAsync();
         IsOllamaRunning = status.State != OllamaState.ServerUnavailable;
-        OllamaStatus = IsOllamaRunning ? "✓ Ollama está funcionando." : $"No encuentro Ollama en {status.BaseUrl}.";
+        OllamaStatus = IsOllamaRunning ? "Ollama está funcionando." : "No encuentro Ollama. Instálalo o ábrelo y vuelve a comprobarlo.";
         if (!IsOllamaRunning)
             return;
 

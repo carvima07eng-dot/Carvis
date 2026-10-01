@@ -10,6 +10,7 @@ public partial class OnboardingWindow : Window
     public OnboardingWindow()
     {
         InitializeComponent();
+        Platform.Backdrop.Apply(this, Root, Platform.ThemeColors.Backdrop);
     }
 
     private async void OnAddFolderClick(object? sender, RoutedEventArgs e)
