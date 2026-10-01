@@ -57,25 +57,23 @@ public static class CrashReporter
         }
     }
 
-    /// <summary>A new GitHub issue with the bug template and the report, ready to send.</summary>
+    /// <summary>A new GitHub issue from the bug form (.github/ISSUE_TEMPLATE/bug.yml), with its fields filled in.</summary>
     public static string NewIssueUrl(string? report)
     {
-        var title = report is null ? "Fallo: " : "Carvis se cerró por un error";
-        var body = new StringBuilder()
-            .AppendLine("**Qué estaba haciendo**")
-            .AppendLine()
-            .AppendLine("(Cuéntalo aquí)")
-            .AppendLine();
+        var fields = new Dictionary<string, string>
+        {
+            ["template"] = "bug.yml",
+            ["title"] = report is null ? "Fallo: " : "Carvis se cerró por un error",
+            ["version"] = Version,
+            ["windows"] = RuntimeInformation.OSDescription,
+        };
         if (report is not null)
         {
-            var trimmed = report.Length > MaxIssueBody ? report[..MaxIssueBody] + "\n…" : report;
-            body.AppendLine("**Informe**").AppendLine().AppendLine("```").AppendLine(trimmed).AppendLine("```");
+            fields["what"] = "Carvis se cerró solo mientras…";
+            fields["report"] = report.Length > MaxIssueBody ? report[..MaxIssueBody] + "\n…" : report;
         }
-        else
-        {
-            body.AppendLine($"Carvis {Version} · {RuntimeInformation.OSDescription}");
-        }
-        return $"{UpdateService.RepositoryUrl}/issues/new?labels=bug&title={Uri.EscapeDataString(title)}&body={Uri.EscapeDataString(body.ToString())}";
+        var query = string.Join("&", fields.Select(f => $"{f.Key}={Uri.EscapeDataString(f.Value)}"));
+        return $"{UpdateService.RepositoryUrl}/issues/new?{query}";
     }
 
     /// <summary>Removes what identifies the user: the profile path and the user name.</summary>

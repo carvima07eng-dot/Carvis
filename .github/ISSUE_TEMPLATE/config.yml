@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Problema de seguridad
+    url: https://github.com/carvima07eng-dot/Carvis/security/advisories/new
+    about: Avisa en privado; no abras un issue público.
+  - name: Manual de usuario
+    url: https://github.com/carvima07eng-dot/Carvis/blob/main/docs/MANUAL.md
+    about: Atajos, comandos, ajustes y solución de problemas.

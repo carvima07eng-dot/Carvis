@@ -1,0 +1,36 @@
+name: Propuesta de mejora
+description: Una idea para que Carvis haga algo nuevo o lo haga mejor
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Qué te gustaría poder hacer
+    validations:
+      required: true
+  - type: textarea
+    id: phrase
+    attributes:
+      label: Cómo se lo pedirías a Carvis
+      description: Una o dos frases tal cual las dirías.
+      placeholder: «Pásame a PDF los apuntes de hoy y déjalos en la carpeta de Android»
+  - type: textarea
+    id: why
+    attributes:
+      label: Por qué es útil
+      description: En qué situación lo usarías y qué haces ahora en su lugar.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Parte de Carvis
+      options:
+        - Chat
+        - Mis documentos
+        - Recordatorios y rutinas
+        - Capturas, OCR o visión
+        - Voz
+        - Acciones en el PC
+        - Diseño o textos
+        - Otra
