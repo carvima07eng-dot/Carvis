@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Carvis.App.Configuration;
 using Carvis.App.Services;
@@ -21,6 +22,7 @@ public partial class App : Application
     private MainWindow? _window;
     private MainWindowViewModel? _viewModel;
     private GlobalHotkeyService? _hotkey;
+    private TrayIcon? _trayIcon;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -30,7 +32,7 @@ public partial class App : Application
         {
             // Carvis lives in the background; hiding the window must not end the app.
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-            desktop.Exit += (_, _) => _services?.Dispose();
+            desktop.Exit += (_, _) => Cleanup();
 
             var settings = SettingsLoader.Load();
             _services = BuildServices(settings);
@@ -42,6 +44,7 @@ public partial class App : Application
             };
 
             StartHotkey(settings);
+            CreateTrayIcon(_viewModel.HotkeyText);
 
             if (!settings.Window.StartHidden)
                 Dispatcher.UIThread.Post(ShowWindow);
@@ -64,10 +67,56 @@ public partial class App : Application
 
     public void ToggleWindow()
     {
-        if (_window is { IsVisible: true, IsActive: true })
+        if (_window is null)
+            return;
+
+        // With hide-on-focus-lost a visible window is the active one; IsActive alone
+        // is not reliable on every platform right after showing.
+        if (_window.IsVisible && (_window.IsActive || _window.HideOnFocusLost))
             _window.Hide();
         else
             ShowWindow();
+    }
+
+    public void Exit()
+    {
+        if (_window is not null)
+            _window.AllowClose = true;
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.Shutdown();
+    }
+
+    private void CreateTrayIcon(string hotkeyText)
+    {
+        var open = new NativeMenuItem("Abrir");
+        open.Click += (_, _) => ShowWindow();
+
+        var exit = new NativeMenuItem("Salir");
+        exit.Click += (_, _) => Exit();
+
+        var menu = new NativeMenu();
+        menu.Items.Add(open);
+        menu.Items.Add(new NativeMenuItemSeparator());
+        menu.Items.Add(exit);
+
+        _trayIcon = new TrayIcon
+        {
+            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Carvis/Assets/carvis.ico"))),
+            ToolTipText = $"Carvis ({hotkeyText})",
+            Menu = menu,
+            IsVisible = true,
+        };
+        _trayIcon.Clicked += (_, _) => ShowWindow();
+
+        TrayIcon.SetIcons(this, [_trayIcon]);
+    }
+
+    private void Cleanup()
+    {
+        _hotkey?.Dispose();
+        _trayIcon?.Dispose();
+        _services?.Dispose();
     }
 
     private void StartHotkey(CarvisSettings settings)
