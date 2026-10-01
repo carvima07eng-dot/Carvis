@@ -124,7 +124,8 @@ public sealed class DocumentIndexer : IIndexService, IDisposable
             // Without the embedding model the keyword search still works.
             _logger.LogInformation("Searching documents without embeddings: {Message}", ex.Message);
         }
-        return _index.Search(query, embedding, limit, onlyPath);
+        // The vector and keyword search is synchronous SQLite work: keep it off the caller's (UI) thread.
+        return await Task.Run(() => _index.Search(query, embedding, limit, onlyPath), cancellationToken);
     }
 
     public void StartWatching()

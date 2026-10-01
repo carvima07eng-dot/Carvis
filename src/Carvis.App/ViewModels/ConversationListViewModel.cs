@@ -60,7 +60,28 @@ public sealed partial class ConversationListViewModel(IConversationStore store) 
 
     public bool HasNoResults => IsEmpty && !string.IsNullOrWhiteSpace(Search);
 
-    partial void OnSearchChanged(string value) => Refresh();
+    private CancellationTokenSource? _searching;
+
+    // Typing searches after a short pause, and the query runs off the UI thread.
+    partial void OnSearchChanged(string value) => _ = SearchAsync(value);
+
+    private async Task SearchAsync(string text)
+    {
+        _searching?.Cancel();
+        var cancellation = _searching = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(150, cancellation.Token);
+            var query = string.IsNullOrWhiteSpace(text) ? null : text;
+            var results = await Task.Run(() => store.List(query), cancellation.Token);
+            if (!cancellation.IsCancellationRequested)
+                Show(results);
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer search replaced this one.
+        }
+    }
 
     [RelayCommand]
     private void ClearSearch() => Search = string.Empty;
@@ -71,10 +92,12 @@ public sealed partial class ConversationListViewModel(IConversationStore store) 
             item.IsCurrent = item.Id == value;
     }
 
-    public void Refresh()
+    public void Refresh() => Show(store.List(string.IsNullOrWhiteSpace(Search) ? null : Search));
+
+    private void Show(IEnumerable<ConversationInfo> conversations)
     {
         Items.Clear();
-        foreach (var info in store.List(string.IsNullOrWhiteSpace(Search) ? null : Search))
+        foreach (var info in conversations)
             Items.Add(new ConversationItemViewModel(info) { IsCurrent = info.Id == CurrentId });
         OnPropertyChanged(nameof(IsEmpty));
         OnPropertyChanged(nameof(HasNoConversations));
