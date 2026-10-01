@@ -22,7 +22,7 @@ Carvis se distribuye con licencia MIT (ver [LICENSE](LICENSE)). Incluye o descar
 | [SQLite](https://sqlite.org) | 3.x | Dominio público |
 | [sqlite-vec](https://github.com/asg017/sqlite-vec) | 0.1.7-alpha.2.1 | MIT o Apache-2.0 |
 | [System.Security.Cryptography.ProtectedData](https://github.com/dotnet/runtime) | 10.0.12 | MIT |
-| [SharpHook](https://github.com/TolikPylypchuk/SharpHook) / libuiohook | 8.0.0 | MIT / GPL-3.0 con excepción de enlace* |
+| [SharpHook](https://github.com/TolikPylypchuk/SharpHook) / libuiohook | 8.0.0 | MIT / LGPL-3.0* |
 | [Markdig](https://github.com/xoofx/markdig) | 1.4.0 | BSD-2-Clause |
 | [PdfPig](https://github.com/UglyToad/PdfPig) | 0.1.16 | Apache-2.0 |
 | [DocumentFormat.OpenXml](https://github.com/dotnet/Open-XML-SDK) | 3.5.1 | MIT |
