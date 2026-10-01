@@ -151,7 +151,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or OllamaSharp.Models.Exceptions.OllamaException)
         {
-            DownloadStatus = $"No se ha podido descargar {model}: {ex.Message}";
+            DownloadStatus = $"No se ha podido descargar {model}. Comprueba el nombre y la conexión y vuelve a intentarlo.";
         }
         finally
         {

@@ -270,7 +270,7 @@ public sealed class VoiceAssistant : IDisposable
             _logger.LogWarning(ex, "Transcription failed");
             ReturnToRest();
             if (forCommand)
-                Problem?.Invoke($"No he podido entender el audio: {ex.Message}");
+                Problem?.Invoke("No he podido entender el audio. Prueba otra vez hablando un poco más cerca del micrófono.");
         }
     }
 
@@ -309,7 +309,7 @@ public sealed class VoiceAssistant : IDisposable
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Microphone failed");
-            Problem?.Invoke($"No he podido abrir el micrófono: {ex.Message}");
+            Problem?.Invoke("No puedo usar el micrófono. Mira que esté conectado y que Windows deje usarlo (Configuración → Privacidad → Micrófono).");
         }
     }
 
@@ -391,7 +391,7 @@ public sealed class VoiceAssistant : IDisposable
             catch (Exception ex)
             {
                 _owner._logger.LogWarning(ex, "Speech failed");
-                _owner.Problem?.Invoke($"No he podido hablar: {ex.Message}");
+                _owner.Problem?.Invoke("No he podido leer la respuesta en voz alta. Revisa la voz en Ajustes → Voz.");
             }
             finally
             {

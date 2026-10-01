@@ -168,7 +168,7 @@ public sealed partial class OnboardingViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or OllamaSharp.Models.Exceptions.OllamaException)
         {
-            model.Status = $"Error: {ex.Message}";
+            model.Status = "No se ha podido descargar. Comprueba la conexión y que Ollama está abierto, y pulsa Descargar otra vez.";
         }
         finally
         {

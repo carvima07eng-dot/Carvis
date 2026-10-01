@@ -190,7 +190,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Screen capture failed");
-            _viewModel.AddNotice($"No he podido capturar la pantalla: {ex.Message}");
+            _viewModel.AddNotice("No he podido capturar la pantalla. Vuelve a intentarlo; si se repite, reinicia Carvis.");
         }
     }
 
@@ -202,7 +202,7 @@ public partial class App : Application
         var ocr = _services.GetRequiredService<Carvis.Core.Indexing.Readers.IOcrEngine>();
         if (!ocr.IsAvailable)
         {
-            _viewModel.AddNotice("El reconocimiento de texto (OCR) de Windows no está disponible en este equipo.");
+            _viewModel.AddNotice("Este Windows no tiene el reconocimiento de texto instalado. Añádelo en Configuración → Hora e idioma → Idioma (paquete de español).");
             return;
         }
         try
@@ -222,7 +222,7 @@ public partial class App : Application
         catch (Exception ex)
         {
             _logger?.LogWarning(ex, "Screen OCR failed");
-            _viewModel.AddNotice($"No he podido leer el texto de la pantalla: {ex.Message}");
+            _viewModel.AddNotice("No he podido leer el texto de la captura. Prueba con una zona más grande o más nítida.");
         }
     }
 
@@ -360,7 +360,7 @@ public partial class App : Application
     private void OnUiException(object? sender, DispatcherUnhandledExceptionEventArgs e)
     {
         _logger?.LogError(e.Exception, "Unhandled exception on the UI thread");
-        _viewModel?.AddNotice($"Ha ocurrido un error inesperado: {e.Exception.Message}. Los detalles están en el log.");
+        _viewModel?.AddNotice("Algo ha fallado, pero puedes seguir usando Carvis. Si se repite, abre Ajustes → Privacidad → Carpeta de registros y adjunta el último archivo al informar del problema.");
         e.Handled = true;
     }
 

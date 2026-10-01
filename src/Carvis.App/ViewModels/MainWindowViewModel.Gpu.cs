@@ -65,7 +65,7 @@ public sealed partial class MainWindowViewModel
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
         {
-            Say($"No he podido liberar la memoria: {ex.Message}");
+            Say("No he podido liberar la memoria de la gráfica. Comprueba que Ollama está abierto.");
         }
     }
 }

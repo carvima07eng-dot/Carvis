@@ -702,7 +702,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            AddNotice($"No he podido exportar la conversación: {ex.Message}");
+            AddNotice("No he podido guardar el archivo. Prueba en otra carpeta, por ejemplo Documentos.");
         }
     }
 
@@ -725,10 +725,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             (StatusMessage, StatusCommand) = status.State switch
             {
                 OllamaState.ServerUnavailable => (
-                    $"No encuentro Ollama en {status.BaseUrl}. Comprueba que está instalado y abierto.",
+                    $"No encuentro Ollama en {status.BaseUrl}. Ábrelo o instálalo y pulsa Reintentar. También puedes arrancarlo con:",
                     "ollama serve"),
                 OllamaState.ModelMissing => (
-                    $"El modelo {status.Model} no está descargado. Descárgalo con:",
+                    $"Falta el modelo {status.Model}. Descárgalo desde Ajustes → Modelo o con:",
                     $"ollama pull {status.Model}"),
                 _ => ((string?)null, (string?)null),
             };
@@ -815,9 +815,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private static string DescribeError(Exception ex) => ex switch
     {
-        HttpRequestException => "No he podido conectar con Ollama. ¿Está abierto?",
-        OperationCanceledException => "Ollama ha tardado demasiado en responder.",
-        _ => $"Ollama ha devuelto un error: {ex.Message}",
+        HttpRequestException => "No puedo hablar con Ollama. Ábrelo desde el menú Inicio y vuelve a intentarlo.",
+        OperationCanceledException => "Ollama está tardando mucho. Puede que esté cargando el modelo: espera un momento y vuelve a intentarlo.",
+        _ => $"Ollama no ha podido contestar ({ex.Message}). Vuelve a intentarlo; si se repite, reinicia Ollama.",
     };
 
     private static string ToDisplay(HotkeyGesture gesture) =>

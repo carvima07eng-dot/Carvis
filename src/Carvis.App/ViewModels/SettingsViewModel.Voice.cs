@@ -111,9 +111,9 @@ public sealed partial class SettingsViewModel
         {
             VoiceStatus = "Descarga cancelada.";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            VoiceStatus = $"No he podido descargar los modelos de voz: {ex.Message}";
+            VoiceStatus = "No he podido descargar la voz. Comprueba la conexión y vuelve a intentarlo.";
         }
         finally
         {
@@ -142,9 +142,9 @@ public sealed partial class SettingsViewModel
             await _voice.SayAsync($"Hola{name}. Soy Carvis. Así sueno.");
             VoiceStatus = "¿Se oye bien? Si va muy rápido o lento, cambia la velocidad.";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            VoiceStatus = $"No he podido hablar: {ex.Message}";
+            VoiceStatus = "No he podido reproducir la voz. Prueba a descargarla otra vez.";
         }
     }
 
@@ -178,10 +178,10 @@ public sealed partial class SettingsViewModel
                 VoiceStatus = peak > 0.02f ? "El micrófono funciona." : "Apenas se oye nada: revisa el micrófono elegido y su volumen en Windows.";
             }));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             _audioInput.SamplesAvailable -= OnSamples;
-            VoiceStatus = $"No he podido abrir el micrófono: {ex.Message}";
+            VoiceStatus = "No puedo usar el micrófono. Mira que esté conectado y que Windows deje usarlo (Configuración → Privacidad → Micrófono).";
         }
     }
 

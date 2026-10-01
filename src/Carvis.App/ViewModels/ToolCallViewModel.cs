@@ -153,7 +153,7 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            Output = $"No he podido deshacerlo: {ex.Message}";
+            Output = $"No he podido deshacerlo ({ex.Message}). Puede que el archivo se haya movido o esté abierto en otro programa.";
         }
         ShowOutput = true;
     }
