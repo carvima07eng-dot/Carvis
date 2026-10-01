@@ -8,17 +8,17 @@
         Icon="/Assets/carvis.ico"
         Width="760" Height="640" MinWidth="560" MinHeight="420"
         WindowStartupLocation="CenterScreen"
-        Background="#0B1220"
+        Background="{DynamicResource Background}"
         FontFamily="{StaticResource CarvisFont}">
 
   <Window.Styles>
     <Style Selector="TextBlock.label">
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="Margin" Value="0,10,0,4" />
     </Style>
     <Style Selector="TextBlock.hint">
-      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="TextWrapping" Value="Wrap" />
       <Setter Property="Margin" Value="0,2,0,0" />
@@ -37,19 +37,19 @@
       <Setter Property="Margin" Value="0,6,0,0" />
     </Style>
     <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
-      <Setter Property="Foreground" Value="#0B1220" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
     </Style>
     <Style Selector="Button.danger /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#7F1D1D" />
-      <Setter Property="Foreground" Value="#FECACA" />
+      <Setter Property="Background" Value="{DynamicResource DangerStrong}" />
+      <Setter Property="Foreground" Value="{DynamicResource DangerText}" />
     </Style>
   </Window.Styles>
 
   <DockPanel>
-    <Border DockPanel.Dock="Bottom" Background="#0F1A2B" Padding="16,10">
+    <Border DockPanel.Dock="Bottom" Background="{DynamicResource PanelAlt}" Padding="16,10">
       <Grid ColumnDefinitions="*,Auto,Auto">
-        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}" />
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondary}" />
         <Button Grid.Column="1" Content="Cerrar" Margin="8,0" Click="OnCloseClick" />
         <Button Grid.Column="2" Classes="primary" Content="Guardar" Command="{Binding SaveCommand}" />
       </Grid>
@@ -69,6 +69,30 @@
 
             <TextBlock Classes="label" Text="Tipo de ventana" />
             <ComboBox ItemsSource="{Binding WindowModes}" SelectedIndex="{Binding WindowMode}" HorizontalAlignment="Stretch" />
+
+            <TextBlock Classes="label" Text="Tema" />
+            <ComboBox ItemsSource="{Binding Themes}" SelectedIndex="{Binding ThemeIndex}" HorizontalAlignment="Stretch" />
+
+            <TextBlock Classes="label" Text="Color de acento" />
+            <ItemsControl ItemsSource="{Binding AccentColors}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button Classes="swatch" Margin="0,0,6,0" Padding="0" MinWidth="0" Background="Transparent"
+                          Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).SetAccentCommand}" CommandParameter="{Binding}"
+                          AutomationProperties.Name="{Binding, StringFormat='Color de acento {0}'}" ToolTip.Tip="{Binding}">
+                    <Border Width="22" Height="22" CornerRadius="11" BorderThickness="2" BorderBrush="{DynamicResource CardBorder}"
+                            Background="{Binding, Converter={x:Static vm:SettingsViewModel.AccentToBrush}}" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="hint" Text="{Binding AccentText}" />
+            <CheckBox Content="Animaciones" IsChecked="{Binding Draft.Window.Animations}" />
 
             <TextBlock Classes="label" Text="Fondo" />
             <ComboBox ItemsSource="{Binding Backdrops}" SelectedItem="{Binding Draft.Window.Backdrop}" HorizontalAlignment="Stretch" />
@@ -115,6 +139,21 @@
             <TextBlock Classes="label" Text="Mantener el modelo cargado" />
             <TextBox Text="{Binding Draft.Ollama.KeepAlive}" />
             <TextBlock Classes="hint" Text="Ejemplos: 30m, 2h, -1 (siempre). Mientras está cargado, la primera respuesta es inmediata." />
+
+            <TextBlock Classes="label" Text="{Binding Draft.Ollama.ToolTemperature, StringFormat='Precisión al usar herramientas: {0:0.0}'}" />
+            <Slider Value="{Binding Draft.Ollama.ToolTemperature}" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+            <TextBlock Classes="hint" Text="Valores bajos hacen que rellene los argumentos de las acciones con más cuidado." />
+            <TextBlock Classes="label" Text="{Binding Draft.Ollama.TopP, StringFormat='top_p: {0:0.00}'}" />
+            <Slider Value="{Binding Draft.Ollama.TopP}" Minimum="0.1" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+
+            <TextBlock Classes="section" Text="Rendimiento de la gráfica" />
+            <TextBlock Classes="hint" TextWrapping="Wrap"
+                       Text="Flash attention y la caché KV de 8 bits reducen mucho la memoria que gasta el contexto. Son ajustes de Ollama: se aplican al reiniciarlo." />
+            <TextBlock Text="{Binding OllamaTuningStatus}" TextWrapping="Wrap" Margin="0,4" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Optimizar Ollama" Command="{Binding OptimizeOllamaCommand}" />
+              <Button Content="Quitar" Command="{Binding ResetOllamaTuningCommand}" />
+            </StackPanel>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
@@ -131,6 +170,70 @@
             <TextBlock Classes="label" Text="Mensajes de la conversación que se envían al modelo" />
             <NumericUpDown Value="{Binding Draft.Assistant.MaxHistoryMessages}" Minimum="4" Maximum="200" FormatString="0" />
             <TextBlock Classes="hint" Text="Lo más antiguo se resume automáticamente para que no se pierda." />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Voz y pantalla">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="Hablar con Carvis" />
+            <CheckBox Content="Activar la voz" IsChecked="{Binding Draft.Voice.Enabled}" />
+            <TextBlock Classes="hint" Text="Todo se procesa en tu PC: Whisper entiende lo que dices y Piper pone la voz. Solo se conecta a Internet para descargar los modelos cuando pulses el botón." />
+
+            <Border Background="{DynamicResource Card}" CornerRadius="10" Padding="12" Margin="0,10,0,0">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding VoiceStatus}" TextWrapping="Wrap" />
+                <ProgressBar Value="{Binding VoiceDownloadProgress}" Maximum="100" IsVisible="{Binding IsDownloadingVoice}" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Content="Descargar modelos de voz" Command="{Binding DownloadVoiceModelsCommand}" />
+                  <Button Content="Cancelar" Command="{Binding CancelVoiceDownloadCommand}" IsVisible="{Binding IsDownloadingVoice}" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="label" Text="Atajo para hablar" />
+            <TextBox Text="{Binding Draft.Voice.PushToTalkHotkey}" Watermark="Ctrl+Alt+Space" />
+            <TextBlock Classes="hint" Text="Púlsalo, habla y calla: Carvis entiende que has terminado. Púlsalo otra vez mientras habla Carvis para cortarle." />
+
+            <TextBlock Classes="label" Text="Precisión del reconocimiento (Whisper)" />
+            <ComboBox ItemsSource="{Binding WhisperSizes}" SelectedItem="{Binding Draft.Voice.WhisperModel}" HorizontalAlignment="Stretch" />
+            <TextBlock Classes="hint" Text="tiny y base son rápidos pero fallan más; small va bien en español; medium es el más preciso (unos 1,5 GB y 2 GB de VRAM)." />
+            <CheckBox Content="Usar la tarjeta gráfica (Vulkan)" IsChecked="{Binding Draft.Voice.UseGpu}" />
+
+            <TextBlock Classes="label" Text="Micrófono" />
+            <ComboBox ItemsSource="{Binding Microphones}" SelectedItem="{Binding SelectedMicrophone}" HorizontalAlignment="Stretch" />
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,6,0,0">
+              <Button Content="Probar micrófono" Command="{Binding TestMicrophoneCommand}" />
+              <ProgressBar Value="{Binding MicrophoneLevel}" Maximum="100" Width="200" VerticalAlignment="Center" />
+            </StackPanel>
+
+            <TextBlock Classes="label" Text="Altavoces" />
+            <ComboBox ItemsSource="{Binding Speakers}" SelectedItem="{Binding SelectedSpeaker}" HorizontalAlignment="Stretch" />
+
+            <CheckBox Content="Leer en voz alta las respuestas a lo que pregunto hablando" IsChecked="{Binding Draft.Voice.SpeakAnswers}" />
+            <TextBlock Classes="label" Text="Voz de Piper" />
+            <TextBox Text="{Binding Draft.Voice.PiperVoice}" Watermark="es_ES-davefx-medium" />
+            <TextBlock Classes="hint" Text="Otras voces en español: es_ES-sharvard-medium, es_MX-claude-high. Al cambiarla, vuelve a pulsar «Descargar modelos de voz»." />
+            <TextBlock Classes="label" Text="Velocidad de la voz" />
+            <Slider Minimum="0.6" Maximum="1.6" Value="{Binding Draft.Voice.SpeechRate}" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+            <Button Content="Probar la voz" Command="{Binding TestSpeakerCommand}" />
+
+            <TextBlock Classes="label" Text="Pausa que indica que has terminado (ms)" />
+            <NumericUpDown Value="{Binding Draft.Voice.SilenceMilliseconds}" Minimum="300" Maximum="3000" Increment="100" FormatString="0" />
+
+            <CheckBox Content="Escuchar siempre la palabra «Carvis»" IsChecked="{Binding Draft.Voice.WakeWord}" />
+            <TextBlock Classes="hint" Text="El micrófono queda abierto y Carvis solo reacciona si empiezas con «Carvis…». Nunca escucha con el PC bloqueado. Usa algo más de CPU." />
+            <CheckBox Content="Conversación continua (después de contestar, vuelve a escuchar)" IsChecked="{Binding Draft.Voice.ContinuousConversation}" />
+            <CheckBox Content="Cortar a Carvis si hablo mientras habla (mejor con auriculares)" IsChecked="{Binding Draft.Voice.InterruptByVoice}" />
+
+            <TextBlock Classes="section" Text="Capturas de pantalla" />
+            <TextBlock Classes="label" Text="Atajo para capturar una zona y preguntar sobre ella" />
+            <TextBox Text="{Binding Draft.Vision.CaptureHotkey}" Watermark="Ctrl+Alt+S" />
+            <TextBlock Classes="label" Text="Modelo de visión" />
+            <TextBox Text="{Binding Draft.Ollama.VisionModel}" Watermark="qwen2.5vl:7b" />
+            <CheckBox Content="Guardar las capturas en Imágenes\Carvis" IsChecked="{Binding Draft.Vision.SaveCaptures}" />
+            <TextBlock Classes="hint" Text="Si no lo marcas, las capturas solo existen en memoria mientras las usas." />
           </StackPanel>
         </ScrollViewer>
       </TabItem>
@@ -241,7 +344,7 @@
             <Image Source="/Assets/carvis.png" Width="48" Height="48" />
             <StackPanel VerticalAlignment="Center">
               <TextBlock Text="Carvis" FontSize="20" FontWeight="SemiBold" />
-              <TextBlock Text="{Binding Version, StringFormat='Versión {0}'}" Foreground="{StaticResource TextSecondary}" />
+              <TextBlock Text="{Binding Version, StringFormat='Versión {0}'}" Foreground="{DynamicResource TextSecondary}" />
             </StackPanel>
           </StackPanel>
           <TextBlock Classes="hint" Text="Asistente de IA local para Windows. Usa modelos que se ejecutan en tu PC con Ollama." />

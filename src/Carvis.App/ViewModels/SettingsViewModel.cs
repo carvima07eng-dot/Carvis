@@ -51,6 +51,17 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public ObservableCollection<MemoryItem> Memories { get; } = [];
 
     public string[] Backdrops { get; } = ["Solid", "Acrylic", "Mica"];
+    public string[] Themes { get; } = ["Oscuro", "Claro", "Como Windows"];
+    private static readonly string[] ThemeValues = ["Dark", "Light", "System"];
+
+    public int ThemeIndex
+    {
+        get => Math.Max(0, Array.IndexOf(ThemeValues, Draft.Window.Theme));
+        set => Draft.Window.Theme = ThemeValues[Math.Clamp(value, 0, ThemeValues.Length - 1)];
+    }
+
+    /// <summary>Accent presets; the first one is the theme's own.</summary>
+    public string[] AccentColors { get; } = ["", "#22D3EE", "#A78BFA", "#34D399", "#F472B6", "#FBBF24", "#60A5FA", "#F87171"];
     public string[] WindowModes { get; } = ["Ventana normal", "Spotlight (siempre encima, se oculta al perder el foco)"];
     public bool IsWindows => OperatingSystem.IsWindows();
     public string Version => typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "?";

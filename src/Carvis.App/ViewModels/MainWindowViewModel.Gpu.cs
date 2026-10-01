@@ -1,0 +1,71 @@
+using System.Globalization;
+using Carvis.Core.Ollama;
+using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace Carvis.App.ViewModels;
+
+public sealed partial class MainWindowViewModel
+{
+    private static readonly CultureInfo Spanish = CultureInfo.GetCultureInfo("es-ES");
+    private bool _warnedAboutCpu;
+
+    /// <summary>"GPU 5,8 GB" in the footer, or "CPU 40 %" when part of the model doesn't fit.</summary>
+    [ObservableProperty]
+    private string? _gpuText;
+
+    /// <summary>Reads `ollama ps`: warns once if the chat model isn't fully on the graphics card.</summary>
+    public async Task CheckGpuAsync(bool report)
+    {
+        IReadOnlyList<LoadedModel> loaded;
+        try
+        {
+            loaded = await _models.LoadedAsync();
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            if (report)
+                Say("No he podido preguntar a Ollama qué modelos tiene cargados.");
+            return;
+        }
+
+        var vram = loaded.Sum(m => m.VramBytes);
+        var chat = loaded.FirstOrDefault(m => ModelNames.AreSame(m.Name, _settings.Ollama.ChatModel));
+        GpuText = chat is { GpuShare: < 0.99 }
+            ? $"CPU {(1 - chat.GpuShare) * 100:0} %"
+            : vram > 0 ? $"GPU {(vram / 1e9).ToString("0.0", Spanish)} GB" : null;
+
+        if (report)
+        {
+            Say(loaded.Count == 0
+                ? "Ahora mismo no hay ningún modelo cargado en memoria."
+                : "Modelos cargados:\n" + string.Join("\n", loaded.Select(m =>
+                    $"- **{m.Name}**: {(m.SizeBytes / 1e9).ToString("0.0", Spanish)} GB, {m.GpuShare * 100:0} % en la gráfica, contexto {m.ContextLength}")));
+        }
+
+        if (chat is not null && chat.GpuShare < 0.99 && !_warnedAboutCpu)
+        {
+            _warnedAboutCpu = true;
+            AddNotice(chat.GpuShare <= 0.01
+                ? $"Ollama está ejecutando {chat.Name} en el procesador, no en la tarjeta gráfica: irá muy lento. Revisa que el driver de NVIDIA esté actualizado y reinicia Ollama."
+                : $"{chat.Name} no cabe entero en la gráfica ({chat.GpuShare * 100:0} % en GPU): irá más lento. Escribe /liberar, cierra juegos o programas que usen la gráfica, o baja la ventana de contexto en Ajustes.");
+        }
+    }
+
+    /// <summary>Frees the graphics card: every model Ollama has loaded (they load again when needed).</summary>
+    private async Task FreeMemoryAsync()
+    {
+        try
+        {
+            var loaded = await _models.LoadedAsync();
+            foreach (var model in loaded)
+                await _models.UnloadAsync(model.Name);
+            _isModelLoaded = false;
+            GpuText = null;
+            Say(loaded.Count == 0 ? "No había nada cargado." : $"He liberado la memoria de {string.Join(", ", loaded.Select(m => m.Name))}.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or InvalidOperationException)
+        {
+            Say($"No he podido liberar la memoria: {ex.Message}");
+        }
+    }
+}

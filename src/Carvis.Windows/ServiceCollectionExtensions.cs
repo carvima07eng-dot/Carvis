@@ -17,6 +17,9 @@ public static class ServiceCollectionExtensions
         services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Indexing.Readers.IOcrEngine, WindowsOcrEngine>());
         services.Replace(ServiceDescriptor.Singleton<ISystemControl, WindowsSystemControl>());
         services.Replace(ServiceDescriptor.Singleton<IScriptRunner, WindowsScriptRunner>());
+        services.Replace(ServiceDescriptor.Singleton<ISessionState, WindowsSessionState>());
+        services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Voice.IAudioInput, WindowsAudioInput>());
+        services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Voice.IAudioOutput, WindowsAudioOutput>());
         return services;
     }
 }

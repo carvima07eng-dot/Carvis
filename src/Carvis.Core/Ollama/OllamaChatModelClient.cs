@@ -25,12 +25,13 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
             Messages = request.Messages.Select(ToOllama).ToList(),
             Stream = true,
             Think = settings.EnableThinking,
-            KeepAlive = settings.KeepAlive,
+            KeepAlive = request.KeepAlive ?? settings.KeepAlive,
             Tools = request.Tools?.Select(ToDefinition).ToList(),
             Options = new RequestOptions
             {
                 NumCtx = settings.ContextLength,
                 Temperature = (float)(request.Temperature ?? settings.Temperature),
+                TopP = (float)settings.TopP,
             },
         };
 

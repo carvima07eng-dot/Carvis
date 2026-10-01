@@ -32,6 +32,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Carvis.Core\Carvis.Core.csproj" />
     <ProjectReference Include="..\Carvis.Windows\Carvis.Windows.csproj" />
+    <ProjectReference Include="..\Carvis.Voice\Carvis.Voice.csproj" />
   </ItemGroup>
 
 </Project>

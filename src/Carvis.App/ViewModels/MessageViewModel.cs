@@ -54,8 +54,12 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
     /// <summary>Files the user attached to this message.</summary>
     public IReadOnlyList<string> Attachments { get; init; } = [];
 
-    public bool HasAttachments => Attachments.Count > 0;
-    public string AttachmentsText => string.Join("  ", Attachments.Select(a => "📎 " + Path.GetFileName(a)));
+    /// <summary>Images sent with this message (only the count: they aren't kept).</summary>
+    public int ImageCount { get; init; }
+
+    public bool HasAttachments => Attachments.Count > 0 || ImageCount > 0;
+    public string AttachmentsText => string.Join("  ", Attachments.Select(a => "📎 " + Path.GetFileName(a))
+        .Concat(ImageCount > 0 ? [ImageCount == 1 ? "🖼 1 imagen" : $"🖼 {ImageCount} imágenes"] : []));
 
     public void Append(string text) => Content += text;
 

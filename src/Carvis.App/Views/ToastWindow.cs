@@ -31,8 +31,8 @@ public sealed class ToastWindow : Window
 
         var icon = new Image { Source = new Avalonia.Media.Imaging.Bitmap(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Carvis/Assets/carvis.png"))), Width = 26, Height = 26, VerticalAlignment = VerticalAlignment.Top };
         var text = new StackPanel { Spacing = 2, Margin = new Thickness(10, 0, 4, 0) };
-        text.Children.Add(new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, Foreground = Brush.Parse("#E5E7EB") });
-        text.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, MaxLines = 4, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = Brush.Parse("#9CA3AF") });
+        text.Children.Add(new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, Foreground = Platform.ThemeColors.Brush("TextPrimary") });
+        text.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, MaxLines = 4, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = Platform.ThemeColors.Brush("TextSecondary") });
         Grid.SetColumn(text, 1);
 
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
@@ -42,8 +42,8 @@ public sealed class ToastWindow : Window
 
         Content = new Border
         {
-            Background = Brush.Parse("#0B1220"),
-            BorderBrush = Brush.Parse(important ? "#38BDF8" : "#2A3A4F"),
+            Background = Platform.ThemeColors.Brush("Background"),
+            BorderBrush = Platform.ThemeColors.Brush(important ? "Accent" : "WindowBorder"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(14, 12, 8, 12),

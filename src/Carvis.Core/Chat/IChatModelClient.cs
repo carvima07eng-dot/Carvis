@@ -9,6 +9,9 @@ public sealed record ModelRequest(IReadOnlyList<ChatMessage> Messages)
 
     /// <summary>Overrides the chat model (e.g. the vision model).</summary>
     public string? Model { get; init; }
+
+    /// <summary>How long Ollama keeps this model loaded afterwards (e.g. "2m"); null = the setting.</summary>
+    public string? KeepAlive { get; init; }
 }
 
 /// <summary>A piece of the streamed answer: text, tool calls or both.</summary>

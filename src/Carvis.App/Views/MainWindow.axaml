@@ -23,6 +23,8 @@
 
   <Window.Resources>
     <StreamGeometry x:Key="HistoryIcon">M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3</StreamGeometry>
+    <StreamGeometry x:Key="MicIcon">M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z</StreamGeometry>
+    <StreamGeometry x:Key="CaptureIcon">M19,3H15V5H19V9H21V5C21,3.89 20.1,3 19,3M19,19H15V21H19A2,2 0 0,0 21,19V15H19M5,15H3V19A2,2 0 0,0 5,21H9V19H5M3,5V9H5V5H9V3H5A2,2 0 0,0 3,5Z</StreamGeometry>
     <StreamGeometry x:Key="AttachIcon">M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z</StreamGeometry>
     <StreamGeometry x:Key="SettingsIcon">M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z</StreamGeometry>
   </Window.Resources>
@@ -33,7 +35,7 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="FontSize" Value="18" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Padding" Value="4,8" />
     </Style>
@@ -43,13 +45,13 @@
       <Setter Property="BorderThickness" Value="0" />
     </Style>
     <Style Selector="TextBox.prompt /template/ TextBlock#PART_Watermark">
-      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
     </Style>
 
     <!-- "accent" is taken by Fluent, so the main button uses its own class -->
     <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
-      <Setter Property="Foreground" Value="#0B1220" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
       <Setter Property="CornerRadius" Value="10" />
     </Style>
     <Style Selector="Button.primary">
@@ -57,32 +59,32 @@
       <Setter Property="Padding" Value="16,8" />
     </Style>
     <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#67E8F9" />
-      <Setter Property="Foreground" Value="#0B1220" />
+      <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
     </Style>
     <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#06B6D4" />
+      <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
     </Style>
     <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#16313A" />
-      <Setter Property="Foreground" Value="#4B6470" />
+      <Setter Property="Background" Value="{DynamicResource AccentDisabled}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentDisabledText}" />
     </Style>
 
     <Style Selector="Button.ghost">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="10,6" />
       <Setter Property="FontSize" Value="12" />
     </Style>
     <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#1AFFFFFF" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource HoverOverlay}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
 
     <Style Selector="Button.caption">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMuted}" />
       <Setter Property="Width" Value="32" />
       <Setter Property="Height" Value="26" />
       <Setter Property="Padding" Value="0" />
@@ -92,8 +94,8 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="Button.caption:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#1AFFFFFF" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Background" Value="{DynamicResource HoverOverlay}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
 
     <Style Selector="Border.bubble">
@@ -102,21 +104,21 @@
       <Setter Property="Margin" Value="0,4" />
       <Setter Property="MaxWidth" Value="640" />
       <Setter Property="HorizontalAlignment" Value="Left" />
-      <Setter Property="Background" Value="{StaticResource Surface}" />
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
     </Style>
     <Style Selector="Border.bubble.user">
       <Setter Property="HorizontalAlignment" Value="Right" />
-      <Setter Property="Background" Value="#1E3A5F" />
+      <Setter Property="Background" Value="{DynamicResource Chip}" />
     </Style>
     <Style Selector="Border.bubble.error">
-      <Setter Property="Background" Value="#3A1D24" />
-      <Setter Property="BorderBrush" Value="#F87171" />
+      <Setter Property="Background" Value="{DynamicResource DangerSurface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Danger}" />
       <Setter Property="BorderThickness" Value="1" />
     </Style>
 
     <Style Selector="Border.tool">
-      <Setter Property="Background" Value="#111A2B" />
-      <Setter Property="BorderBrush" Value="#24324A" />
+      <Setter Property="Background" Value="{DynamicResource Card}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource CardBorder}" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="12" />
       <Setter Property="Padding" Value="12,10" />
@@ -125,35 +127,35 @@
       <Setter Property="HorizontalAlignment" Value="Left" />
     </Style>
     <Style Selector="Border.tool.pending">
-      <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
     </Style>
     <Style Selector="Border.tool.pending.dangerous">
-      <Setter Property="BorderBrush" Value="#F87171" />
-      <Setter Property="Background" Value="#2A1519" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Danger}" />
+      <Setter Property="Background" Value="{DynamicResource DangerCard}" />
     </Style>
     <Style Selector="Border.tool Border.toolIcon">
-      <Setter Property="Background" Value="#24324A" />
+      <Setter Property="Background" Value="{DynamicResource CardBorder}" />
     </Style>
     <Style Selector="Border.tool.pending Border.toolIcon">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
-      <Setter Property="TextElement.Foreground" Value="#0B1220" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource OnAccent}" />
     </Style>
     <Style Selector="Border.tool.done Border.toolIcon">
-      <Setter Property="Background" Value="#065F46" />
-      <Setter Property="TextElement.Foreground" Value="#A7F3D0" />
+      <Setter Property="Background" Value="{DynamicResource SuccessSurface}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource SuccessText}" />
     </Style>
     <Style Selector="Border.tool.failed Border.toolIcon">
-      <Setter Property="Background" Value="#7F1D1D" />
-      <Setter Property="TextElement.Foreground" Value="#FECACA" />
+      <Setter Property="Background" Value="{DynamicResource DangerStrong}" />
+      <Setter Property="TextElement.Foreground" Value="{DynamicResource DangerText}" />
     </Style>
     <Style Selector="Button.primary.danger /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#F87171" />
-      <Setter Property="Foreground" Value="#1F0A0A" />
+      <Setter Property="Background" Value="{DynamicResource Danger}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
     </Style>
 
     <Style Selector="Button.source">
-      <Setter Property="Background" Value="#14FFFFFF" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Background" Value="{DynamicResource SubtleOverlay}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="FontSize" Value="11" />
       <Setter Property="Padding" Value="8,2" />
       <Setter Property="Margin" Value="0,0,6,4" />
@@ -166,17 +168,17 @@
       <Setter Property="Margin" Value="0,1" />
     </Style>
     <Style Selector="Border.conversation:pointerover">
-      <Setter Property="Background" Value="#14FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource SubtleOverlay}" />
     </Style>
     <Style Selector="Border.conversation.current">
-      <Setter Property="Background" Value="#1E3A5F" />
+      <Setter Property="Background" Value="{DynamicResource Chip}" />
     </Style>
     <Style Selector="Button.conversationOpen">
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
       <Setter Property="Padding" Value="8,6" />
-      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
     </Style>
     <Style Selector="Button.conversationOpen:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
@@ -185,19 +187,34 @@
     <Style Selector="Ellipse.status">
       <Setter Property="Width" Value="8" />
       <Setter Property="Height" Value="8" />
-      <Setter Property="Fill" Value="#F87171" />
+      <Setter Property="Fill" Value="{DynamicResource Danger}" />
     </Style>
     <Style Selector="Ellipse.status.ready">
-      <Setter Property="Fill" Value="#34D399" />
+      <Setter Property="Fill" Value="{DynamicResource Success}" />
     </Style>
     <Style Selector="Ellipse.status.checking">
-      <Setter Property="Fill" Value="#9CA3AF" />
+      <Setter Property="Fill" Value="{DynamicResource TextSecondary}" />
+    </Style>
+    <Style Selector="Button.listening PathIcon">
+      <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+    </Style>
+    <Style Selector="Ellipse.pulse">
+      <Style.Animations>
+        <Animation Duration="0:0:1.2" IterationCount="Infinite" PlaybackDirection="Alternate">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="1" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0.25" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
     </Style>
   </Window.Styles>
 
   <Panel>
-  <Border x:Name="RootBorder" Background="{StaticResource Background}"
-          BorderBrush="#2A3A4F" BorderThickness="1"
+  <Border x:Name="RootBorder" Background="{DynamicResource Background}"
+          BorderBrush="{DynamicResource WindowBorder}" BorderThickness="1"
           CornerRadius="18" Margin="8"
           BoxShadow="0 10 30 0 #66000000"
           ClipToBounds="True">
@@ -209,7 +226,7 @@
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Image Source="/Assets/carvis.png" Width="18" Height="18" />
           <TextBlock Text="Carvis" FontWeight="SemiBold" FontSize="13"
-                     Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" />
+                     Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center" />
         </StackPanel>
         <Button Grid.Column="2" Classes="caption" ToolTip.Tip="Conversaciones guardadas"
                 AutomationProperties.Name="Conversaciones guardadas"
@@ -228,7 +245,38 @@
 
       <!-- Prompt -->
       <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" Margin="12,4,12,12">
-        <ItemsControl Grid.ColumnSpan="3" ItemsSource="{Binding Attachments}" Margin="6,0,0,6">
+        <StackPanel Grid.ColumnSpan="3" Spacing="6" Margin="6,0,0,6">
+        <!-- Voice: listening / speaking -->
+        <Border Classes="voice" IsVisible="{Binding ShowVoiceIndicator}" HorizontalAlignment="Left"
+                Background="{DynamicResource VoiceChip}" CornerRadius="12" Padding="10,4">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Ellipse Classes="pulse" Width="9" Height="9" Fill="{DynamicResource Accent}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding VoiceText}" FontSize="12" VerticalAlignment="Center" />
+            <Button Classes="caption" Content="Parar" FontSize="12" Padding="6,0" IsVisible="{Binding IsSpeaking}"
+                    Command="{Binding StopSpeakingCommand}" AutomationProperties.Name="Dejar de hablar" />
+          </StackPanel>
+        </Border>
+        <ItemsControl ItemsSource="{Binding Images}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ImageAttachmentViewModel">
+              <Border Background="{DynamicResource Chip}" CornerRadius="8" Padding="4" Margin="0,0,6,0">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Image Source="{Binding Preview}" MaxHeight="48" MaxWidth="90" />
+                  <TextBlock Text="{Binding Label}" FontSize="12" VerticalAlignment="Center" />
+                  <Button Classes="caption" Content="✕" Width="22" Height="20" AutomationProperties.Name="Quitar imagen"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveImageCommand}"
+                          CommandParameter="{Binding}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl ItemsSource="{Binding Attachments}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <WrapPanel />
@@ -236,7 +284,7 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="x:String">
-              <Border Background="#1E3A5F" CornerRadius="8" Padding="8,2,2,2" Margin="0,0,6,0">
+              <Border Background="{DynamicResource Chip}" CornerRadius="8" Padding="8,2,2,2" Margin="0,0,6,0">
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <TextBlock Text="{Binding, StringFormat='📎 {0}'}" FontSize="12" VerticalAlignment="Center" MaxWidth="260"
                              TextTrimming="CharacterEllipsis" />
@@ -248,11 +296,30 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button Grid.Row="1" Classes="caption" VerticalAlignment="Center" ToolTip.Tip="Adjuntar archivos o imágenes (también puedes arrastrarlos)"
-                AutomationProperties.Name="Adjuntar archivos" Click="OnAttachClick">
-          <PathIcon Data="{StaticResource AttachIcon}" Width="16" Height="16" />
-        </Button>
+        </StackPanel>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Center">
+          <Button Classes="caption" ToolTip.Tip="Adjuntar archivos o imágenes (también puedes arrastrarlos o pegarlos)"
+                  AutomationProperties.Name="Adjuntar archivos" Click="OnAttachClick">
+            <PathIcon Data="{StaticResource AttachIcon}" Width="16" Height="16" />
+          </Button>
+          <Button Classes="caption" ToolTip.Tip="Capturar la pantalla para preguntar sobre ella"
+                  AutomationProperties.Name="Capturar la pantalla">
+            <PathIcon Data="{StaticResource CaptureIcon}" Width="15" Height="15" />
+            <Button.Flyout>
+              <MenuFlyout>
+                <MenuItem Header="Elegir una zona…" Click="OnCaptureRegionClick" />
+                <MenuItem Header="Pantalla completa" Click="OnCaptureScreenClick" />
+                <MenuItem Header="Ventana activa" Click="OnCaptureWindowClick" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+          <Button Classes="caption" Classes.listening="{Binding IsListening}" Command="{Binding ToggleVoiceCommand}"
+                  ToolTip.Tip="Hablar con Carvis" AutomationProperties.Name="Hablar" IsVisible="{Binding IsVoiceEnabled}">
+            <PathIcon Data="{StaticResource MicIcon}" Width="16" Height="16" />
+          </Button>
+        </StackPanel>
         <TextBox x:Name="PromptBox" Grid.Row="1" Grid.Column="1" Classes="prompt" Margin="4,0,10,0"
+                 AutomationProperties.Name="Mensaje para Carvis"
                  Watermark="Pregúntale algo a Carvis…"
                  Text="{Binding Input}"
                  AcceptsReturn="True"
@@ -272,11 +339,11 @@
         <ItemsControl ItemsSource="{Binding Notices}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="x:String">
-              <Border Background="#1E2A44" BorderBrush="#3B82F6" BorderThickness="1"
+              <Border Background="{DynamicResource InfoSurface}" BorderBrush="{DynamicResource InfoBorder}" BorderThickness="1"
                       CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="#BFDBFE" VerticalAlignment="Center" />
-                  <Button Grid.Column="1" Classes="caption" Content="✕" ToolTip.Tip="Cerrar aviso"
+                  <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="{DynamicResource InfoText}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="caption" Content="✕" ToolTip.Tip="Cerrar aviso" AutomationProperties.Name="Cerrar aviso"
                           Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DismissNoticeCommand}"
                           CommandParameter="{Binding}" />
                 </Grid>
@@ -284,17 +351,17 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Border Background="#3A2A12" BorderBrush="#F59E0B" BorderThickness="1"
+        <Border Background="{DynamicResource WarnSurface}" BorderBrush="{DynamicResource WarnBorder}" BorderThickness="1"
                 CornerRadius="10" Padding="12,10"
                 IsVisible="{Binding HasStatusMessage}">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Spacing="6">
               <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap"
-                         Foreground="#FDE68A" />
+                         Foreground="{DynamicResource WarnText}" />
               <SelectableTextBlock Text="{Binding StatusCommand}"
                                    IsVisible="{Binding HasStatusCommand}"
                                    FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
-                                   Foreground="{StaticResource TextPrimary}" />
+                                   Foreground="{DynamicResource TextPrimary}" />
             </StackPanel>
             <Button Grid.Column="1" Classes="ghost" Content="Reintentar"
                     VerticalAlignment="Center"
@@ -302,23 +369,23 @@
           </Grid>
         </Border>
         <TextBlock Text="{Binding HotkeyWarning}" IsVisible="{Binding HasHotkeyWarning}"
-                   TextWrapping="Wrap" Foreground="#FCA5A5" FontSize="12" />
+                   TextWrapping="Wrap" Foreground="{DynamicResource ErrorText}" FontSize="12" />
       </StackPanel>
 
       <!-- Conversation -->
       <!-- Saved conversations -->
-      <Border Grid.Row="3" BorderBrush="#1F2A3A" BorderThickness="0,1,0,0" IsVisible="{Binding IsHistoryOpen}">
+      <Border Grid.Row="3" BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0" IsVisible="{Binding IsHistoryOpen}">
         <Grid x:Name="HistoryPanel" RowDefinitions="Auto,Auto,*" Margin="18,10" Height="360">
           <Grid ColumnDefinitions="*,Auto">
             <TextBlock Text="Conversaciones" FontWeight="SemiBold" VerticalAlignment="Center"
-                       Foreground="{StaticResource TextPrimary}" />
+                       Foreground="{DynamicResource TextPrimary}" />
             <Button Grid.Column="1" Classes="ghost" Content="Nueva conversación" Command="{Binding NewConversationCommand}" />
           </Grid>
           <TextBox Grid.Row="1" Margin="0,8" Watermark="Buscar en las conversaciones…"
                    Text="{Binding History.Search}" />
           <Panel Grid.Row="2">
             <TextBlock Text="Todavía no hay conversaciones guardadas." IsVisible="{Binding History.IsEmpty}"
-                       Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,20" />
+                       Foreground="{DynamicResource TextMuted}" HorizontalAlignment="Center" Margin="0,20" />
             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
               <ItemsControl ItemsSource="{Binding History.Items}">
                 <ItemsControl.ItemTemplate>
@@ -341,7 +408,7 @@
                           </TextBox.KeyBindings>
                         </TextBox>
                         <TextBlock Grid.Column="1" Text="{Binding When}" FontSize="11" Margin="8,0"
-                                   VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" />
+                                   VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
                         <Button Grid.Column="2" Classes="caption" Content="⋯" AutomationProperties.Name="Opciones">
                           <Button.Flyout>
                             <MenuFlyout>
@@ -367,7 +434,7 @@
         </Grid>
       </Border>
 
-      <Border Grid.Row="3" BorderBrush="#1F2A3A" BorderThickness="0,1,0,0"
+      <Border Grid.Row="3" BorderBrush="{DynamicResource Divider}" BorderThickness="0,1,0,0"
               IsVisible="{Binding ShowConversation}">
         <ScrollViewer x:Name="MessagesScroll" MaxHeight="380" VerticalAlignment="Top"
                       HorizontalScrollBarVisibility="Disabled">
@@ -387,15 +454,15 @@
                             Command="{Binding ToggleThinkingCommand}" Padding="6,1" FontSize="11"
                             Margin="-6,0,0,0" HorizontalAlignment="Left" />
                     <TextBlock Text="{Binding Thinking}" IsVisible="{Binding ShowThinking}" TextWrapping="Wrap"
-                               FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextMuted}" />
+                               FontSize="12" FontStyle="Italic" Foreground="{DynamicResource TextMuted}" />
                     <SelectableTextBlock Text="{Binding Content}" IsVisible="{Binding IsUser}"
                                          TextWrapping="Wrap"
-                                         Foreground="{StaticResource TextPrimary}" />
+                                         Foreground="{DynamicResource TextPrimary}" />
                     <TextBlock Text="{Binding AttachmentsText}" IsVisible="{Binding HasAttachments}" FontSize="12"
-                               TextWrapping="Wrap" Foreground="#BFDBFE" />
+                               TextWrapping="Wrap" Foreground="{DynamicResource InfoText}" />
                     <controls:MarkdownView Markdown="{Binding Content}" IsVisible="{Binding !IsUser}" />
                     <TextBlock Text="Pensando…" IsVisible="{Binding IsWaiting}"
-                               FontStyle="Italic" Foreground="{StaticResource TextMuted}" />
+                               FontStyle="Italic" Foreground="{DynamicResource TextMuted}" />
                     <ItemsControl ItemsSource="{Binding Sources}" Margin="0,4,0,0">
                       <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -443,8 +510,8 @@
                       </Border>
                       <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
                         <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimary}" />
-                        <TextBlock Text="{Binding StateText}" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                                   Foreground="{DynamicResource TextPrimary}" />
+                        <TextBlock Text="{Binding StateText}" FontSize="12" Foreground="{DynamicResource TextSecondary}" />
                       </StackPanel>
                       <Button Grid.Column="2" Classes="ghost" Content="Detalles" VerticalAlignment="Top"
                               IsVisible="{Binding HasOutput}" Command="{Binding ToggleOutputCommand}"
@@ -455,15 +522,15 @@
                       <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
                           <TextBlock Text="{Binding}" FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12"
-                                     TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" />
+                                     TextWrapping="Wrap" Foreground="{DynamicResource TextSecondary}" />
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border IsVisible="{Binding ShowOutput}" Background="#0B1220" CornerRadius="8" Padding="10,6" Margin="32,0,0,0">
+                    <Border IsVisible="{Binding ShowOutput}" Background="{DynamicResource Background}" CornerRadius="8" Padding="10,6" Margin="32,0,0,0">
                       <SelectableTextBlock Text="{Binding Output}" TextWrapping="Wrap" FontSize="12"
                                            FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
-                                           Foreground="{StaticResource TextSecondary}" />
+                                           Foreground="{DynamicResource TextSecondary}" />
                     </Border>
 
                     <StackPanel Orientation="Horizontal" Spacing="8" Margin="32,2,0,0" IsVisible="{Binding IsPending}">
@@ -473,7 +540,7 @@
                               IsVisible="{Binding CanApproveForSession}" />
                       <Button Classes="ghost" Content="Cancelar" Command="{Binding DenyCommand}" />
                       <TextBlock Text="Enter acepta · Esc cancela" FontSize="11" VerticalAlignment="Center"
-                                 Foreground="{StaticResource TextMuted}" />
+                                 Foreground="{DynamicResource TextMuted}" />
                     </StackPanel>
 
                     <Button Classes="ghost" Content="Deshacer" IsVisible="{Binding CanUndo}" Command="{Binding UndoCommand}"
@@ -483,7 +550,7 @@
               </DataTemplate>
               <DataTemplate DataType="vm:HistoryToolViewModel">
                 <TextBlock Text="{Binding Text, StringFormat='↳ {0}'}" FontSize="12" Margin="4,2" TextWrapping="Wrap"
-                           Foreground="{StaticResource TextMuted}" />
+                           Foreground="{DynamicResource TextMuted}" />
               </DataTemplate>
             </ItemsControl.DataTemplates>
           </ItemsControl>
@@ -491,14 +558,14 @@
       </Border>
 
       <!-- Footer -->
-      <Border Grid.Row="4" Background="#0DFFFFFF" Padding="18,6,10,6">
+      <Border Grid.Row="4" Background="{DynamicResource FooterOverlay}" Padding="18,6,10,6">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
             <Ellipse Classes="status"
                      Classes.ready="{Binding IsOllamaReady}"
                      Classes.checking="{Binding IsCheckingStatus}" />
-            <Button Classes="ghost" Padding="4,2" Margin="-4,0,0,0" ToolTip.Tip="Cambiar de modelo">
-              <TextBlock FontSize="12" Foreground="{StaticResource TextSecondary}">
+            <Button Classes="ghost" Padding="4,2" Margin="-4,0,0,0" ToolTip.Tip="Cambiar de modelo" AutomationProperties.Name="Cambiar de modelo">
+              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondary}">
                 <Run Text="{Binding ModelName}" />
                 <Run Text=" · " />
                 <Run Text="{Binding ConnectionText}" />
@@ -521,11 +588,13 @@
               </Button.Flyout>
             </Button>
             <TextBlock Text="{Binding LastSpeed}" FontSize="12" VerticalAlignment="Center"
-                       Foreground="{StaticResource TextMuted}" />
+                       Foreground="{DynamicResource TextMuted}" />
+            <TextBlock Text="{Binding GpuText}" FontSize="12" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextMuted}" ToolTip.Tip="Memoria de la tarjeta gráfica usada por los modelos (/gpu para más detalle)" />
             <TextBlock Text="{Binding IndexStatusText}" FontSize="12" VerticalAlignment="Center"
-                       Foreground="{StaticResource Accent}" />
+                       Foreground="{DynamicResource Accent}" />
           </StackPanel>
-          <TextBlock Grid.Column="1" FontSize="12" Foreground="{StaticResource TextMuted}"
+          <TextBlock Grid.Column="1" FontSize="12" Foreground="{DynamicResource TextMuted}"
                      HorizontalAlignment="Center" VerticalAlignment="Center">
             <Run Text="Enter enviar · Shift+Enter nueva línea · " />
             <Run Text="{Binding DismissHint}" />

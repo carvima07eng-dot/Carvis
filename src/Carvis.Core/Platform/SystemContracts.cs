@@ -129,3 +129,14 @@ public sealed class MemoryClipboard : IClipboardService
         return Task.CompletedTask;
     }
 }
+
+/// <summary>Whether the Windows session is locked (the wake word must not work then).</summary>
+public interface ISessionState
+{
+    bool IsLocked { get; }
+}
+
+public sealed class UnlockedSession : ISessionState
+{
+    public bool IsLocked => false;
+}

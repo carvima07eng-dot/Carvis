@@ -40,9 +40,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         IMemoryStore memories,
         SettingsStore settingsStore,
         Carvis.Core.Platform.IShell shell,
-        Carvis.Core.Indexing.IIndexService index)
+        Carvis.Core.Indexing.IIndexService index,
+        Carvis.Core.Voice.VoiceAssistant? voice = null)
     {
         _shell = shell;
+        _voice = voice;
+        AttachVoice();
         IndexStatusText = DescribeIndex(index.Status);
         index.StatusChanged += status => Avalonia.Threading.Dispatcher.UIThread.Post(() => IndexStatusText = DescribeIndex(status));
         _chat = chat;
@@ -192,12 +195,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void DismissNotice(string notice) => Notices.Remove(notice);
 
-    private bool CanSend() => !IsBusy && !string.IsNullOrWhiteSpace(Input);
+    private bool CanSend() => !IsBusy && (!string.IsNullOrWhiteSpace(Input) || Images.Count > 0);
 
     [RelayCommand(CanExecute = nameof(CanSend))]
     private async Task SendAsync()
     {
         var text = Input.Trim();
+        if (text.Length == 0)
+            text = "¿Qué ves en esta imagen?";
         Input = string.Empty;
         _lastSentMessage = text;
 
@@ -206,11 +211,43 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         var attachments = Attachments.ToList();
         Attachments.Clear();
-        await AskAsync(text, attachments);
+        var images = Images.ToList();
+        Images.Clear();
+        await AskAsync(text, attachments, images);
+    }
+
+    /// <summary>Images for the next message (captures, pasted or dropped). Never written to disk.</summary>
+    public ObservableCollection<ImageAttachmentViewModel> Images { get; } = [];
+
+    public void AttachImage(ImageAttachmentViewModel image)
+    {
+        if (Images.Count >= 4)
+            Images.RemoveAt(0);
+        Images.Add(image);
+        SendCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void RemoveImage(ImageAttachmentViewModel image)
+    {
+        Images.Remove(image);
+        SendCommand.NotifyCanExecuteChanged();
     }
 
     public void AttachFile(string path)
     {
+        if (ImageAttachmentViewModel.IsImageFile(path) && File.Exists(path) && new FileInfo(path).Length < 30_000_000)
+        {
+            try
+            {
+                AttachImage(ImageAttachmentViewModel.Create(File.ReadAllBytes(path), Path.GetFileName(path)));
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+            {
+                // Not an image Avalonia can read: send it as a document (OCR) instead.
+            }
+        }
         if (File.Exists(path) && !Attachments.Contains(path, StringComparer.OrdinalIgnoreCase))
             Attachments.Add(path);
     }
@@ -224,10 +261,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private static string? DescribeIndex(Carvis.Core.Indexing.IndexStatus status) =>
         status.IsRunning ? status.Describe() : null;
 
-    private async Task AskAsync(string text, IReadOnlyList<string>? attachments = null)
+    private async Task AskAsync(string text, IReadOnlyList<string>? attachments = null, IReadOnlyList<ImageAttachmentViewModel>? images = null)
     {
-        Items.Add(new MessageViewModel(ChatRole.User, text) { Attachments = attachments ?? [] });
-        var input = new ChatInput(text) { Attachments = attachments ?? [] };
+        Items.Add(new MessageViewModel(ChatRole.User, text) { Attachments = attachments ?? [], ImageCount = images?.Count ?? 0 });
+        var input = new ChatInput(text) { Attachments = attachments ?? [], Images = images?.Select(i => i.Png).ToList() ?? [] };
         await RunTurnAsync(token => _chat.SendAsync(input, token), expectAnswer: true);
     }
 
@@ -265,6 +302,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     case TextDelta delta:
                         reply ??= NewReply();
                         reply.Append(delta.Text);
+                        _speech?.Push(delta.Text);
                         break;
 
                     case ThinkingDelta thinking:
@@ -301,6 +339,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 reply.Content = "(Sin respuesta)";
             if (expectAnswer)
                 AnswerCompleted?.Invoke(Items.OfType<MessageViewModel>().LastOrDefault(m => !m.IsUser)?.Content ?? string.Empty);
+            _ = CheckGpuAsync(report: false);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -317,6 +356,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         finally
         {
             CloseReply(reply);
+            _ = _speech?.CompleteAsync();
+            _speech = null;
             foreach (var card in Items.OfType<ToolCallViewModel>().Where(c => c.IsPending))
                 card.Deny();
             PendingConfirmation = null;
@@ -327,7 +368,11 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void Cancel() => _sendCancellation?.Cancel();
+    private void Cancel()
+    {
+        _sendCancellation?.Cancel();
+        _voice?.StopSpeaking();
+    }
 
     /// <summary>Puts the last message back in the prompt (arrow up on an empty prompt).</summary>
     public bool RecallLastMessage()
@@ -510,6 +555,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         ModelName = _settings.Ollama.ChatModel;
         _isModelLoaded = false;
+        OnVoiceSettingsApplied();
         _ = CheckStatusAsync();
     }
 
@@ -556,6 +602,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Say(entries.Count == 0 ? "Todavía no he hecho ninguna acción." :
                     "Últimas acciones:\n" + string.Join("\n", entries.Select(e => $"- {e.Time:dd/MM HH:mm} · {e.Summary}{(e.Undone ? " (deshecha)" : e.Success ? string.Empty : " (falló)")}")));
                 return true;
+            case "/gpu":
+                await CheckGpuAsync(report: true);
+                return true;
+            case "/liberar":
+                await FreeMemoryAsync();
+                return true;
             case "/ayuda":
             case "/olvidar":
                 Say("""
@@ -565,7 +617,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     - `/modelo` y `/modelo nombre`: ver o cambiar el modelo
                     - `/memoria`: lo que recuerdo de ti · `/olvidar todo`: borrarlo
                     - `/acciones`: lo último que he hecho en el PC
+                    - `/gpu`: qué modelos hay en la tarjeta gráfica · `/liberar`: sacarlos de la memoria
                     - `/ajustes`: abrir los ajustes
+
+                    Teclado: Ctrl+N nueva · Ctrl+H historial · Ctrl+, ajustes · Ctrl+M hablar · Ctrl+V pega también imágenes · Esc cancela u oculta
                     """);
                 return true;
             default:
@@ -668,6 +723,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             await _chat.WarmUpAsync();
             _isModelLoaded = true;
+            _ = CheckGpuAsync(report: false);
         }
         catch (Exception)
         {

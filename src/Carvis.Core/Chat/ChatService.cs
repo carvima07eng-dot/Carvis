@@ -40,6 +40,7 @@ public sealed class ChatService : IChatService
     private readonly IAttachmentContextBuilder? _attachments;
     private readonly ToolExecutor? _executor;
     private readonly ILogger _logger;
+    private readonly LoggingSettings? _logging;
     private readonly List<string> _attachedFiles = [];
     private readonly List<List<ChatMessage>> _turns = [];
     private readonly object _lock = new();
@@ -65,8 +66,10 @@ public sealed class ChatService : IChatService
         IActionJournal? journal = null,
         OllamaSettings? ollamaSettings = null,
         ILogger<ChatService>? logger = null,
-        IAttachmentContextBuilder? attachments = null)
+        IAttachmentContextBuilder? attachments = null,
+        LoggingSettings? logging = null)
     {
+        _logging = logging;
         _client = client;
         _settings = settings;
         _contextProviders = contextProviders?.ToList() ?? [];
@@ -173,6 +176,8 @@ public sealed class ChatService : IChatService
                 var request = new ModelRequest(messages)
                 {
                     Model = model,
+                    // The vision model leaves the graphics card soon, to give the room back to the chat model.
+                    KeepAlive = model is null ? null : "2m",
                     Tools = tools.Count > 0 && model is null ? tools : null,
                     // After the first tool result the model is filling in arguments: be precise.
                     Temperature = step == 0 ? _ollamaSettings?.Temperature : _ollamaSettings?.ToolTemperature,
@@ -356,7 +361,8 @@ public sealed class ChatService : IChatService
         if (system.Length > 0)
             messages.Add(new ChatMessage(ChatRole.System, system.ToString()));
         messages.AddRange(extra);
-        messages.AddRange(history);
+        // Earlier pictures were already answered: the chat model can't read them anyway.
+        messages.AddRange(history.Select(m => m.Images is null ? m : m with { Images = null }));
         messages.Add(user);
         return (messages, external, sources);
     }
@@ -382,7 +388,23 @@ public sealed class ChatService : IChatService
             while (_turns.Count > 1 && _turns.Sum(t => t.Count) > hardLimit)
                 _turns.RemoveAt(0);
         }
+        LogTurn(turn);
         TurnCommitted?.Invoke(turn);
+    }
+
+    // What was said only reaches the log in debug mode (Ajustes → Privacidad); otherwise just sizes.
+    private void LogTurn(List<ChatMessage> turn)
+    {
+        if (_logging?.IncludeContent == true)
+        {
+            foreach (var message in turn)
+                _logger.LogInformation("{Role}: {Content}", message.Role, message.Content);
+        }
+        else
+        {
+            _logger.LogInformation("Turn of {Messages} messages, {Characters} characters, {Tools} tool calls",
+                turn.Count, turn.Sum(m => m.Content.Length), turn.Sum(m => m.ToolCalls?.Count ?? 0));
+        }
     }
 
     // Old turns that no longer fit are summarized by the model instead of being forgotten.

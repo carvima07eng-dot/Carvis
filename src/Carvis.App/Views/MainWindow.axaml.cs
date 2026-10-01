@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
@@ -39,6 +40,7 @@ public partial class MainWindow : Window
 
         HideOnFocusLost = settings.HideOnFocusLost;
         FontSize = settings.FontSize;
+        ThemeColors.Apply(settings);
         ApplyBackdrop(settings.Backdrop);
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
@@ -105,9 +107,12 @@ public partial class MainWindow : Window
         if (WindowState == WindowState.Minimized)
             WindowState = WindowState.Normal;
 
+        var appearing = !IsVisible;
         Show();
         Activate();
         WindowsNative.BringToFront(this);
+        if (appearing && _settings.Animations)
+            AnimateIn();
         Dispatcher.UIThread.Post(() => PromptBox.Focus(), DispatcherPriority.Input);
     }
 
@@ -124,6 +129,7 @@ public partial class MainWindow : Window
     {
         HideOnFocusLost = settings.HideOnFocusLost;
         FontSize = settings.FontSize;
+        ThemeColors.Apply(settings);
         ApplyBackdrop(settings.Backdrop);
     }
 
@@ -137,14 +143,49 @@ public partial class MainWindow : Window
     // Width/Height are NaN while the window sizes itself to its content.
     private static double Finite(double value) => double.IsFinite(value) ? value : 0;
 
+    // A short fade and rise when the window appears.
+    private void AnimateIn()
+    {
+        RootBorder.Transitions ??=
+        [
+            new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(140) },
+            new Avalonia.Animation.TransformOperationsTransition
+            {
+                Property = RenderTransformProperty,
+                Duration = TimeSpan.FromMilliseconds(160),
+                Easing = new Avalonia.Animation.Easings.CubicEaseOut()
+            },
+        ];
+        RootBorder.Opacity = 0;
+        RootBorder.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(10px)");
+        Dispatcher.UIThread.Post(() =>
+        {
+            RootBorder.Opacity = 1;
+            RootBorder.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(0px)");
+        }, DispatcherPriority.Render);
+    }
+
+    private string _backdrop = "Solid";
+
     public void ApplyBackdrop(string backdrop)
     {
+        _backdrop = backdrop;
+        var background = ThemeColors.Color("Background");
+        Color WithAlpha(byte alpha) => Color.FromArgb(alpha, background.R, background.G, background.B);
         (TransparencyLevelHint, RootBorder.Background) = backdrop switch
         {
-            "Acrylic" => ([WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], Brush.Parse("#CC0B1220")),
-            "Mica" => ([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], Brush.Parse("#B30B1220")),
-            _ => ((IReadOnlyList<WindowTransparencyLevel>)[WindowTransparencyLevel.Transparent], Brush.Parse("#0B1220")),
+            "Acrylic" => ([WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], new SolidColorBrush(WithAlpha(0xCC))),
+            "Mica" => ([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], new SolidColorBrush(WithAlpha(0xB3))),
+            _ => ((IReadOnlyList<WindowTransparencyLevel>)[WindowTransparencyLevel.Transparent], new SolidColorBrush(background)),
         };
+    }
+
+    // The background is built from the theme colour: rebuild it when the theme changes.
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+        if (change.Property == ActualThemeVariantProperty && RootBorder is not null)
+            ApplyBackdrop(_backdrop);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -204,6 +245,11 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
+        if (DataContext is MainWindowViewModel viewModel && e.KeyModifiers == KeyModifiers.Control && RunShortcut(viewModel, e.Key))
+        {
+            e.Handled = true;
+            return;
+        }
         if (e.Key != Key.Escape)
             return;
 
@@ -213,6 +259,32 @@ public partial class MainWindow : Window
         else
             Dismiss();
         e.Handled = true;
+    }
+
+    // Everything is reachable from the keyboard: Ctrl+N new, Ctrl+H history, Ctrl+, settings,
+    // Ctrl+M talk, Ctrl+L back to the prompt.
+    private bool RunShortcut(MainWindowViewModel viewModel, Key key)
+    {
+        switch (key)
+        {
+            case Key.N when viewModel.NewConversationCommand.CanExecute(null):
+                viewModel.NewConversationCommand.Execute(null);
+                return true;
+            case Key.H:
+                viewModel.ToggleHistoryCommand.Execute(null);
+                return true;
+            case Key.OemComma:
+                viewModel.OpenSettingsCommand.Execute(null);
+                return true;
+            case Key.M:
+                viewModel.ToggleVoice();
+                return true;
+            case Key.L:
+                PromptBox.Focus();
+                return true;
+            default:
+                return false;
+        }
     }
 
     // Enter sends, Shift+Enter adds a line, arrow up recalls the last message.
@@ -237,6 +309,22 @@ public partial class MainWindow : Window
             PromptBox.CaretIndex = PromptBox.Text?.Length ?? 0;
             e.Handled = true;
         }
+        else if (e.Key == Key.V && e.KeyModifiers == KeyModifiers.Control)
+        {
+            e.Handled = true;
+            _ = PasteAsync();
+        }
+        else if (e.Key == Key.Escape && viewModel.IsSpeaking)
+        {
+            viewModel.StopSpeakingCommand.Execute(null);
+            e.Handled = true;
+        }
+    }
+
+    private async Task PasteAsync()
+    {
+        if (!await TryPasteImageAsync())
+            PromptBox.Paste();
     }
 
     private async void OnCopyMessageClick(object? sender, RoutedEventArgs e)
@@ -277,6 +365,34 @@ public partial class MainWindow : Window
         {
             if (file.TryGetLocalPath() is { } path)
                 viewModel.AttachFile(path);
+        }
+    }
+
+    private void OnCaptureRegionClick(object? sender, RoutedEventArgs e) => Capture(Carvis.Core.Vision.CaptureArea.Region);
+    private void OnCaptureScreenClick(object? sender, RoutedEventArgs e) => Capture(Carvis.Core.Vision.CaptureArea.Screen);
+    private void OnCaptureWindowClick(object? sender, RoutedEventArgs e) => Capture(Carvis.Core.Vision.CaptureArea.Window);
+
+    private static void Capture(Carvis.Core.Vision.CaptureArea area)
+    {
+        if (Avalonia.Application.Current is App app)
+            _ = app.CaptureForChatAsync(area);
+    }
+
+    // Ctrl+V with a picture in the clipboard attaches it instead of pasting text.
+    private async Task<bool> TryPasteImageAsync()
+    {
+        if (DataContext is not MainWindowViewModel viewModel || Clipboard is not { } clipboard)
+            return false;
+        try
+        {
+            if (await clipboard.TryGetBitmapAsync() is not { } bitmap)
+                return false;
+            viewModel.AttachImage(ImageAttachmentViewModel.Create(bitmap, "Imagen pegada"));
+            return true;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or ArgumentException or NotSupportedException)
+        {
+            return false;
         }
     }
 

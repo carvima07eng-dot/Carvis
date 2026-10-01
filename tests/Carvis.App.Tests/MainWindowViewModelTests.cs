@@ -176,6 +176,53 @@ public sealed class MainWindowViewModelTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public void SettingsWindow_BuildsWithAllTabs()
+    {
+        var viewModel = ActivatorUtilities.CreateInstance<SettingsViewModel>(_services);
+        viewModel.AttachVoice(_services.GetRequiredService<Carvis.Core.Voice.VoiceModels>(), _services.GetRequiredService<Carvis.Core.Voice.ModelDownloader>(),
+            _services.GetRequiredService<Carvis.Core.Voice.VoiceAssistant>(), _services.GetRequiredService<Carvis.Core.Voice.IAudioInput>(),
+            _services.GetRequiredService<Carvis.Core.Voice.IAudioOutput>());
+        var window = new SettingsWindow { DataContext = viewModel };
+        window.Show();
+        Assert.True(window.IsVisible);
+        Assert.False(string.IsNullOrEmpty(viewModel.VoiceStatus));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Images_GoToTheVisionModelOnlyOnce()
+    {
+        _model.Answer("Veo un error de compilación.").Answer("De nada.");
+        var vm = ViewModel;
+        var bitmap = new Avalonia.Media.Imaging.WriteableBitmap(new Avalonia.PixelSize(2000, 1000), new Avalonia.Vector(96, 96),
+            Avalonia.Platform.PixelFormat.Bgra8888, Avalonia.Platform.AlphaFormat.Opaque);
+        vm.AttachImage(ImageAttachmentViewModel.Create(bitmap, "Captura"));
+        Assert.True(vm.SendCommand.CanExecute(null)); // an image alone can be sent
+
+        await vm.SendCommand.ExecuteAsync(null);
+        await SendAsync(vm, "gracias");
+
+        var first = _model.Requests[0];
+        Assert.Equal("qwen2.5vl:7b", first.Model);
+        var png = Assert.Single(first.Messages.Last(m => m.Role == ChatRole.User).Images!);
+        using (var decoded = new Avalonia.Media.Imaging.Bitmap(new MemoryStream(png)))
+            Assert.Equal(1600, decoded.PixelSize.Width); // scaled down
+        Assert.Null(_model.Requests[1].Model);
+        Assert.All(_model.Requests[1].Messages, m => Assert.Null(m.Images));
+        Assert.Empty(vm.Images);
+        Assert.Equal("🖼 1 imagen", vm.Items.OfType<MessageViewModel>().First().AttachmentsText);
+    }
+
+    [AvaloniaFact]
+    public void Voice_IsOffUntilEnabled()
+    {
+        var vm = ViewModel;
+        Assert.False(vm.IsVoiceEnabled);
+        vm.ToggleVoice();
+        Assert.Contains(vm.Notices, n => n.Contains("Ajustes → Voz"));
+    }
+
     private sealed class FixedTitle : ITitleGenerator
     {
         public Task<string> GenerateAsync(string userMessage, string answer, CancellationToken cancellationToken = default) => Task.FromResult("Título");

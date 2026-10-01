@@ -64,8 +64,55 @@ public static class SettingsValidator
             settings.Window.FontSize = defaults.Window.FontSize;
         }
 
+        if (settings.Ollama.TopP is <= 0 or > 1)
+        {
+            problems.Add("top_p debe estar entre 0 y 1.");
+            settings.Ollama.TopP = defaults.Ollama.TopP;
+        }
+
+        ValidateVoice(settings, defaults, problems);
+
+        if (!HotkeyGesture.TryParse(settings.Vision.CaptureHotkey, out _))
+        {
+            problems.Add($"El atajo de captura «{settings.Vision.CaptureHotkey}» no es válido; uso {defaults.Vision.CaptureHotkey}.");
+            settings.Vision.CaptureHotkey = defaults.Vision.CaptureHotkey;
+        }
+
         return problems;
     }
+
+    private static void ValidateVoice(CarvisSettings settings, CarvisSettings defaults, List<string> problems)
+    {
+        var voice = settings.Voice;
+        if (!Voice.VoiceModels.WhisperSizes.Contains(voice.WhisperModel))
+        {
+            problems.Add($"El modelo de voz «{voice.WhisperModel}» no existe (tiny, base, small o medium); uso {defaults.Voice.WhisperModel}.");
+            voice.WhisperModel = defaults.Voice.WhisperModel;
+        }
+        if (voice.SpeechRate is < 0.5 or > 2)
+        {
+            problems.Add("La velocidad de la voz debe estar entre 0,5 y 2.");
+            voice.SpeechRate = defaults.Voice.SpeechRate;
+        }
+        Clamp(problems, "La pausa que termina una frase", voice.SilenceMilliseconds, 300, 3000,
+            v => voice.SilenceMilliseconds = v, defaults.Voice.SilenceMilliseconds);
+        if (voice.PiperVoice.Split('-').Length != 3)
+        {
+            problems.Add($"La voz «{voice.PiperVoice}» no tiene el formato idioma_PAÍS-nombre-calidad; uso {defaults.Voice.PiperVoice}.");
+            voice.PiperVoice = defaults.Voice.PiperVoice;
+        }
+        if (!HotkeyGesture.TryParse(voice.PushToTalkHotkey, out _))
+        {
+            problems.Add($"El atajo para hablar «{voice.PushToTalkHotkey}» no es válido; uso {defaults.Voice.PushToTalkHotkey}.");
+            voice.PushToTalkHotkey = defaults.Voice.PushToTalkHotkey;
+        }
+    }
+
+    /// <summary>A warning (nothing is changed): Ollama on another machine means the conversations leave this PC.</summary>
+    public static string? PrivacyWarning(CarvisSettings settings) =>
+        Uri.TryCreate(settings.Ollama.BaseUrl, UriKind.Absolute, out var uri) && !uri.IsLoopback
+            ? $"Ollama está en otro equipo ({uri.Host}): tus conversaciones salen de este PC."
+            : null;
 
     public static bool IsValidKeepAlive(string? value)
     {

@@ -7,7 +7,7 @@
         Icon="/Assets/carvis.ico"
         Width="620" Height="520" CanResize="False"
         WindowStartupLocation="CenterScreen"
-        Background="#0B1220"
+        Background="{DynamicResource Background}"
         FontFamily="{StaticResource CarvisFont}">
 
   <Window.Styles>
@@ -18,18 +18,18 @@
     </Style>
     <Style Selector="TextBlock.text">
       <Setter Property="TextWrapping" Value="Wrap" />
-      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
       <Setter Property="LineHeight" Value="22" />
     </Style>
     <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{StaticResource Accent}" />
-      <Setter Property="Foreground" Value="#0B1220" />
+      <Setter Property="Background" Value="{DynamicResource Accent}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
     </Style>
   </Window.Styles>
 
   <DockPanel Margin="32,28">
     <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,16,0,0">
-      <TextBlock Text="{Binding StepText}" VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" />
+      <TextBlock Text="{Binding StepText}" VerticalAlignment="Center" Foreground="{DynamicResource TextMuted}" />
       <Button Grid.Column="1" Content="Atrás" Margin="0,0,8,0" IsVisible="{Binding CanGoBack}" Command="{Binding BackCommand}" />
       <Button Grid.Column="2" Classes="primary" Content="{Binding NextLabel}" Command="{Binding NextCommand}" MinWidth="110" />
     </Grid>
@@ -63,16 +63,16 @@
         <ItemsControl ItemsSource="{Binding Models}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ModelSetupViewModel">
-              <Border Background="#111A2B" CornerRadius="10" Padding="14,10" Margin="0,6">
+              <Border Background="{DynamicResource Card}" CornerRadius="10" Padding="14,10" Margin="0,6">
                 <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
                   <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
-                  <TextBlock Grid.Row="1" Text="{Binding Purpose}" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                  <TextBlock Grid.Row="1" Text="{Binding Purpose}" FontSize="12" Foreground="{DynamicResource TextSecondary}" />
                   <TextBlock Grid.Column="1" Text="{Binding StateText}" VerticalAlignment="Center" />
                   <Button Grid.Column="1" Grid.Row="1" Content="Descargar" HorizontalAlignment="Right" IsVisible="{Binding !IsInstalled}"
                           Command="{Binding $parent[Window].((vm:OnboardingViewModel)DataContext).DownloadCommand}" CommandParameter="{Binding}" />
                   <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0" IsVisible="{Binding IsDownloading}">
                     <ProgressBar Value="{Binding Progress}" />
-                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{StaticResource TextMuted}" />
+                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{DynamicResource TextMuted}" />
                   </StackPanel>
                 </Grid>
               </Border>
@@ -103,8 +103,8 @@
       <StackPanel IsVisible="{Binding IsStep4}" Spacing="10">
         <TextBlock Classes="title" Text="Tu atajo" />
         <TextBlock Classes="text" Text="Desde cualquier programa, abre Carvis con este atajo. Pruébalo ahora:" />
-        <TextBlock Text="{Binding HotkeyText}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource Accent}" Margin="0,8" />
-        <TextBlock Text="✓ ¡Funciona!" IsVisible="{Binding HotkeyWorked}" FontWeight="SemiBold" Foreground="#34D399" />
+        <TextBlock Text="{Binding HotkeyText}" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource Accent}" Margin="0,8" />
+        <TextBlock Text="✓ ¡Funciona!" IsVisible="{Binding HotkeyWorked}" FontWeight="SemiBold" Foreground="{DynamicResource Success}" />
         <TextBlock Classes="text" IsVisible="{Binding !HotkeyWorked}"
                    Text="Si al pulsarlo no pasa nada, puede que otro programa (como PowerToys Run) lo use. Puedes cambiarlo en Ajustes → General." />
       </StackPanel>

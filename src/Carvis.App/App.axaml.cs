@@ -11,6 +11,7 @@ using Carvis.App.Views;
 using Carvis.Core;
 using Carvis.Core.Configuration;
 using Carvis.Core.Input;
+using Carvis.Voice;
 using Carvis.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -56,6 +57,7 @@ public partial class App : Application
                     bootstrap.Paths.PluginsDirectory, _logger);
             }
 
+            ThemeColors.Apply(settings.Window);
             _viewModel = _services.GetRequiredService<MainWindowViewModel>();
             StartReconnectTimer();
             _viewModel.PropertyChanged += (_, e) =>
@@ -71,6 +73,8 @@ public partial class App : Application
                 DataContext = _viewModel,
             };
             _services.GetRequiredService<AvaloniaClipboard>().Owner = _window;
+            _services.GetRequiredService<ScreenCaptureService>().Owner = _window;
+            _viewModel.VoiceActivated += () => Dispatcher.UIThread.Post(ShowWindow);
             StartReminders();
             _viewModel.SettingsRequested += OpenSettings;
             _viewModel.AnswerCompleted += OnAnswerCompleted;
@@ -100,6 +104,8 @@ public partial class App : Application
         if (_window is null || _viewModel is null)
             return;
 
+        if (!_window.IsInFront && OperatingSystem.IsWindows() && _services is not null)
+            _services.GetRequiredService<ScreenCaptureService>().PreviousForeground = ScreenGrabber.ForegroundWindow();
         _window.ShowAndFocus();
         if (!_viewModel.IsOllamaReady)
             _ = _viewModel.CheckStatusAsync();
@@ -131,6 +137,58 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
+    }
+
+    private const string VoiceHotkey = "voice";
+    private const string CaptureHotkey = "capture";
+
+    // Push-to-talk (only with voice on) and screen capture.
+    private void ApplyExtraHotkeys(CarvisSettings settings)
+    {
+        if (_hotkey is null || _viewModel is null)
+            return;
+        var problems = new List<string>();
+        HotkeyGesture? voice = settings.Voice.Enabled && HotkeyGesture.TryParse(settings.Voice.PushToTalkHotkey, out var v) ? v : null;
+        if (!_hotkey.TrySet(VoiceHotkey, voice, out var voiceError) && voiceError is not null)
+            problems.Add(voiceError);
+        HotkeyGesture? capture = HotkeyGesture.TryParse(settings.Vision.CaptureHotkey, out var c) ? c : null;
+        if (!_hotkey.TrySet(CaptureHotkey, capture, out var captureError) && captureError is not null)
+            problems.Add(captureError);
+        if (problems.Count > 0)
+            _viewModel.HotkeyWarning = string.Join(" ", problems);
+    }
+
+    private void OnBindingPressed(string name)
+    {
+        if (name == VoiceHotkey)
+        {
+            ShowWindow();
+            _viewModel?.ToggleVoice();
+        }
+        else if (name == CaptureHotkey)
+        {
+            _ = CaptureForChatAsync(Carvis.Core.Vision.CaptureArea.Region);
+        }
+    }
+
+    /// <summary>Captures the screen and attaches it to the next message.</summary>
+    public async Task CaptureForChatAsync(Carvis.Core.Vision.CaptureArea area)
+    {
+        if (_services is null || _viewModel is null)
+            return;
+        try
+        {
+            var png = await _services.GetRequiredService<ScreenCaptureService>().CaptureAsync(area);
+            if (png is null)
+                return;
+            _viewModel.AttachImage(ImageAttachmentViewModel.Create(png, "Captura"));
+            ShowWindow();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Screen capture failed");
+            _viewModel.AddNotice($"No he podido capturar la pantalla: {ex.Message}");
+        }
     }
 
     private void StartReminders()
@@ -220,6 +278,9 @@ public partial class App : Application
         }
 
         var viewModel = ActivatorUtilities.CreateInstance<SettingsViewModel>(_services);
+        viewModel.AttachVoice(_services.GetRequiredService<Carvis.Core.Voice.VoiceModels>(), _services.GetRequiredService<Carvis.Core.Voice.ModelDownloader>(),
+            _services.GetRequiredService<Carvis.Core.Voice.VoiceAssistant>(), _services.GetRequiredService<Carvis.Core.Voice.IAudioInput>(),
+            _services.GetRequiredService<Carvis.Core.Voice.IAudioOutput>());
         viewModel.Saved += OnSettingsSaved;
         _settingsWindow = new SettingsWindow { DataContext = viewModel };
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
@@ -235,6 +296,7 @@ public partial class App : Application
 
         if (HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture) && _hotkey is not null)
             _viewModel.HotkeyWarning = _hotkey.TryChange(gesture, out var error) ? null : error;
+        ApplyExtraHotkeys(settings);
 
         _viewModel.OnSettingsApplied();
         StartIndexing(force: true);
@@ -342,6 +404,8 @@ public partial class App : Application
 
         if (!_hotkey.TryStart(gesture, out var error))
             _viewModel.HotkeyWarning = error;
+        _hotkey.BindingPressed += name => Dispatcher.UIThread.Post(() => OnBindingPressed(name));
+        ApplyExtraHotkeys(settings);
     }
 
     private static ServiceProvider BuildServices(Bootstrap bootstrap)
@@ -356,10 +420,13 @@ public partial class App : Application
         services.AddCarvisCore(bootstrap.Settings, bootstrap.Paths);
         if (OperatingSystem.IsWindows())
             services.AddCarvisWindows();
+        services.AddCarvisVoice();
         services.AddSingleton(new WindowStateStore(bootstrap.Paths.WindowStateFile));
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<Carvis.Core.Platform.INotifier, ToastNotifier>();
         services.AddSingleton<AvaloniaClipboard>();
+        services.AddSingleton<ScreenCaptureService>();
+        services.AddSingleton<Carvis.Core.Vision.IScreenCapture>(sp => sp.GetRequiredService<ScreenCaptureService>());
         services.AddSingleton<Carvis.Core.Platform.IClipboardService>(sp => sp.GetRequiredService<AvaloniaClipboard>());
         services.AddSingleton<MainWindowViewModel>();
         return services.BuildServiceProvider();

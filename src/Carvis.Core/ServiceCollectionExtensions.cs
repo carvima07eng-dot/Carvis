@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(settings.Ollama);
         services.AddSingleton(settings.Assistant);
         services.AddSingleton(settings.Permissions);
+        services.AddSingleton(settings.Logging);
         services.TryAddSingleton(paths ?? new AppPaths());
         services.TryAddSingleton(TimeProvider.System);
 
@@ -81,6 +82,20 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IToolRegistry, ToolRegistry>();
         services.AddSingleton<IToolSelector, ToolSelector>();
         services.AddCarvisTools();
+
+        // Voice: the engines are replaced by Carvis.Voice and the Windows audio.
+        services.AddSingleton(settings.Voice);
+        services.AddSingleton(settings.Vision);
+        services.TryAddSingleton<ISessionState, UnlockedSession>();
+        services.TryAddSingleton<Voice.IAudioInput, Voice.NoAudioInput>();
+        services.TryAddSingleton<Voice.IAudioOutput, Voice.NoAudioOutput>();
+        services.TryAddSingleton<Voice.ISpeechToText, Voice.NoSpeechToText>();
+        services.TryAddSingleton<Voice.ITextToSpeech, Voice.PiperTextToSpeech>();
+        services.AddSingleton<Voice.VoiceModels>();
+        services.AddSingleton(_ => new Voice.ModelDownloader());
+        services.AddSingleton<Voice.VoiceAssistant>();
+        services.TryAddSingleton<Vision.IScreenCapture, Vision.NoScreenCapture>();
+        services.AddSingleton<Vision.IVisionService, Vision.OllamaVisionService>();
 
         services.AddSingleton<IChatService, ChatService>();
         return services;

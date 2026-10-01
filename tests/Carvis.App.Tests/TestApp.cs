@@ -10,5 +10,7 @@ namespace Carvis.App.Tests;
 public static class TestAppBuilder
 {
     public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<Carvis.App.App>().UseHeadless(new AvaloniaHeadlessPlatformOptions());
+        AppBuilder.Configure<Carvis.App.App>()
+            .UseSkia() // real bitmaps (images are resized and encoded)
+            .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }

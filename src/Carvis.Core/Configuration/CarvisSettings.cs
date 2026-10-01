@@ -11,6 +11,8 @@ public sealed class CarvisSettings
     public PermissionsSettings Permissions { get; set; } = new();
     public PrivacySettings Privacy { get; set; } = new();
     public DocumentsSettings Documents { get; set; } = new();
+    public VoiceSettings Voice { get; set; } = new();
+    public VisionSettings Vision { get; set; } = new();
 
     /// <summary>The first-run assistant has been completed.</summary>
     public bool FirstRunCompleted { get; set; }
@@ -52,6 +54,9 @@ public sealed class OllamaSettings
 
     /// <summary>Lower temperature while the model is choosing and filling in tools.</summary>
     public double ToolTemperature { get; set; } = 0.2;
+
+    /// <summary>Nucleus sampling: lower = more predictable wording.</summary>
+    public double TopP { get; set; } = 0.9;
 }
 
 public sealed class HotkeySettings
@@ -93,6 +98,15 @@ public sealed class WindowSettings
     public double FontSize { get; set; } = 14;
 
     public bool RememberPosition { get; set; } = true;
+
+    /// <summary>"Dark", "Light" or "System" (follows Windows).</summary>
+    public string Theme { get; set; } = "Dark";
+
+    /// <summary>Highlight colour (#RRGGBB). Empty = the theme's cyan.</summary>
+    public string AccentColor { get; set; } = string.Empty;
+
+    /// <summary>Opening and message animations.</summary>
+    public bool Animations { get; set; } = true;
 }
 
 public sealed class LoggingSettings
@@ -142,4 +156,55 @@ public sealed class DocumentsSettings
 
     /// <summary>How many document fragments go into the answer.</summary>
     public int ResultsPerQuestion { get; set; } = 6;
+}
+
+public sealed class VoiceSettings
+{
+    /// <summary>Voice is off until the user turns it on and downloads the models.</summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>Press once to talk; Carvis stops listening when you stop speaking.</summary>
+    public string PushToTalkHotkey { get; set; } = "Ctrl+Alt+Space";
+
+    /// <summary>Whisper model: tiny, base, small or medium. Bigger is more accurate and slower.</summary>
+    public string WhisperModel { get; set; } = "small";
+
+    public string Language { get; set; } = "es";
+
+    /// <summary>Use the graphics card for Whisper (Vulkan); falls back to the CPU.</summary>
+    public bool UseGpu { get; set; } = true;
+
+    /// <summary>Microphone and speakers by name. Empty = the Windows default.</summary>
+    public string InputDevice { get; set; } = string.Empty;
+    public string OutputDevice { get; set; } = string.Empty;
+
+    /// <summary>Read the answer aloud when the question was spoken.</summary>
+    public bool SpeakAnswers { get; set; } = true;
+
+    /// <summary>Piper voice, e.g. es_ES-davefx-medium.</summary>
+    public string PiperVoice { get; set; } = "es_ES-davefx-medium";
+
+    /// <summary>1 = normal speed, 1.2 = faster.</summary>
+    public double SpeechRate { get; set; } = 1.0;
+
+    /// <summary>How long a pause ends what you are saying.</summary>
+    public int SilenceMilliseconds { get; set; } = 900;
+
+    /// <summary>Listen all the time for "Carvis" (never while the PC is locked).</summary>
+    public bool WakeWord { get; set; }
+
+    /// <summary>After answering, listen again until there is silence (hands-free conversation).</summary>
+    public bool ContinuousConversation { get; set; }
+
+    /// <summary>Talking while Carvis speaks interrupts it. Only reliable with headphones.</summary>
+    public bool InterruptByVoice { get; set; }
+}
+
+public sealed class VisionSettings
+{
+    /// <summary>Shortcut to capture part of the screen and ask about it.</summary>
+    public string CaptureHotkey { get; set; } = "Ctrl+Alt+S";
+
+    /// <summary>Keep captures in Pictures\Carvis. Off = they only live in memory.</summary>
+    public bool SaveCaptures { get; set; }
 }

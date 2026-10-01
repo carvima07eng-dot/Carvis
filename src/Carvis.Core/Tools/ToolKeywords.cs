@@ -72,6 +72,7 @@ internal static class ToolKeywords
         ["tiempo"] = ["el tiempo", "que tiempo", "tiempo hace", "va a llover", "llueve", "lloverá", "temperatura", "clima", "prevision", "hace frio", "hace calor"],
         ["divisas"] = ["euros", "dolares", "libras", "yenes", "cambio de", "divisa*", "moneda*", "en dolares", "en euros"],
         ["leer_resultados_web"] = ["busca en internet", "busca informacion", "noticias", "ultima hora", "actual", "hoy en", "quien gano", "precio de"],
+        ["ver_pantalla"] = ["pantalla", "que ves", "que hay en mi pantalla", "mira esto", "este error", "esta ventana", "lo que tengo delante", "captura"],
         ["buscar_en_web"] = ["busca en google", "busca en internet", "busca en youtube", "googlea", "en google", "en youtube", "wikipedia", "maps", "mapa", "traduce", "como llego"],
     };
 }

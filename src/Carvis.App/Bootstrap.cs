@@ -34,6 +34,8 @@ public sealed class Bootstrap
         if (store.LoadError is { } loadError)
             warnings.Add(loadError);
         warnings.AddRange(SettingsValidator.Validate(settings));
+        if (SettingsValidator.PrivacyWarning(settings) is { } privacy)
+            warnings.Add(privacy);
 
         var level = Enum.TryParse<LogLevel>(settings.Logging.Level, ignoreCase: true, out var parsed) ? parsed : LogLevel.Information;
         var log = new FileLoggerProvider(paths.LogsDirectory, level, settings.Logging.RetainDays);

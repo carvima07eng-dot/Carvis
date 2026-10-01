@@ -28,12 +28,12 @@ internal static class MarkdownRenderer
         .Build();
 
     private static readonly FontFamily Mono = new("Cascadia Mono, Consolas, Menlo, monospace");
-    private static readonly IBrush TextBrush = Brush.Parse("#E5E7EB");
-    private static readonly IBrush MutedBrush = Brush.Parse("#9CA3AF");
-    private static readonly IBrush AccentBrush = Brush.Parse("#22D3EE");
-    private static readonly IBrush CodeBlockBackground = Brush.Parse("#0B1220");
-    private static readonly IBrush InlineCodeBrush = Brush.Parse("#F0ABFC");
-    private static readonly IBrush RuleBrush = Brush.Parse("#2A3A4F");
+    private static IBrush TextBrush => Platform.ThemeColors.Brush("TextPrimary");
+    private static IBrush MutedBrush => Platform.ThemeColors.Brush("TextSecondary");
+    private static IBrush AccentBrush => Platform.ThemeColors.Brush("Accent");
+    private static IBrush CodeBlockBackground => Platform.ThemeColors.Brush("Background");
+    private static IBrush InlineCodeBrush => Platform.ThemeColors.Brush("InlineCode");
+    private static IBrush RuleBrush => Platform.ThemeColors.Brush("WindowBorder");
 
     public static Control Render(string markdown, double fontSize = 14)
     {
@@ -164,11 +164,11 @@ internal static class MarkdownRenderer
     private static string PlainText(ContainerInline container) =>
         string.Concat(container.Descendants<LiteralInline>().Select(l => l.Content.ToString()));
 
-    private static readonly IBrush KeywordBrush = Brush.Parse("#C792EA");
-    private static readonly IBrush StringBrush = Brush.Parse("#C3E88D");
-    private static readonly IBrush CommentBrush = Brush.Parse("#697098");
-    private static readonly IBrush NumberBrush = Brush.Parse("#F78C6C");
-    private static readonly IBrush TypeBrush = Brush.Parse("#82AAFF");
+    private static IBrush KeywordBrush => Platform.ThemeColors.Brush("CodeKeyword");
+    private static IBrush StringBrush => Platform.ThemeColors.Brush("CodeString");
+    private static IBrush CommentBrush => Platform.ThemeColors.Brush("CodeComment");
+    private static IBrush NumberBrush => Platform.ThemeColors.Brush("CodeNumber");
+    private static IBrush TypeBrush => Platform.ThemeColors.Brush("CodeType");
 
     private static SelectableTextBlock HighlightedCode(string code, string? language)
     {
