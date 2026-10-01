@@ -18,8 +18,8 @@ public sealed class RegionSelectWindow : Window
     private readonly Rectangle[] _shade = [Shade(), Shade(), Shade(), Shade()];
     private readonly Border _selection = new()
     {
-        BorderBrush = Brush.Parse("#38BDF8"),
-        BorderThickness = new Thickness(2),
+        BorderBrush = Platform.ThemeColors.Brush("Accent"),
+        BorderThickness = Platform.Tokens.Inset("Border.2"),
         IsVisible = false,
     };
     private readonly TaskCompletionSource<PixelRect?> _result = new();
@@ -46,17 +46,18 @@ public sealed class RegionSelectWindow : Window
         _canvas.Children.Add(_selection);
         var hint = new Border
         {
-            Background = Brush.Parse("#E60B1220"),
-            CornerRadius = new CornerRadius(10),
-            Padding = new Thickness(14, 8),
-            Margin = new Thickness(0, 24, 0, 0),
+            Background = Platform.ThemeColors.Brush("SurfaceSolid"),
+            CornerRadius = Platform.Tokens.Radius(8),
+            Padding = Platform.Tokens.Inset("Inset.H16V8"),
+            Margin = Platform.Tokens.Inset("Gap.T24"),
+            BoxShadow = Platform.Tokens.Shadow("Flyout"),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Top,
             IsHitTestVisible = false,
             Child = new TextBlock
             {
-                Text = "Arrastra para elegir una zona · Intro: pantalla completa · Esc: cancelar",
-                Foreground = Brush.Parse("#E5E7EB"),
+                Text = "Arrastra para elegir una zona · Intro: toda la pantalla · Esc: cancelar",
+                Foreground = Platform.ThemeColors.Brush("TextPrimary"),
             },
         };
         Content = new Panel { Children = { _canvas, hint } };
@@ -154,5 +155,5 @@ public sealed class RegionSelectWindow : Window
     private static Rect Normalize(Point a, Point b) =>
         new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y));
 
-    private static Rectangle Shade() => new() { Fill = Brush.Parse("#99000000"), IsHitTestVisible = false };
+    private static Rectangle Shade() => new() { Fill = Platform.ThemeColors.Brush("Scrim"), IsHitTestVisible = false };
 }

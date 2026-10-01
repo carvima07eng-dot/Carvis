@@ -1,0 +1,313 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="using:Carvis.App.Views.Controls">
+  <!-- Shared control styles. Values come only from DesignSystem.axaml. -->
+
+  <Style Selector="Window">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Text}" />
+    <Setter Property="FontSize" Value="{StaticResource Type.Body}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+
+  <!-- Type ramp -->
+  <Style Selector="TextBlock.caption, SelectableTextBlock.caption">
+    <Setter Property="FontSize" Value="{StaticResource Type.Caption}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="TextBlock.bodyStrong">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.bodyLarge">
+    <Setter Property="FontSize" Value="{StaticResource Type.BodyLarge}" />
+  </Style>
+  <Style Selector="TextBlock.subtitle">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Display}" />
+    <Setter Property="FontSize" Value="{StaticResource Type.Subtitle}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Display}" />
+    <Setter Property="FontSize" Value="{StaticResource Type.Title}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.secondary, SelectableTextBlock.secondary">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="TextBlock.tertiary">
+    <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+  </Style>
+  <Style Selector="TextBlock.mono, SelectableTextBlock.mono">
+    <Setter Property="FontFamily" Value="{StaticResource Font.Mono}" />
+    <Setter Property="FontSize" Value="{StaticResource Type.Caption}" />
+  </Style>
+  <Style Selector="TextBlock.wrap, SelectableTextBlock.wrap">
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+
+  <!-- Icons -->
+  <Style Selector="c|FluentIcon">
+    <Setter Property="Size" Value="{StaticResource Icon.Small}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="c|FluentIcon.medium">
+    <Setter Property="Size" Value="{StaticResource Icon.Medium}" />
+  </Style>
+  <Style Selector="c|FluentIcon.large">
+    <Setter Property="Size" Value="{StaticResource Icon.Large}" />
+  </Style>
+  <Style Selector="c|FluentIcon.accent">
+    <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+  </Style>
+  <Style Selector="c|FluentIcon.success">
+    <Setter Property="Foreground" Value="{DynamicResource Success}" />
+  </Style>
+  <Style Selector="c|FluentIcon.danger">
+    <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+  </Style>
+  <Style Selector="c|FluentIcon.warning">
+    <Setter Property="Foreground" Value="{DynamicResource Warning}" />
+  </Style>
+  <Style Selector="c|FluentIcon.tertiary">
+    <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+  </Style>
+
+  <!-- Buttons: "accent" is Fluent's own class, so the main one is "primary" -->
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="MinHeight" Value="{StaticResource Control.Height}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.H12V4}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.primary">
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+    <Setter Property="Background" Value="{DynamicResource Accent}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentPressed}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnAccent}" />
+  </Style>
+  <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentDisabled}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextDisabled}" />
+  </Style>
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource Danger}" />
+    <Setter Property="Foreground" Value="{DynamicResource OnDanger}" />
+    <Setter Property="Opacity" Value="0.9" />
+  </Style>
+  <Style Selector="Button.subtle, Button.icon, ToggleButton.icon">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="Button.subtle:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.icon:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextPrimary}" />
+  </Style>
+  <Style Selector="Button.subtle:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.icon:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SubtlePressed}" />
+  </Style>
+  <Style Selector="Button.icon, ToggleButton.icon">
+    <Setter Property="Width" Value="{StaticResource Control.Height}" />
+    <Setter Property="Height" Value="{StaticResource Control.Height}" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+  </Style>
+  <Style Selector="Button.compact">
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="{StaticResource Inset.H8V4}" />
+    <Setter Property="FontSize" Value="{StaticResource Type.Caption}" />
+  </Style>
+  <Style Selector="Button.link">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+    <Setter Property="TextElement.FontWeight" Value="SemiBold" />
+  </Style>
+  <!-- A large clickable card (suggestions on the empty conversation) -->
+  <Style Selector="Button.card">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.12}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Top" />
+  </Style>
+  <Style Selector="Button.card:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}" />
+  </Style>
+
+  <!-- Surfaces -->
+  <Style Selector="Border.card">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.16}" />
+  </Style>
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.H8V4}" />
+  </Style>
+  <Style Selector="Border.iconTile">
+    <Setter Property="Width" Value="{StaticResource Icon.Large}" />
+    <Setter Property="Height" Value="{StaticResource Icon.Large}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+    <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+    <Setter Property="VerticalAlignment" Value="Top" />
+  </Style>
+
+  <!-- Info bars (like WinUI's InfoBar) -->
+  <Style Selector="Border.infobar">
+    <Setter Property="Background" Value="{DynamicResource InfoSubtle}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.H12V8}" />
+  </Style>
+  <Style Selector="Border.infobar.warning">
+    <Setter Property="Background" Value="{DynamicResource WarningSubtle}" />
+  </Style>
+  <Style Selector="Border.infobar.error">
+    <Setter Property="Background" Value="{DynamicResource DangerSubtle}" />
+  </Style>
+  <Style Selector="Border.infobar.success">
+    <Setter Property="Background" Value="{DynamicResource SuccessSubtle}" />
+  </Style>
+
+  <!-- Loading placeholders -->
+  <Style Selector="Border.skeleton">
+    <Setter Property="Background" Value="{DynamicResource Skeleton}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="Height" Value="{StaticResource Space.12}" />
+  </Style>
+  <Style Selector="Window.motion Border.skeleton">
+    <Style.Animations>
+      <Animation Duration="0:0:1" IterationCount="Infinite" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="0.4" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Things that enter the conversation fade and rise into place (only with animations on) -->
+  <Style Selector="Window.motion :is(Control).enter">
+    <Setter Property="RenderTransform">
+      <TranslateTransform />
+    </Setter>
+    <Style.Animations>
+      <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Backward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0" />
+          <Setter Property="TranslateTransform.Y" Value="8" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1" />
+          <Setter Property="TranslateTransform.Y" Value="0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <Style Selector="Ellipse.statusDot">
+    <Setter Property="Width" Value="{StaticResource Space.8}" />
+    <Setter Property="Height" Value="{StaticResource Space.8}" />
+    <Setter Property="Fill" Value="{DynamicResource Danger}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Ellipse.statusDot.ready">
+    <Setter Property="Fill" Value="{DynamicResource Success}" />
+  </Style>
+  <Style Selector="Ellipse.statusDot.checking">
+    <Setter Property="Fill" Value="{DynamicResource TextTertiary}" />
+  </Style>
+
+  <Style Selector="ToolTip">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="FontSize" Value="{StaticResource Type.Caption}" />
+  </Style>
+  <Style Selector="FlyoutPresenter, MenuFlyoutPresenter">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+  </Style>
+  <Style Selector="ProgressBar">
+    <Setter Property="MinHeight" Value="{StaticResource Space.4}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+  </Style>
+
+  <!-- Settings card (like the Settings app): icon, title, description, control on the right -->
+  <Style Selector="c|SettingsCard">
+    <Setter Property="Background" Value="{DynamicResource Surface}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+    <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.H16V12}" />
+    <Setter Property="MinHeight" Value="{StaticResource Space.32}" />
+    <Setter Property="HorizontalContentAlignment" Value="Right" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}"
+                Padding="{TemplateBinding Padding}">
+          <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+            <c:FluentIcon Data="{TemplateBinding Icon}" Classes="medium" Margin="{StaticResource Gap.R8}"
+                          IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="{StaticResource Inset.H8V0}">
+              <TextBlock Text="{TemplateBinding Header}" TextWrapping="Wrap" />
+              <TextBlock Classes="caption wrap" Text="{TemplateBinding Description}"
+                         IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            </StackPanel>
+            <ContentPresenter Grid.Column="2" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                              VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <ContentPresenter Grid.Row="1" Grid.ColumnSpan="3" Content="{TemplateBinding Footer}"
+                              IsVisible="{TemplateBinding Footer, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="{StaticResource Gap.T12}" />
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Navigation list of the settings window -->
+  <Style Selector="ListBox.nav">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem">
+    <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    <Setter Property="Padding" Value="{StaticResource Inset.H12V8}" />
+    <Setter Property="Margin" Value="{StaticResource Inset.H0V4}" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+  </Style>
+  <Style Selector="ListBox.nav ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+  </Style>
+</Styles>

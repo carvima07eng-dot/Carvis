@@ -20,19 +20,34 @@ public sealed class ToastWindow : Window
         ShowActivated = false;
         Topmost = true;
         CanResize = false;
-        Width = 340;
+        Width = Platform.Tokens.Number("Toast.Width");
         SizeToContent = SizeToContent.Height;
         Background = Brushes.Transparent;
         TransparencyLevelHint = [WindowTransparencyLevel.Transparent];
 
-        var close = new Button { Content = "✕", Padding = new Thickness(6, 2), Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Top };
+        var close = new Button { Content = new Controls.FluentIcon { Data = IconData("Dismiss") }, VerticalAlignment = VerticalAlignment.Top };
+        close.Classes.Add("icon");
         close.Click += (_, _) => Close();
         Grid.SetColumn(close, 2);
 
-        var icon = new Image { Source = new Avalonia.Media.Imaging.Bitmap(Avalonia.Platform.AssetLoader.Open(new Uri("avares://Carvis/Assets/carvis.png"))), Width = 26, Height = 26, VerticalAlignment = VerticalAlignment.Top };
-        var text = new StackPanel { Spacing = 2, Margin = new Thickness(10, 0, 4, 0) };
+        var icon = new Controls.FluentIcon
+        {
+            Data = IconData(important ? "Alarm" : "Sparkle"),
+            Size = Platform.Tokens.Type("Subtitle"),
+            Foreground = Platform.ThemeColors.Brush("Accent"),
+            VerticalAlignment = VerticalAlignment.Top,
+        };
+        var text = new StackPanel { Spacing = Platform.Tokens.Space(4), Margin = Platform.Tokens.Inset("Gap.L12") };
         text.Children.Add(new TextBlock { Text = title, FontWeight = FontWeight.SemiBold, Foreground = Platform.ThemeColors.Brush("TextPrimary") });
-        text.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, MaxLines = 4, TextTrimming = TextTrimming.CharacterEllipsis, Foreground = Platform.ThemeColors.Brush("TextSecondary") });
+        text.Children.Add(new TextBlock
+        {
+            Text = message,
+            TextWrapping = TextWrapping.Wrap,
+            MaxLines = 4,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            FontSize = Platform.Tokens.Type("Caption"),
+            Foreground = Platform.ThemeColors.Brush("TextSecondary"),
+        });
         Grid.SetColumn(text, 1);
 
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto") };
@@ -42,13 +57,13 @@ public sealed class ToastWindow : Window
 
         Content = new Border
         {
-            Background = Platform.ThemeColors.Brush("Background"),
-            BorderBrush = Platform.ThemeColors.Brush(important ? "Accent" : "WindowBorder"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(14),
-            Padding = new Thickness(14, 12, 8, 12),
-            Margin = new Thickness(8),
-            BoxShadow = BoxShadows.Parse("0 6 20 0 #66000000"),
+            Background = Platform.ThemeColors.Brush("SurfaceSolid"),
+            BorderBrush = Platform.ThemeColors.Brush(important ? "Accent" : "Stroke"),
+            BorderThickness = Platform.Tokens.Inset("Border.1"),
+            CornerRadius = Platform.Tokens.Radius(8),
+            Padding = Platform.Tokens.Inset("Inset.12"),
+            Margin = Platform.Tokens.Inset("Gap.Window"),
+            BoxShadow = Platform.Tokens.Shadow("Flyout"),
             Child = grid,
             Cursor = new Cursor(StandardCursorType.Hand),
         };
@@ -77,6 +92,8 @@ public sealed class ToastWindow : Window
         };
         Closed += (_, _) => _timer.Stop();
     }
+
+    private static Geometry? IconData(string key) => ViewModels.ToolIcons.ToGeometry.Convert(key, typeof(Geometry), null, System.Globalization.CultureInfo.InvariantCulture) as Geometry;
 
     /// <summary>Places the toast above the ones already shown.</summary>
     public void PlaceAt(int index)

@@ -20,6 +20,20 @@ internal static class WindowsNative
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool MessageBeep(uint type);
 
+    [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SystemParametersInfo(uint action, uint param, out int value, uint winIni);
+
+    private const uint SPI_GETCLIENTAREAANIMATION = 0x1042;
+
+    /// <summary>Settings → Accessibility → Visual effects → Animation effects.</summary>
+    public static bool AnimationsEnabled()
+    {
+        if (!OperatingSystem.IsWindows())
+            return true;
+        return !SystemParametersInfo(SPI_GETCLIENTAREAANIMATION, 0, out var enabled, 0) || enabled != 0;
+    }
+
     /// <summary>The Windows notification sound (reminders).</summary>
     public static void PlayNotificationSound()
     {

@@ -1,153 +1,18 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:p="using:Carvis.App.Platform"
              x:Class="Carvis.App.App"
              RequestedThemeVariant="Dark">
   <Application.Resources>
     <ResourceDictionary>
-      <FontFamily x:Key="CarvisFont">fonts:Inter#Inter, $Default</FontFamily>
-      <!-- Colours by meaning; each theme gives its own values. -->
-      <ResourceDictionary.ThemeDictionaries>
-        <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="Background" Color="#0B1220" />
-          <SolidColorBrush x:Key="Surface" Color="#162133" />
-          <SolidColorBrush x:Key="PanelAlt" Color="#0F1A2B" />
-          <SolidColorBrush x:Key="Card" Color="#111A2B" />
-          <SolidColorBrush x:Key="CardBorder" Color="#24324A" />
-          <SolidColorBrush x:Key="WindowBorder" Color="#2A3A4F" />
-          <SolidColorBrush x:Key="Divider" Color="#1F2A3A" />
-          <SolidColorBrush x:Key="Accent" Color="#22D3EE" />
-          <SolidColorBrush x:Key="AccentHover" Color="#67E8F9" />
-          <SolidColorBrush x:Key="AccentPressed" Color="#06B6D4" />
-          <SolidColorBrush x:Key="AccentDisabled" Color="#16313A" />
-          <SolidColorBrush x:Key="AccentDisabledText" Color="#4B6470" />
-          <SolidColorBrush x:Key="OnAccent" Color="#0B1220" />
-          <SolidColorBrush x:Key="HoverOverlay" Color="#1AFFFFFF" />
-          <SolidColorBrush x:Key="SubtleOverlay" Color="#14FFFFFF" />
-          <SolidColorBrush x:Key="FooterOverlay" Color="#0DFFFFFF" />
-          <SolidColorBrush x:Key="Chip" Color="#1E3A5F" />
-          <SolidColorBrush x:Key="VoiceChip" Color="#132A40" />
-          <SolidColorBrush x:Key="Danger" Color="#F87171" />
-          <SolidColorBrush x:Key="OnDanger" Color="#1F0A0A" />
-          <SolidColorBrush x:Key="DangerSurface" Color="#3A1D24" />
-          <SolidColorBrush x:Key="DangerCard" Color="#2A1519" />
-          <SolidColorBrush x:Key="DangerStrong" Color="#7F1D1D" />
-          <SolidColorBrush x:Key="DangerText" Color="#FECACA" />
-          <SolidColorBrush x:Key="ErrorText" Color="#FCA5A5" />
-          <SolidColorBrush x:Key="Success" Color="#34D399" />
-          <SolidColorBrush x:Key="SuccessSurface" Color="#065F46" />
-          <SolidColorBrush x:Key="SuccessText" Color="#A7F3D0" />
-          <SolidColorBrush x:Key="InfoSurface" Color="#1E2A44" />
-          <SolidColorBrush x:Key="InfoBorder" Color="#3B82F6" />
-          <SolidColorBrush x:Key="InfoText" Color="#BFDBFE" />
-          <SolidColorBrush x:Key="WarnSurface" Color="#3A2A12" />
-          <SolidColorBrush x:Key="WarnBorder" Color="#F59E0B" />
-          <SolidColorBrush x:Key="WarnText" Color="#FDE68A" />
-          <SolidColorBrush x:Key="TextPrimary" Color="#E5E7EB" />
-          <SolidColorBrush x:Key="TextSecondary" Color="#9CA3AF" />
-          <SolidColorBrush x:Key="TextMuted" Color="#6B7280" />
-          <SolidColorBrush x:Key="InlineCode" Color="#F0ABFC" />
-          <SolidColorBrush x:Key="CodeKeyword" Color="#C792EA" />
-          <SolidColorBrush x:Key="CodeString" Color="#C3E88D" />
-          <SolidColorBrush x:Key="CodeComment" Color="#697098" />
-          <SolidColorBrush x:Key="CodeNumber" Color="#F78C6C" />
-          <SolidColorBrush x:Key="CodeType" Color="#82AAFF" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="Background" Color="#F8FAFC" />
-          <SolidColorBrush x:Key="Surface" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="PanelAlt" Color="#EEF2F7" />
-          <SolidColorBrush x:Key="Card" Color="#F1F5F9" />
-          <SolidColorBrush x:Key="CardBorder" Color="#D1D5DB" />
-          <SolidColorBrush x:Key="WindowBorder" Color="#CBD5E1" />
-          <SolidColorBrush x:Key="Divider" Color="#E5E7EB" />
-          <SolidColorBrush x:Key="Accent" Color="#0891B2" />
-          <SolidColorBrush x:Key="AccentHover" Color="#0E7490" />
-          <SolidColorBrush x:Key="AccentPressed" Color="#155E75" />
-          <SolidColorBrush x:Key="AccentDisabled" Color="#CFE8EE" />
-          <SolidColorBrush x:Key="AccentDisabledText" Color="#7C9AA3" />
-          <SolidColorBrush x:Key="OnAccent" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="HoverOverlay" Color="#14000000" />
-          <SolidColorBrush x:Key="SubtleOverlay" Color="#0D000000" />
-          <SolidColorBrush x:Key="FooterOverlay" Color="#08000000" />
-          <SolidColorBrush x:Key="Chip" Color="#DBEAFE" />
-          <SolidColorBrush x:Key="VoiceChip" Color="#E0F2FE" />
-          <SolidColorBrush x:Key="Danger" Color="#DC2626" />
-          <SolidColorBrush x:Key="OnDanger" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="DangerSurface" Color="#FEE2E2" />
-          <SolidColorBrush x:Key="DangerCard" Color="#FEF2F2" />
-          <SolidColorBrush x:Key="DangerStrong" Color="#FEE2E2" />
-          <SolidColorBrush x:Key="DangerText" Color="#991B1B" />
-          <SolidColorBrush x:Key="ErrorText" Color="#B91C1C" />
-          <SolidColorBrush x:Key="Success" Color="#059669" />
-          <SolidColorBrush x:Key="SuccessSurface" Color="#D1FAE5" />
-          <SolidColorBrush x:Key="SuccessText" Color="#065F46" />
-          <SolidColorBrush x:Key="InfoSurface" Color="#EFF6FF" />
-          <SolidColorBrush x:Key="InfoBorder" Color="#3B82F6" />
-          <SolidColorBrush x:Key="InfoText" Color="#1E3A8A" />
-          <SolidColorBrush x:Key="WarnSurface" Color="#FEF3C7" />
-          <SolidColorBrush x:Key="WarnBorder" Color="#D97706" />
-          <SolidColorBrush x:Key="WarnText" Color="#78350F" />
-          <SolidColorBrush x:Key="TextPrimary" Color="#111827" />
-          <SolidColorBrush x:Key="TextSecondary" Color="#4B5563" />
-          <SolidColorBrush x:Key="TextMuted" Color="#6B7280" />
-          <SolidColorBrush x:Key="InlineCode" Color="#A21CAF" />
-          <SolidColorBrush x:Key="CodeKeyword" Color="#7C3AED" />
-          <SolidColorBrush x:Key="CodeString" Color="#15803D" />
-          <SolidColorBrush x:Key="CodeComment" Color="#6B7280" />
-          <SolidColorBrush x:Key="CodeNumber" Color="#C2410C" />
-          <SolidColorBrush x:Key="CodeType" Color="#1D4ED8" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="{x:Static p:ThemeColors.HighContrast}">
-          <SolidColorBrush x:Key="Background" Color="#000000" />
-          <SolidColorBrush x:Key="Surface" Color="#000000" />
-          <SolidColorBrush x:Key="PanelAlt" Color="#000000" />
-          <SolidColorBrush x:Key="Card" Color="#000000" />
-          <SolidColorBrush x:Key="CardBorder" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="WindowBorder" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="Divider" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="Accent" Color="#FFFF00" />
-          <SolidColorBrush x:Key="AccentHover" Color="#FFFF80" />
-          <SolidColorBrush x:Key="AccentPressed" Color="#C8C800" />
-          <SolidColorBrush x:Key="AccentDisabled" Color="#3F3F3F" />
-          <SolidColorBrush x:Key="AccentDisabledText" Color="#C0C0C0" />
-          <SolidColorBrush x:Key="OnAccent" Color="#000000" />
-          <SolidColorBrush x:Key="HoverOverlay" Color="#33FFFFFF" />
-          <SolidColorBrush x:Key="SubtleOverlay" Color="#22FFFFFF" />
-          <SolidColorBrush x:Key="FooterOverlay" Color="#000000" />
-          <SolidColorBrush x:Key="Chip" Color="#1A1A1A" />
-          <SolidColorBrush x:Key="VoiceChip" Color="#1A1A1A" />
-          <SolidColorBrush x:Key="Danger" Color="#FF6060" />
-          <SolidColorBrush x:Key="OnDanger" Color="#000000" />
-          <SolidColorBrush x:Key="DangerSurface" Color="#000000" />
-          <SolidColorBrush x:Key="DangerCard" Color="#000000" />
-          <SolidColorBrush x:Key="DangerStrong" Color="#000000" />
-          <SolidColorBrush x:Key="DangerText" Color="#FF8080" />
-          <SolidColorBrush x:Key="ErrorText" Color="#FF8080" />
-          <SolidColorBrush x:Key="Success" Color="#00FF00" />
-          <SolidColorBrush x:Key="SuccessSurface" Color="#000000" />
-          <SolidColorBrush x:Key="SuccessText" Color="#00FF00" />
-          <SolidColorBrush x:Key="InfoSurface" Color="#000000" />
-          <SolidColorBrush x:Key="InfoBorder" Color="#00FFFF" />
-          <SolidColorBrush x:Key="InfoText" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="WarnSurface" Color="#000000" />
-          <SolidColorBrush x:Key="WarnBorder" Color="#FFFF00" />
-          <SolidColorBrush x:Key="WarnText" Color="#FFFF00" />
-          <SolidColorBrush x:Key="TextPrimary" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="TextSecondary" Color="#FFFFFF" />
-          <SolidColorBrush x:Key="TextMuted" Color="#E0E0E0" />
-          <SolidColorBrush x:Key="InlineCode" Color="#00FFFF" />
-          <SolidColorBrush x:Key="CodeKeyword" Color="#FFFF00" />
-          <SolidColorBrush x:Key="CodeString" Color="#00FF00" />
-          <SolidColorBrush x:Key="CodeComment" Color="#C0C0C0" />
-          <SolidColorBrush x:Key="CodeNumber" Color="#FF80FF" />
-          <SolidColorBrush x:Key="CodeType" Color="#00FFFF" />
-        </ResourceDictionary>
-      </ResourceDictionary.ThemeDictionaries>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="/Styles/DesignSystem.axaml" />
+        <ResourceInclude Source="/Styles/Icons.axaml" />
+      </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
 
   <Application.Styles>
     <FluentTheme />
+    <StyleInclude Source="/Styles/Controls.axaml" />
   </Application.Styles>
 </Application>

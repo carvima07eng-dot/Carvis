@@ -27,18 +27,18 @@ internal static class MarkdownRenderer
         .UseAutoLinks()
         .Build();
 
-    private static readonly FontFamily Mono = new("Cascadia Mono, Consolas, Menlo, monospace");
+    private static FontFamily Mono => Platform.Tokens.Font("Mono");
     private static IBrush TextBrush => Platform.ThemeColors.Brush("TextPrimary");
     private static IBrush MutedBrush => Platform.ThemeColors.Brush("TextSecondary");
-    private static IBrush AccentBrush => Platform.ThemeColors.Brush("Accent");
-    private static IBrush CodeBlockBackground => Platform.ThemeColors.Brush("Background");
+    private static IBrush AccentBrush => Platform.ThemeColors.Brush("AccentText");
+    private static IBrush CodeBlockBackground => Platform.ThemeColors.Brush("CodeBackground");
     private static IBrush InlineCodeBrush => Platform.ThemeColors.Brush("InlineCode");
-    private static IBrush RuleBrush => Platform.ThemeColors.Brush("WindowBorder");
+    private static IBrush RuleBrush => Platform.ThemeColors.Brush("StrokeStrong");
 
     public static Control Render(string markdown, double fontSize = 14)
     {
         _bodySize = fontSize;
-        var panel = Stack(8);
+        var panel = Stack(Platform.Tokens.Space(8));
         foreach (var block in Markdig.Markdown.Parse(markdown, Pipeline))
             panel.Children.Add(RenderBlock(block));
         return panel;
@@ -46,15 +46,15 @@ internal static class MarkdownRenderer
 
     private static Control RenderBlock(Block block) => block switch
     {
-        HeadingBlock heading => Text(heading.Inline, BodySize + heading.Level switch { 1 => 6, 2 => 3, _ => 1 }, FontWeight.Bold),
+        HeadingBlock heading => Text(heading.Inline, heading.Level switch { 1 => Platform.Tokens.Type("Subtitle"), 2 => Platform.Tokens.Type("BodyLarge"), _ => BodySize }, FontWeight.SemiBold),
         ParagraphBlock paragraph => Text(paragraph.Inline),
         CodeBlock code => CodeBox(code),
         ListBlock list => List(list),
         QuoteBlock quote => Quote(quote),
-        ThematicBreakBlock => new Border { Height = 1, Background = RuleBrush, Margin = new Thickness(0, 4) },
+        ThematicBreakBlock => new Border { Height = 1, Background = RuleBrush, Margin = Platform.Tokens.Inset("Inset.H0V4") },
         Table table => TableGrid(table),
         LeafBlock leaf => Plain(leaf.Lines.ToString()),
-        ContainerBlock container => Children(container, 8),
+        ContainerBlock container => Children(container, Platform.Tokens.Space(8)),
         _ => new Panel(),
     };
 
@@ -109,7 +109,7 @@ internal static class MarkdownRenderer
 
             case CodeInline code:
                 // Run backgrounds only cover part of the text in Avalonia 11, so inline code uses a colour.
-                return new Run(code.Content) { FontFamily = Mono, FontSize = BodySize - 1, Foreground = InlineCodeBrush };
+                return new Run(code.Content) { FontFamily = Mono, Foreground = InlineCodeBrush };
 
             case LinkInline { IsImage: true } image:
                 return new Run($"[imagen: {image.Url}]") { Foreground = MutedBrush };
@@ -154,8 +154,8 @@ internal static class MarkdownRenderer
         {
             Content = new TextBlock { Text = label, Foreground = AccentBrush, TextDecorations = TextDecorations.Underline, FontSize = BodySize },
             NavigateUri = uri,
-            Padding = new Thickness(0),
-            Margin = new Thickness(0),
+            Padding = default,
+            Margin = default,
         };
         ToolTip.SetTip(link, uri.AbsoluteUri);
         return new InlineUIContainer(link) { BaselineAlignment = BaselineAlignment.TextBottom };
@@ -172,7 +172,7 @@ internal static class MarkdownRenderer
 
     private static SelectableTextBlock HighlightedCode(string code, string? language)
     {
-        var text = new SelectableTextBlock { FontFamily = Mono, FontSize = BodySize - 1, Foreground = TextBrush };
+        var text = new SelectableTextBlock { FontFamily = Mono, FontSize = Platform.Tokens.Type("Caption"), Foreground = TextBrush };
         if (!CodeTokenizer.IsKnown(language))
         {
             text.Text = code;
@@ -203,8 +203,9 @@ internal static class MarkdownRenderer
         var code = block.Lines.ToString().TrimEnd('\r', '\n');
         var language = (block as FencedCodeBlock)?.Info;
 
-        var copy = new Button { Content = "Copiar", FontSize = 11, Padding = new Thickness(8, 2) };
-        copy.Classes.Add("ghost");
+        var copy = new Button { Content = "Copiar" };
+        copy.Classes.Add("subtle");
+        copy.Classes.Add("compact");
         copy.Click += async (_, _) =>
         {
             if (TopLevel.GetTopLevel(copy)?.Clipboard is not { } clipboard)
@@ -220,7 +221,7 @@ internal static class MarkdownRenderer
         header.Children.Add(new TextBlock
         {
             Text = string.IsNullOrWhiteSpace(language) ? "código" : language,
-            FontSize = 11,
+            FontSize = Platform.Tokens.Type("Caption"),
             Foreground = MutedBrush,
             VerticalAlignment = VerticalAlignment.Center,
         });
@@ -233,21 +234,21 @@ internal static class MarkdownRenderer
             Content = HighlightedCode(code, language?.Split(' ')[0]),
         };
 
-        var content = Stack(4);
+        var content = Stack(Platform.Tokens.Space(4));
         content.Children.Add(header);
         content.Children.Add(body);
         return new Border
         {
             Background = CodeBlockBackground,
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(12, 6, 12, 10),
+            CornerRadius = Platform.Tokens.Radius(8),
+            Padding = Platform.Tokens.Inset("Inset.H12V8"),
             Child = content,
         };
     }
 
     private static Control List(ListBlock list)
     {
-        var panel = Stack(4);
+        var panel = Stack(Platform.Tokens.Space(4));
         var number = list.IsOrdered && int.TryParse(list.OrderedStart, out var start) ? start : 1;
 
         foreach (var item in list.OfType<ListItemBlock>())
@@ -260,11 +261,11 @@ internal static class MarkdownRenderer
                 FontSize = BodySize,
                 LineHeight = Math.Round(BodySize * 1.5),
                 Foreground = MutedBrush,
-                MinWidth = list.IsOrdered ? 20 : 12,
-                Margin = new Thickness(0, 0, 6, 0),
+                MinWidth = Platform.Tokens.Space(list.IsOrdered ? 16 : 12),
+                Margin = Platform.Tokens.Inset("Gap.R8"),
             });
 
-            var content = Children(item, 4);
+            var content = Children(item, Platform.Tokens.Space(4));
             Grid.SetColumn(content, 1);
             row.Children.Add(content);
             panel.Children.Add(row);
@@ -275,9 +276,9 @@ internal static class MarkdownRenderer
     private static Control Quote(QuoteBlock quote) => new Border
     {
         BorderBrush = RuleBrush,
-        BorderThickness = new Thickness(3, 0, 0, 0),
-        Padding = new Thickness(12, 2, 0, 2),
-        Child = Children(quote, 6),
+        BorderThickness = Platform.Tokens.Inset("Border.Left3"),
+        Padding = Platform.Tokens.Inset("Gap.L12"),
+        Child = Children(quote, Platform.Tokens.Space(4)),
     };
 
     private static Control TableGrid(Table table)
@@ -294,7 +295,7 @@ internal static class MarkdownRenderer
             var column = 0;
             foreach (var cell in rows[r].OfType<TableCell>())
             {
-                var content = Children(cell, 4);
+                var content = Children(cell, Platform.Tokens.Space(4));
                 if (rows[r].IsHeader)
                 {
                     foreach (var text in content.Children.OfType<SelectableTextBlock>())
@@ -303,9 +304,9 @@ internal static class MarkdownRenderer
 
                 var border = new Border
                 {
-                    Padding = new Thickness(8, 4),
+                    Padding = Platform.Tokens.Inset("Inset.H8V4"),
                     BorderBrush = RuleBrush,
-                    BorderThickness = new Thickness(0, 0, 0, 1),
+                    BorderThickness = Platform.Tokens.Inset("Border.Bottom1"),
                     Child = content,
                 };
                 Grid.SetRow(border, r);
