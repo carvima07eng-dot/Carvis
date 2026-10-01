@@ -74,6 +74,12 @@ public sealed partial class ConversationListViewModel(IConversationStore store) 
     [RelayCommand]
     private void Open(ConversationItemViewModel item) => OpenRequested?.Invoke(item);
 
+    /// <summary>The user wants the conversation as a Markdown file.</summary>
+    public event Action<ConversationItemViewModel>? ExportRequested;
+
+    [RelayCommand]
+    private void Export(ConversationItemViewModel item) => ExportRequested?.Invoke(item);
+
     [RelayCommand]
     private void TogglePin(ConversationItemViewModel item)
     {

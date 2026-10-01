@@ -7,6 +7,9 @@ namespace Carvis.App.Platform;
 /// <summary>Theme colours for controls built in code; same keys as App.axaml.</summary>
 public static class ThemeColors
 {
+    /// <summary>Black, white and yellow, for low vision. Built on the dark Fluent theme.</summary>
+    public static readonly ThemeVariant HighContrast = new("HighContrast", ThemeVariant.Dark);
+
     public static IBrush Brush(string key)
     {
         var app = Application.Current;
@@ -25,6 +28,7 @@ public static class ThemeColors
         app.RequestedThemeVariant = settings.Theme switch
         {
             "Light" => ThemeVariant.Light,
+            "HighContrast" => HighContrast,
             "System" => ThemeVariant.Default,
             _ => ThemeVariant.Dark,
         };

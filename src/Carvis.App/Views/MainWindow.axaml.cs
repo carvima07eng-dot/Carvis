@@ -372,6 +372,12 @@ public partial class MainWindow : Window
     private void OnCaptureScreenClick(object? sender, RoutedEventArgs e) => Capture(Carvis.Core.Vision.CaptureArea.Screen);
     private void OnCaptureWindowClick(object? sender, RoutedEventArgs e) => Capture(Carvis.Core.Vision.CaptureArea.Window);
 
+    private void OnCopyTextClick(object? sender, RoutedEventArgs e)
+    {
+        if (Avalonia.Application.Current is App app)
+            _ = app.CopyTextFromScreenAsync();
+    }
+
     private static void Capture(Carvis.Core.Vision.CaptureArea area)
     {
         if (Avalonia.Application.Current is App app)

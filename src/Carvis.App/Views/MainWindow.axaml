@@ -310,6 +310,8 @@
                 <MenuItem Header="Elegir una zona…" Click="OnCaptureRegionClick" />
                 <MenuItem Header="Pantalla completa" Click="OnCaptureScreenClick" />
                 <MenuItem Header="Ventana activa" Click="OnCaptureWindowClick" />
+                <Separator />
+                <MenuItem Header="Copiar el texto de una zona (OCR)" Click="OnCopyTextClick" />
               </MenuFlyout>
             </Button.Flyout>
           </Button>
@@ -336,6 +338,13 @@
 
       <!-- Ollama / hotkey problems -->
       <StackPanel Grid.Row="2" Spacing="6" Margin="18,0,18,12">
+        <Border Background="{DynamicResource InfoSurface}" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
+                CornerRadius="10" Padding="12,8" IsVisible="{Binding HasUpdate}">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding UpdateText}" TextWrapping="Wrap" Foreground="{DynamicResource InfoText}" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="ghost" Content="Reiniciar ahora" Command="{Binding InstallUpdateCommand}" />
+          </Grid>
+        </Border>
         <ItemsControl ItemsSource="{Binding Notices}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="x:String">
@@ -417,6 +426,9 @@
                                         CommandParameter="{Binding}" />
                               <MenuItem Header="Renombrar"
                                         Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.StartRenameCommand}"
+                                        CommandParameter="{Binding}" />
+                              <MenuItem Header="Exportar a Markdown"
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.ExportCommand}"
                                         CommandParameter="{Binding}" />
                               <MenuItem Header="Borrar"
                                         Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.DeleteCommand}"

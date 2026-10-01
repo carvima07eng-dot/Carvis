@@ -62,6 +62,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         History = new ConversationListViewModel(conversations);
         History.OpenRequested += item => OpenConversation(item.Id);
+        History.ExportRequested += item => Export(item.Id);
         History.Deleted += id =>
         {
             if (id == CurrentConversationId)
@@ -602,6 +603,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 Say(entries.Count == 0 ? "Todavía no he hecho ninguna acción." :
                     "Últimas acciones:\n" + string.Join("\n", entries.Select(e => $"- {e.Time:dd/MM HH:mm} · {e.Summary}{(e.Undone ? " (deshecha)" : e.Success ? string.Empty : " (falló)")}")));
                 return true;
+            case "/exportar":
+                if (CurrentConversationId is { } current)
+                    Export(current);
+                else
+                    Say("Todavía no hay nada que exportar en esta conversación.");
+                return true;
             case "/gpu":
                 await CheckGpuAsync(report: true);
                 return true;
@@ -617,6 +624,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     - `/modelo` y `/modelo nombre`: ver o cambiar el modelo
                     - `/memoria`: lo que recuerdo de ti · `/olvidar todo`: borrarlo
                     - `/acciones`: lo último que he hecho en el PC
+                    - `/exportar`: guardar esta conversación en Markdown
                     - `/gpu`: qué modelos hay en la tarjeta gráfica · `/liberar`: sacarlos de la memoria
                     - `/ajustes`: abrir los ajustes
 
@@ -625,6 +633,24 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                 return true;
             default:
                 return false;
+        }
+    }
+
+    private void Export(string id)
+    {
+        if (_conversations.Find(id) is not { } info)
+            return;
+        try
+        {
+            var name = string.IsNullOrWhiteSpace(_settings.Assistant.UserName) ? "Yo" : _settings.Assistant.UserName;
+            var path = ConversationExporter.Save(info, _conversations.Messages(id), userName: name);
+            IsHistoryOpen = false;
+            Say($"He guardado «{info.Title}» en `{path}`.");
+            _ = _shell.RevealAsync(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            AddNotice($"No he podido exportar la conversación: {ex.Message}");
         }
     }
 

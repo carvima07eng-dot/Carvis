@@ -54,3 +54,9 @@ public interface IOcrEngine
     bool IsAvailable { get; }
     Task<string> RecognizeAsync(byte[] image, CancellationToken cancellationToken = default);
 }
+
+public sealed class NoOcrEngine : IOcrEngine
+{
+    public bool IsAvailable => false;
+    public Task<string> RecognizeAsync(byte[] image, CancellationToken cancellationToken = default) => Task.FromResult(string.Empty);
+}

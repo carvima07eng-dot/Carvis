@@ -51,8 +51,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public ObservableCollection<MemoryItem> Memories { get; } = [];
 
     public string[] Backdrops { get; } = ["Solid", "Acrylic", "Mica"];
-    public string[] Themes { get; } = ["Oscuro", "Claro", "Como Windows"];
-    private static readonly string[] ThemeValues = ["Dark", "Light", "System"];
+    public string[] Themes { get; } = ["Oscuro", "Claro", "Como Windows", "Alto contraste"];
+    private static readonly string[] ThemeValues = ["Dark", "Light", "System", "HighContrast"];
 
     public int ThemeIndex
     {
@@ -229,7 +229,9 @@ public sealed partial class SettingsViewModel : ViewModelBase
         var problems = SettingsValidator.Validate(Draft);
         var restart = Draft.Ollama.BaseUrl != _live.Ollama.BaseUrl
                       || Draft.Ollama.RequestTimeoutSeconds != _live.Ollama.RequestTimeoutSeconds
-                      || Draft.Privacy.EncryptData != _live.Privacy.EncryptData;
+                      || Draft.Privacy.EncryptData != _live.Privacy.EncryptData
+                      || Draft.Permissions.EnablePlugins != _live.Permissions.EnablePlugins
+                      || Draft.Voice.UseGpu != _live.Voice.UseGpu;
 
         SettingsApplier.CopyInto(Draft, _live);
         _store.Save(_live);

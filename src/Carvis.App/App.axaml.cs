@@ -76,6 +76,7 @@ public partial class App : Application
             _services.GetRequiredService<ScreenCaptureService>().Owner = _window;
             _viewModel.VoiceActivated += () => Dispatcher.UIThread.Post(ShowWindow);
             StartReminders();
+            StartUpdateChecks();
             _viewModel.SettingsRequested += OpenSettings;
             _viewModel.AnswerCompleted += OnAnswerCompleted;
 
@@ -188,6 +189,38 @@ public partial class App : Application
         {
             _logger?.LogWarning(ex, "Screen capture failed");
             _viewModel.AddNotice($"No he podido capturar la pantalla: {ex.Message}");
+        }
+    }
+
+    /// <summary>OCR of a screen region straight to the clipboard (text from images, videos, error dialogs...).</summary>
+    public async Task CopyTextFromScreenAsync()
+    {
+        if (_services is null || _viewModel is null)
+            return;
+        var ocr = _services.GetRequiredService<Carvis.Core.Indexing.Readers.IOcrEngine>();
+        if (!ocr.IsAvailable)
+        {
+            _viewModel.AddNotice("El reconocimiento de texto (OCR) de Windows no está disponible en este equipo.");
+            return;
+        }
+        try
+        {
+            var png = await _services.GetRequiredService<ScreenCaptureService>().CaptureAsync(Carvis.Core.Vision.CaptureArea.Region);
+            if (png is null)
+                return;
+            var text = (await ocr.RecognizeAsync(png)).Trim();
+            if (text.Length == 0)
+            {
+                _viewModel.AddNotice("No he encontrado texto en esa zona.");
+                return;
+            }
+            await _services.GetRequiredService<Carvis.Core.Platform.IClipboardService>().SetTextAsync(text);
+            _services.GetRequiredService<Carvis.Core.Platform.INotifier>().Notify("Texto copiado", text.Length > 120 ? text[..120] + "…" : text);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Screen OCR failed");
+            _viewModel.AddNotice($"No he podido leer el texto de la pantalla: {ex.Message}");
         }
     }
 
@@ -321,6 +354,51 @@ public partial class App : Application
         e.Handled = true;
     }
 
+    private NativeMenuItem? _updateItem;
+    private DispatcherTimer? _updateTimer;
+
+    // Once shortly after starting and then once a day.
+    private void StartUpdateChecks()
+    {
+        if (_services is null || !_services.GetRequiredService<CarvisSettings>().Privacy.CheckForUpdates)
+            return;
+        var updates = _services.GetRequiredService<UpdateService>();
+        if (!updates.IsInstalled)
+            return;
+
+        async void Check()
+        {
+            if (!_services.GetRequiredService<CarvisSettings>().Privacy.CheckForUpdates || updates.PendingVersion is not null)
+                return;
+            if (await updates.CheckAndDownloadAsync() is { } version)
+                Dispatcher.UIThread.Post(() => OfferUpdate(version));
+        }
+
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(24) };
+        _updateTimer.Tick += (_, _) => Check();
+        _updateTimer.Start();
+        DispatcherTimer.RunOnce(Check, TimeSpan.FromSeconds(45));
+    }
+
+    private void OfferUpdate(string version)
+    {
+        if (_updateItem is not null)
+        {
+            _updateItem.Header = $"Instalar Carvis {version} y reiniciar";
+            _updateItem.IsVisible = true;
+        }
+        _viewModel?.OfferUpdate(version, InstallUpdate);
+    }
+
+    public void InstallUpdate()
+    {
+        if (_services is null)
+            return;
+        _window?.SavePlacement();
+        _hotkey?.Dispose();
+        _services.GetRequiredService<UpdateService>().ApplyAndRestart();
+    }
+
     private void CreateTrayIcon(string hotkeyText)
     {
         var open = new NativeMenuItem("Abrir");
@@ -340,6 +418,9 @@ public partial class App : Application
         var restart = new NativeMenuItem("Reiniciar");
         restart.Click += (_, _) => Restart();
 
+        _updateItem = new NativeMenuItem("Instalar la actualización y reiniciar") { IsVisible = false };
+        _updateItem.Click += (_, _) => InstallUpdate();
+
         var exit = new NativeMenuItem("Salir");
         exit.Click += (_, _) => Exit();
 
@@ -353,6 +434,7 @@ public partial class App : Application
             menu.Items.Add(CreateStartupMenuItem());
             menu.Items.Add(new NativeMenuItemSeparator());
         }
+        menu.Items.Add(_updateItem);
         menu.Items.Add(restart);
         menu.Items.Add(exit);
 
@@ -426,6 +508,7 @@ public partial class App : Application
         services.AddSingleton<Carvis.Core.Platform.INotifier, ToastNotifier>();
         services.AddSingleton<AvaloniaClipboard>();
         services.AddSingleton<ScreenCaptureService>();
+        services.AddSingleton<UpdateService>();
         services.AddSingleton<Carvis.Core.Vision.IScreenCapture>(sp => sp.GetRequiredService<ScreenCaptureService>());
         services.AddSingleton<Carvis.Core.Platform.IClipboardService>(sp => sp.GetRequiredService<AvaloniaClipboard>());
         services.AddSingleton<MainWindowViewModel>();

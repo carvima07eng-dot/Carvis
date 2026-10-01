@@ -25,6 +25,9 @@ public sealed class PrivacySettings
 
     /// <summary>Save conversations so they can be reopened later.</summary>
     public bool SaveConversations { get; set; } = true;
+
+    /// <summary>Look for new versions on GitHub once a day (only the list of releases is downloaded).</summary>
+    public bool CheckForUpdates { get; set; } = true;
 }
 
 public sealed class OllamaSettings
@@ -99,7 +102,7 @@ public sealed class WindowSettings
 
     public bool RememberPosition { get; set; } = true;
 
-    /// <summary>"Dark", "Light" or "System" (follows Windows).</summary>
+    /// <summary>"Dark", "Light", "System" (follows Windows) or "HighContrast".</summary>
     public string Theme { get; set; } = "Dark";
 
     /// <summary>Highlight colour (#RRGGBB). Empty = the theme's cyan.</summary>

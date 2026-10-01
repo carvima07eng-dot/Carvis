@@ -64,6 +64,17 @@ public static class SettingsValidator
             settings.Window.FontSize = defaults.Window.FontSize;
         }
 
+        if (settings.Window.Theme is not ("Dark" or "Light" or "System" or "HighContrast"))
+        {
+            problems.Add($"El tema «{settings.Window.Theme}» no existe (Dark, Light, System o HighContrast); uso Dark.");
+            settings.Window.Theme = "Dark";
+        }
+        if (settings.Window.AccentColor.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(settings.Window.AccentColor, "^#[0-9A-Fa-f]{6}$"))
+        {
+            problems.Add($"El color de acento «{settings.Window.AccentColor}» no es válido (formato #RRGGBB); uso el del tema.");
+            settings.Window.AccentColor = string.Empty;
+        }
+
         if (settings.Ollama.TopP is <= 0 or > 1)
         {
             problems.Add("top_p debe estar entre 0 y 1.");

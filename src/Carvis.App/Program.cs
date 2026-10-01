@@ -15,6 +15,12 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // Installer hooks (install, update, uninstall) run here and exit straight away.
+        var velopack = Velopack.VelopackApp.Build();
+        if (OperatingSystem.IsWindows())
+            velopack.OnBeforeUninstallFastCallback(_ => DisableStartWithWindows());
+        velopack.Run();
+
         using var mutex = new Mutex(initiallyOwned: false, InstanceMutexName);
         var isFirstInstance = WaitForMutex(mutex, args.Contains(RestartArgument) ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!isFirstInstance)
@@ -48,6 +54,13 @@ internal static class Program
             log.LogInformation("Carvis stopped");
             bootstrap.Log.Dispose();
         }
+    }
+
+    // Uninstalling must not leave "start with Windows" pointing to a deleted program.
+    private static void DisableStartWithWindows()
+    {
+        if (OperatingSystem.IsWindows())
+            Platform.WindowsStartup.SetEnabled(false);
     }
 
     private static bool WaitForMutex(Mutex mutex, TimeSpan timeout)

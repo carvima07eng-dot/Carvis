@@ -147,3 +147,39 @@ public sealed class StorageTests : IDisposable
         Assert.Equal("texto sin cifrar", _protector.Unprotect("texto sin cifrar"));
     }
 }
+
+public sealed class ConversationExporterTests
+{
+    [Fact]
+    public void Markdown_HasQuestionsAnswersAndActions()
+    {
+        var info = new ConversationInfo("1", "Carpetas: clase/2º", false, new DateTimeOffset(2026, 10, 1, 18, 30, 0, TimeSpan.FromHours(2)), DateTimeOffset.Now, 4);
+        var messages = new List<Carvis.Core.Chat.ChatMessage>
+        {
+            new(Carvis.Core.Chat.ChatRole.User, "crea la carpeta Clase"),
+            new(Carvis.Core.Chat.ChatRole.Assistant, "") { ToolCalls = [new ToolCall("crear_carpeta", new System.Text.Json.Nodes.JsonObject { ["ruta"] = "Clase" })] },
+            new(Carvis.Core.Chat.ChatRole.Tool, "Carpeta creada: C:\\Users\\Carlos\\Desktop\\Clase") { ToolName = "crear_carpeta" },
+            new(Carvis.Core.Chat.ChatRole.Assistant, "Hecho, ya tienes la carpeta."),
+        };
+
+        var markdown = ConversationExporter.ToMarkdown(info, messages, "Carlos");
+
+        Assert.StartsWith("# Carpetas: clase/2º", markdown);
+        Assert.Contains("1 de octubre de 2026", markdown);
+        Assert.Contains("## Carlos\n\ncrea la carpeta Clase", markdown);
+        Assert.Contains("> Acción: `crear_carpeta` {\"ruta\":\"Clase\"}", markdown);
+        Assert.Contains("> Resultado: Carpeta creada", markdown);
+        Assert.Contains("## Carvis\n\nHecho, ya tienes la carpeta.", markdown);
+
+        var dir = Directory.CreateTempSubdirectory("carvis-export").FullName;
+        try
+        {
+            var path = ConversationExporter.Save(info, messages, dir);
+            Assert.Equal("Carpetas_ clase_2º (2026-10-01).md", Path.GetFileName(path).Replace('\\', '_'));
+        }
+        finally
+        {
+            Directory.Delete(dir, true);
+        }
+    }
+}

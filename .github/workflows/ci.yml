@@ -36,3 +36,20 @@ jobs:
         with:
           name: test-results
           path: "**/TestResults/*.trx"
+
+      # An installer to try every version (the real releases come from release.yml).
+      - name: Build installer
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          dotnet publish src/Carvis.App -c Release -r win-x64 -o publish
+          dotnet tool install -g vpk --version 1.2.161
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          vpk pack --packId CarvisApp --packVersion "$version-ci.${{ github.run_number }}" --packDir publish --mainExe Carvis.exe --packTitle Carvis --packAuthors "Carlos Vidal Marín" --icon src/Carvis.App/Assets/carvis.ico -o installer
+
+      - name: Upload installer
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Carvis-Setup
+          path: installer/*-Setup.exe

@@ -69,3 +69,24 @@ public sealed partial class MainWindowViewModel
         }
     }
 }
+
+public sealed partial class MainWindowViewModel
+{
+    private Action? _installUpdate;
+
+    /// <summary>"Carvis 1.1.0 está lista" with a button, when an update has been downloaded.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasUpdate))]
+    private string? _updateText;
+
+    public bool HasUpdate => UpdateText is not null;
+
+    public void OfferUpdate(string version, Action install)
+    {
+        _installUpdate = install;
+        UpdateText = $"Carvis {version} está descargada. Se instalará al reiniciar.";
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void InstallUpdate() => _installUpdate?.Invoke();
+}

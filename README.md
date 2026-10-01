@@ -1,116 +1,74 @@
 # Carvis
 
-Asistente de IA local para Windows, estilo Jarvis. Se abre con **Alt+Espacio** y responde en streaming usando un modelo que corre en tu propio PC con [Ollama](https://ollama.com). Sin APIs de pago y sin enviar nada a Internet.
+Asistente de IA **local** para Windows, estilo Jarvis. Se abre con **Alt+Espacio**, responde en streaming con un modelo que corre en tu propio PC ([Ollama](https://ollama.com)) y puede **actuar en el PC**: archivos, programas, ventanas, volumen, recordatorios, rutinas, documentos, voz y capturas de pantalla. Sin APIs de pago y sin enviar tus datos a Internet.
 
 ![Carvis](docs/screenshot.png)
 
-## Requisitos
+## Qué hace
 
-- Windows 10/11
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Ollama](https://ollama.com/download) instalado y en marcha
-- Los modelos descargados:
+- **Chat** con formato (Markdown, código resaltado, enlaces), historial guardado y cifrado, búsqueda de conversaciones, regenerar y editar.
+- **Acciones en el PC** (61 herramientas): crear, mover, copiar, renombrar, comprimir, ordenar y buscar archivos; abrir y cerrar programas, colocar ventanas; volumen, multimedia, brillo, modo oscuro, bloquear o apagar; portapapeles; PowerShell. Todo lo que cambia algo se confirma y se puede **deshacer**.
+- **Tus documentos**: indexa carpetas (PDF, Word, Excel, PowerPoint, texto, imágenes con OCR) y responde citando el archivo y la página.
+- **Recordatorios, temporizadores y alarmas**, también repetidos y con rutinas programadas ("cada lunes a las 9, modo estudio").
+- **Rutinas**: varias acciones con una sola orden ("modo estudio").
+- **Utilidades exactas**: calculadora, unidades, fechas y zonas horarias, notas y tareas.
+- **Voz** (opcional): pulsa un atajo o di «Carvis», habla, y te contesta en voz alta. Whisper y Piper, en local.
+- **Visión**: captura una zona de la pantalla (o pega una imagen) y pregúntale qué ve; usa `qwen2.5vl`.
+- **Internet solo si lo activas**: tiempo, divisas y búsqueda con un SearXNG propio.
 
-```powershell
-ollama pull qwen3:8b
-ollama pull nomic-embed-text   # se usará en la fase 2 (indexado de documentos)
-```
+## Instalar
 
-## Arrancar
+1. Instala [Ollama](https://ollama.com/download) (el asistente de primer arranque también puede instalarlo con winget).
+2. Descarga `CarvisApp-win-Setup.exe` de la [última versión](https://github.com/carvima07eng-dot/Carvis/releases/latest) y ejecútalo. No necesita permisos de administrador.
+3. Al abrirse, el asistente de primer arranque comprueba Ollama, descarga los modelos (`qwen3:8b` y `nomic-embed-text`), te pregunta qué carpetas quieres que lea y prueba el atajo.
+
+Carvis se actualiza solo desde GitHub Releases (se puede desactivar en Ajustes → Privacidad).
+
+> El instalador no está firmado digitalmente: Windows SmartScreen puede avisar la primera vez («Más información» → «Ejecutar de todas formas»).
+
+### Requisitos
+
+- Windows 10 u 11 de 64 bits.
+- Una gráfica NVIDIA con 8 GB o más (probado para una RTX 5070 de 12 GB). Sin gráfica funciona, pero mucho más lento.
+- Unos 7 GB de disco para los modelos de chat (más 0,5–2 GB si activas la voz y 6 GB para el modelo de visión).
+
+## Uso rápido
+
+| Acción | Cómo |
+|---|---|
+| Mostrar u ocultar | **Alt+Espacio**, el botón de la barra de tareas o el icono de la bandeja |
+| Hablar | **Ctrl+Alt+Espacio** o el micrófono (activa la voz en Ajustes → Voz) |
+| Capturar una zona de la pantalla | **Ctrl+Alt+S** o el botón de captura |
+| Enviar / nueva línea | **Enter** / **Shift+Enter** |
+| Nueva conversación · historial · ajustes | **Ctrl+N** · **Ctrl+H** · **Ctrl+,** |
+| Comandos | `/ayuda`, `/nueva`, `/historial`, `/modelo`, `/memoria`, `/acciones`, `/gpu`, `/liberar` |
+
+Ejemplos: «créame una carpeta en el escritorio llamada Clase», «ordena mis descargas por tipo», «abre Spotify y ponlo a la izquierda», «recuérdame mañana a las 9 entregar la práctica», «¿qué dicen mis apuntes de redes sobre TCP?», «¿cuánto es el 21 % de 350?», «¿qué error sale en mi pantalla?».
+
+Más detalle en el [manual de usuario](docs/MANUAL.md). Si algo falla, mira [solución de problemas](docs/TROUBLESHOOTING.md).
+
+## Desarrollo
+
+Requiere el [SDK de .NET 8](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ```powershell
 git clone https://github.com/carvima07eng-dot/Carvis.git
 cd Carvis
 dotnet run --project src/Carvis.App
-```
-
-O desde la carpeta de la app:
-
-```powershell
-cd src/Carvis.App
-dotnet run
-```
-
-Al arrancar aparece la ventana, con su botón en la barra de tareas y un icono en la bandeja del sistema (en Windows 11 puede estar dentro de la flecha **^**; arrástralo a la barra para tenerlo siempre a mano). Solo hay una instancia: si vuelves a ejecutar Carvis, se muestra la que ya está abierta.
-
-| Acción | Cómo |
-|---|---|
-| Mostrar / traer al frente | **Alt+Espacio**, el botón de la barra de tareas o el icono de la bandeja |
-| Enviar mensaje | **Enter** |
-| Nueva línea | **Shift+Enter** |
-| Recuperar el último mensaje | **↑** con la caja vacía |
-| Detener la respuesta | Botón **Detener** |
-| Minimizar | **Esc**, **Alt+Espacio** o el botón **—** |
-| Ocultar en la bandeja | Botón **✕** |
-| Mover la ventana | Arrastra la barra superior |
-| Copiar una respuesta o un bloque de código | Botón **Copiar** |
-| Empezar de cero | **Nueva conversación** |
-| Arrancar con Windows | Icono de la bandeja → **Iniciar con Windows** |
-| Salir | Icono de la bandeja → **Salir** |
-
-Las respuestas se muestran con formato (negritas, listas, tablas, bloques de código). Al arrancar Carvis carga el modelo en memoria para que la primera respuesta no tarde, y lo mantiene cargado 30 minutos.
-
-Si Ollama no está abierto o falta el modelo, Carvis lo indica en la propia ventana con el comando para solucionarlo y un botón **Reintentar**.
-
-## Configuración
-
-`src/Carvis.App/appsettings.json` (se copia junto al ejecutable):
-
-```json
-{
-  "Ollama": {
-    "BaseUrl": "http://localhost:11434",
-    "ChatModel": "qwen3:8b",
-    "EmbeddingModel": "nomic-embed-text",
-    "EnableThinking": false,
-    "KeepAlive": "30m",
-    "RequestTimeoutSeconds": 300
-  },
-  "Hotkey": { "ToggleWindow": "Alt+Space" },
-  "Assistant": {
-    "SystemPrompt": "Eres Carvis, ...",
-    "MaxHistoryMessages": 40
-  },
-  "Window": { "StartHidden": false, "HideOnFocusLost": false }
-}
-```
-
-- `Hotkey.ToggleWindow`: modificadores `Ctrl`, `Alt`, `Shift`, `Win` + una tecla (`Space`, `J`, `F1`...). Ejemplo: `"Ctrl+Shift+J"`.
-- `EnableThinking`: deja que qwen3 "piense" antes de responder (más lento; el razonamiento no se muestra).
-- `KeepAlive`: cuánto tiempo mantiene Ollama el modelo en la GPU tras la última pregunta (`"-1"` = siempre).
-- `StartHidden`: arranca solo en la bandeja.
-- `HideOnFocusLost`: modo Spotlight. Con `true` la ventana va siempre encima y se oculta al hacer clic fuera; con `false` (por defecto) se comporta como una app normal.
-
-Si Alt+Espacio no hace nada, puede que otro programa lo esté usando (por ejemplo PowerToys Run). Cambia `Hotkey.ToggleWindow` a otro atajo, como `"Ctrl+Shift+Space"`.
-
-## Tests
-
-```powershell
 dotnet test
 ```
 
-## Estructura
-
 ```
-src/Carvis.App     UI con Avalonia (MVVM con CommunityToolkit.Mvvm), bandeja, atajo global (SharpHook)
-src/Carvis.Core    Servicios sin UI: chat, cliente de Ollama, configuración y contratos de las próximas fases
-tests/Carvis.Tests Tests xUnit del Core
+src/Carvis.App      Interfaz Avalonia (MVVM), bandeja, atajos globales, capturas, actualizaciones
+src/Carvis.Core     Chat, herramientas, permisos, documentos (RAG), almacenamiento, voz, visión
+src/Carvis.Windows  Implementaciones de Windows: ventanas, audio, volumen, papelera, OCR, energía
+src/Carvis.Voice    Reconocimiento de voz con Whisper.net (Vulkan o CPU)
+tests/              Tests del Core, tests de interfaz (Avalonia headless) y evals con Ollama real
 ```
 
-Piezas principales del Core:
+- Arquitectura, cómo añadir una herramienta o un plugin: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Evals del uso de herramientas con el modelo real: `dotnet run --project tests/Carvis.Evals`
+- Publicar una versión: crea la etiqueta `vX.Y.Z` y súbela (`git tag v1.0.0 && git push origin v1.0.0`); el workflow *Release* genera el instalador y lo publica.
+- Historial de cambios: [CHANGELOG.md](CHANGELOG.md) · Licencias de terceros: [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md)
 
-- `IChatService` / `ChatService`: conversación con historial, streaming y filtrado de bloques `<think>`.
-- `IChatModelClient` / `OllamaChatModelClient`: llamada al modelo con OllamaSharp.
-- `IOllamaHealthCheck`: comprueba que Ollama responde y que el modelo está descargado.
-- `IChatContextProvider`: punto de entrada para añadir contexto a cada pregunta (lo usará el RAG).
-
-## Hoja de ruta
-
-La lista completa de lo que falta hasta la versión final está en [docs/ROADMAP.md](docs/ROADMAP.md).
-
-
-- [x] **Fase 1**: ventana flotante, chat en streaming con historial, comprobación de Ollama, bandeja, configuración y tests.
-- [ ] **Fase 2**: indexar carpetas (PDF con PdfPig, DOCX con OpenXML, txt/md), trocear, embeddings con `nomic-embed-text`, guardar en SQLite + sqlite-vec y responder con RAG citando archivos. Contratos en `Carvis.Core/Indexing`.
-- [ ] **Fase 3**: acciones con tool calling (abrir programas, mover/renombrar archivos, ejecutar scripts) siempre con confirmación en la UI. Contratos en `Carvis.Core/Tools`.
-- [ ] **Fase 4**: voz con Whisper.net (entrada), Piper (salida) y palabra de activación "Carvis". Contratos en `Carvis.Core/Voice`.
-- [ ] **Fase 5**: captura de pantalla con atajo y análisis con `qwen2.5vl`. Contratos en `Carvis.Core/Vision`.
+© 2026 Carlos Vidal Marín.

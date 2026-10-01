@@ -246,6 +246,8 @@
             <CheckBox Content="Preguntarme también antes de abrir programas o páginas web" IsChecked="{Binding Draft.Permissions.ConfirmLowRisk}" />
             <TextBlock Classes="hint" Text="Borrar, sobrescribir, ejecutar scripts o apagar el PC siempre se confirma." />
             <CheckBox Content="Permitir herramientas que usan Internet (tiempo, divisas, búsqueda web)" IsChecked="{Binding Draft.Permissions.AllowInternet}" />
+            <CheckBox Content="Cargar plugins de %AppData%\Carvis\plugins (solo si confías en ellos)" IsChecked="{Binding Draft.Permissions.EnablePlugins}" />
+            <TextBlock Classes="hint" Text="Un plugin puede hacer cualquier cosa con tus permisos. Se cargan al reiniciar Carvis." />
             <TextBlock Classes="label" Text="Buscador web (SearXNG, opcional)" />
             <TextBox Text="{Binding Draft.Permissions.SearchUrl}" Watermark="http://localhost:8080" IsEnabled="{Binding Draft.Permissions.AllowInternet}" />
             <TextBlock Classes="hint" Text="Para que Carvis lea resultados de búsqueda hace falta un SearXNG propio. Sin él, solo abre la búsqueda en el navegador." />
@@ -327,6 +329,8 @@
             <CheckBox Content="Guardar las conversaciones para poder volver a ellas" IsChecked="{Binding Draft.Privacy.SaveConversations}" />
             <CheckBox Content="Cifrar conversaciones y recuerdos con mi cuenta de Windows" IsChecked="{Binding Draft.Privacy.EncryptData}" />
             <CheckBox Content="Incluir el contenido de los mensajes en el log (solo para depurar)" IsChecked="{Binding Draft.Logging.IncludeContent}" />
+            <CheckBox Content="Buscar actualizaciones en GitHub una vez al día" IsChecked="{Binding Draft.Privacy.CheckForUpdates}" />
+            <TextBlock Classes="hint" Text="Solo se descarga la lista de versiones y, si hay una nueva, la actualización. No se envía nada tuyo." />
             <TextBlock Classes="label" Text="{Binding DataFolder, StringFormat='Tus datos están en {0}'}" TextWrapping="Wrap" />
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Button Content="Abrir carpeta de datos" Command="{Binding OpenDataFolderCommand}" />

@@ -35,6 +35,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<INotifier, NullNotifier>();
 
         services.TryAddSingleton<IUserFolders, UserFolders>();
+        services.TryAddSingleton<IOcrEngine, NoOcrEngine>();
         services.AddSingleton(settings.Documents);
         services.AddSingleton<IDocumentReader, TextDocumentReader>();
         services.AddSingleton<IDocumentReader, PdfDocumentReader>();
