@@ -10,6 +10,7 @@ public partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        Platform.Backdrop.Apply(this, Root, Platform.ThemeColors.Backdrop);
         Opened += async (_, _) =>
         {
             if (DataContext is SettingsViewModel viewModel)
@@ -36,4 +37,10 @@ public partial class SettingsWindow : Window
     }
 
     private void OnCloseClick(object? sender, RoutedEventArgs e) => Close();
+
+    private void OnOpenRepositoryClick(object? sender, RoutedEventArgs e) =>
+        _ = Launcher.LaunchUriAsync(new Uri(Services.UpdateService.RepositoryUrl));
+
+    private void OnReportIssueClick(object? sender, RoutedEventArgs e) =>
+        _ = Launcher.LaunchUriAsync(new Uri(Services.CrashReporter.NewIssueUrl(null)));
 }

@@ -40,6 +40,11 @@ public sealed partial class SettingsViewModel : ViewModelBase
         Draft = SettingsApplier.Clone(live);
         AllowedFolders = new ObservableCollection<string>(Draft.Permissions.AllowedFolders);
         DocumentFolders = new ObservableCollection<string>(Draft.Documents.Folders);
+        DocumentFolders.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoDocumentFolders));
+        Memories.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasNoMemories));
+        foreach (var server in Draft.Experimental.McpServers)
+            McpServers.Add(server);
+        SelectedPage = Pages[0];
         _startWithWindows = OperatingSystem.IsWindows() && WindowsStartup.IsEnabled();
         RefreshMemories();
     }
@@ -50,7 +55,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public ObservableCollection<string> InstalledModels { get; } = [];
     public ObservableCollection<MemoryItem> Memories { get; } = [];
 
-    public string[] Backdrops { get; } = ["Solid", "Acrylic", "Mica"];
     public string[] Themes { get; } = ["Oscuro", "Claro", "Como Windows", "Alto contraste"];
     private static readonly string[] ThemeValues = ["Dark", "Light", "System", "HighContrast"];
 
@@ -60,9 +64,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         set => Draft.Window.Theme = ThemeValues[Math.Clamp(value, 0, ThemeValues.Length - 1)];
     }
 
-    /// <summary>Accent presets; the first one is the theme's own.</summary>
-    public string[] AccentColors { get; } = ["", "#22D3EE", "#A78BFA", "#34D399", "#F472B6", "#FBBF24", "#60A5FA", "#F87171"];
-    public string[] WindowModes { get; } = ["Ventana normal", "Spotlight (siempre encima, se oculta al perder el foco)"];
+    public string[] WindowModes { get; } = ["Ventana normal", "Rápida: siempre encima y se oculta al hacer clic fuera"];
     public bool IsWindows => OperatingSystem.IsWindows();
     public string Version => typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "?";
     public string DataFolder => _paths.DataRoot;
@@ -124,7 +126,7 @@ public sealed partial class SettingsViewModel : ViewModelBase
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {
-            Message = "No he podido leer los modelos: ¿está Ollama abierto?";
+            Message = "No puedo ver los modelos. Comprueba que Ollama está abierto.";
         }
     }
 
@@ -202,21 +204,22 @@ public sealed partial class SettingsViewModel : ViewModelBase
         if (!_confirmingDelete)
         {
             _confirmingDelete = true;
-            DeleteDataLabel = "¿Seguro? Pulsa otra vez para borrarlo todo";
+            DeleteDataLabel = "Pulsa otra vez para confirmarlo";
             return;
         }
         _database.DeleteAllUserData();
         _confirmingDelete = false;
         DeleteDataLabel = "Borrar todos mis datos";
         RefreshMemories();
-        Message = "He borrado las conversaciones, recuerdos, notas, recordatorios y el historial de acciones.";
+        Message = "Listo: he borrado tus conversaciones, recuerdos, notas, recordatorios y el historial de acciones.";
+        RefreshReminders();
     }
 
     [RelayCommand]
     private void ResetToDefaults()
     {
         _store.Reset();
-        Message = "Ajustes de fábrica restaurados. Reinicia Carvis para aplicarlos.";
+        Message = "He vuelto a los ajustes de fábrica. Reinicia Carvis para aplicarlos.";
         Saved?.Invoke(true);
     }
 
@@ -225,13 +228,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
     {
         Draft.Permissions.AllowedFolders = AllowedFolders.ToList();
         Draft.Documents.Folders = DocumentFolders.ToList();
+        Draft.Experimental.McpServers = McpServers.ToList();
 
         var problems = SettingsValidator.Validate(Draft);
         var restart = Draft.Ollama.BaseUrl != _live.Ollama.BaseUrl
                       || Draft.Ollama.RequestTimeoutSeconds != _live.Ollama.RequestTimeoutSeconds
                       || Draft.Privacy.EncryptData != _live.Privacy.EncryptData
                       || Draft.Permissions.EnablePlugins != _live.Permissions.EnablePlugins
-                      || Draft.Voice.UseGpu != _live.Voice.UseGpu;
+                      || Draft.Voice.UseGpu != _live.Voice.UseGpu
+                      || Draft.Experimental.Mcp != _live.Experimental.Mcp
+                      || System.Text.Json.JsonSerializer.Serialize(Draft.Experimental.McpServers) != System.Text.Json.JsonSerializer.Serialize(_live.Experimental.McpServers);
 
         SettingsApplier.CopyInto(Draft, _live);
         _store.Save(_live);
@@ -240,8 +246,8 @@ public sealed partial class SettingsViewModel : ViewModelBase
             WindowsStartup.SetEnabled(StartWithWindows);
 
         Message = problems.Count > 0
-            ? "Guardado con correcciones: " + string.Join(" ", problems)
-            : restart ? "Guardado. Algunos cambios se aplican al reiniciar Carvis." : "Guardado.";
+            ? "Guardado, pero he corregido algo: " + string.Join(" ", problems)
+            : restart ? "Guardado. Algunos cambios se aplicarán cuando reinicies Carvis." : "Guardado.";
         Saved?.Invoke(restart);
     }
 

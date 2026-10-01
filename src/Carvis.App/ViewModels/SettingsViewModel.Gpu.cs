@@ -45,8 +45,8 @@ public sealed partial class SettingsViewModel
         var flash = Environment.GetEnvironmentVariable(FlashAttention, EnvironmentVariableTarget.User);
         var kv = Environment.GetEnvironmentVariable(KvCacheType, EnvironmentVariableTarget.User);
         return flash == "1" && !string.IsNullOrEmpty(kv)
-            ? $"Activado (flash attention y caché {kv})."
-            : "Sin activar: Ollama usa más memoria de la gráfica con contextos largos.";
+            ? "Activado: las conversaciones largas gastan menos memoria de la gráfica."
+            : "Sin activar: las conversaciones largas gastan más memoria de la gráfica.";
     }
 }
 
@@ -55,11 +55,11 @@ public sealed partial class SettingsViewModel
     /// <summary>The swatch of each accent preset (the empty one shows the theme's).</summary>
     public static readonly Avalonia.Data.Converters.IValueConverter AccentToBrush =
         new Avalonia.Data.Converters.FuncValueConverter<string?, Avalonia.Media.IBrush>(color =>
-            Avalonia.Media.Color.TryParse(color, out var c) ? new Avalonia.Media.SolidColorBrush(c) : Avalonia.Media.Brush.Parse("#22D3EE"));
+            Avalonia.Media.Color.TryParse(color, out var c) ? new Avalonia.Media.SolidColorBrush(c) : Platform.ThemeColors.Brush("Accent"));
 
     public string AccentText => string.IsNullOrEmpty(Draft.Window.AccentColor)
-        ? "Acento: el del tema."
-        : $"Acento: {Draft.Window.AccentColor}.";
+        ? "El mismo color que Windows."
+        : $"Color {Draft.Window.AccentColor}.";
 
     [RelayCommand]
     private void SetAccent(string? color)
