@@ -29,7 +29,7 @@ public sealed class StorageTests : IDisposable
     [Fact]
     public void Database_CreatesTheLatestSchemaAndLoadsVectorSearch()
     {
-        Assert.Equal(3, _db.SchemaVersion);
+        Assert.Equal(4, _db.SchemaVersion);
         Assert.True(_db.HasVectorSearch);
     }
 

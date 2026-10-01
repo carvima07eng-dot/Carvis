@@ -58,6 +58,11 @@ public partial class App : Application
 
             _viewModel = _services.GetRequiredService<MainWindowViewModel>();
             StartReconnectTimer();
+            _viewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainWindowViewModel.IsOllamaReady) && _viewModel.IsOllamaReady)
+                    StartIndexing();
+            };
             foreach (var warning in bootstrap.Warnings)
                 _viewModel.AddNotice(warning);
 
@@ -124,6 +129,21 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
+    }
+
+    private bool _indexingStarted;
+
+    // Documents are read in the background once Ollama answers (embeddings need it).
+    private void StartIndexing(bool force = false)
+    {
+        if (_services is null || (_indexingStarted && !force))
+            return;
+        var settings = _services.GetRequiredService<CarvisSettings>();
+        var index = _services.GetRequiredService<Carvis.Core.Indexing.IIndexService>();
+        _indexingStarted = true;
+        index.StartWatching();
+        if (settings.Documents.Folders.Count > 0)
+            _ = Task.Run(() => index.IndexAsync());
     }
 
     // If Ollama was closed or started late, find it again without the user doing anything.
@@ -194,6 +214,7 @@ public partial class App : Application
             _viewModel.HotkeyWarning = _hotkey.TryChange(gesture, out var error) ? null : error;
 
         _viewModel.OnSettingsApplied();
+        StartIndexing(force: true);
         if (restartNeeded)
             _viewModel.AddNotice("Algunos cambios se aplicarán cuando reinicies Carvis (icono de la bandeja → Reiniciar).");
     }

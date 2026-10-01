@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Carvis.Core.Chat;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -46,6 +47,15 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
 
     public bool CanCopy => !IsUser && !IsStreaming && Content.Length > 0;
     public bool HasThinking => !string.IsNullOrWhiteSpace(Thinking);
+
+    /// <summary>Documents the answer could cite as [n].</summary>
+    public ObservableCollection<SourceReference> Sources { get; } = [];
+
+    /// <summary>Files the user attached to this message.</summary>
+    public IReadOnlyList<string> Attachments { get; init; } = [];
+
+    public bool HasAttachments => Attachments.Count > 0;
+    public string AttachmentsText => string.Join("  ", Attachments.Select(a => "📎 " + Path.GetFileName(a)));
 
     public void Append(string text) => Content += text;
 

@@ -20,11 +20,16 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private readonly CarvisDatabase _database;
     private readonly IShell _shell;
     private readonly AppPaths _paths;
+    private readonly Carvis.Core.Indexing.IIndexService _index;
     private bool _confirmingDelete;
 
     public SettingsViewModel(CarvisSettings live, SettingsStore store, IModelManager models, IMemoryStore memories,
-        CarvisDatabase database, IShell shell, AppPaths paths)
+        CarvisDatabase database, IShell shell, AppPaths paths, Carvis.Core.Indexing.IIndexService index)
     {
+        _index = index;
+        _indexStatus = index.Status.Describe();
+        index.StatusChanged += status => Avalonia.Threading.Dispatcher.UIThread.Post(() => IndexStatus = status.Describe() +
+            (status.LastError is { } error ? $" · Último problema: {error}" : string.Empty));
         _live = live;
         _store = store;
         _models = models;
@@ -62,6 +67,24 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _startWithWindows;
+
+    [ObservableProperty]
+    private string _indexStatus;
+
+    [RelayCommand]
+    private void IndexNow()
+    {
+        _live.Documents.Folders = DocumentFolders.ToList();
+        _store.Save(_live);
+        _index.StartWatching();
+        _ = Task.Run(() => _index.IndexAsync());
+    }
+
+    [RelayCommand]
+    private void PauseIndex() => _index.Pause();
+
+    [RelayCommand]
+    private void ClearIndex() => _index.ClearIndex();
 
     [ObservableProperty]
     private string? _message;

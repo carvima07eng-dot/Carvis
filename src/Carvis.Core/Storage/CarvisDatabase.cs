@@ -125,6 +125,12 @@ public sealed class CarvisDatabase
     {
         using var connection = Open();
         using var transaction = connection.BeginTransaction();
+        if (Convert.ToInt32(Scalar(connection, "SELECT COUNT(*) FROM sqlite_master WHERE name = 'chunks_vec'")) > 0 && HasVectorSearch)
+        {
+            using var vectors = Command(connection, "DELETE FROM chunks_vec");
+            vectors.Transaction = transaction;
+            vectors.ExecuteNonQuery();
+        }
         foreach (var table in Migrations.UserDataTables)
         {
             using var command = Command(connection, $"DELETE FROM {table}");

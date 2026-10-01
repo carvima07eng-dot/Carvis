@@ -8,6 +8,9 @@ public interface IChatService
     /// <summary>Sends a message and streams what happens: text, tool calls and their results.</summary>
     IAsyncEnumerable<ChatEvent> SendAsync(string userMessage, CancellationToken cancellationToken = default);
 
+    /// <summary>Sends a message with attached files or images.</summary>
+    IAsyncEnumerable<ChatEvent> SendAsync(ChatInput input, CancellationToken cancellationToken = default);
+
     void ClearHistory();
 
     /// <summary>Replaces the history, e.g. when reopening a saved conversation.</summary>

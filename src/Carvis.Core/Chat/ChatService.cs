@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Carvis.Core.Configuration;
+using Carvis.Core.Indexing;
 using Carvis.Core.Tools;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -35,7 +36,9 @@ public sealed class ChatService : IChatService
     private readonly IToolConfirmation? _confirmation;
     private readonly ToolPolicy? _policy;
     private readonly IActionJournal? _journal;
+    private readonly IAttachmentContextBuilder? _attachments;
     private readonly ILogger _logger;
+    private readonly List<string> _attachedFiles = [];
     private readonly List<List<ChatMessage>> _turns = [];
     private readonly object _lock = new();
     private string? _summary;
@@ -59,7 +62,8 @@ public sealed class ChatService : IChatService
         ToolPolicy? policy = null,
         IActionJournal? journal = null,
         OllamaSettings? ollamaSettings = null,
-        ILogger<ChatService>? logger = null)
+        ILogger<ChatService>? logger = null,
+        IAttachmentContextBuilder? attachments = null)
     {
         _client = client;
         _settings = settings;
@@ -70,6 +74,7 @@ public sealed class ChatService : IChatService
         _policy = policy;
         _journal = journal;
         _ollamaSettings = ollamaSettings;
+        _attachments = attachments;
         _logger = logger ?? NullLogger<ChatService>.Instance;
     }
 
@@ -84,6 +89,7 @@ public sealed class ChatService : IChatService
         {
             _turns.Clear();
             _summary = null;
+            _attachedFiles.Clear();
         }
         _policy?.ResetSession();
     }
@@ -105,6 +111,7 @@ public sealed class ChatService : IChatService
         lock (_lock)
         {
             _turns.Clear();
+            _attachedFiles.Clear();
             _summary = summary;
             foreach (var message in messages)
             {
@@ -118,17 +125,25 @@ public sealed class ChatService : IChatService
 
     public Task WarmUpAsync(CancellationToken cancellationToken = default) => _client.WarmUpAsync(cancellationToken);
 
+    public IAsyncEnumerable<ChatEvent> SendAsync(string userMessage, CancellationToken cancellationToken = default) =>
+        SendAsync(new ChatInput(userMessage), cancellationToken);
+
     public async IAsyncEnumerable<ChatEvent> SendAsync(
-        string userMessage,
+        ChatInput input,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(userMessage))
-            throw new ArgumentException("El mensaje está vacío.", nameof(userMessage));
+        if (string.IsNullOrWhiteSpace(input.Text))
+            throw new ArgumentException("El mensaje está vacío.", nameof(input));
 
         if (Interlocked.Exchange(ref _isSending, 1) == 1)
             throw new InvalidOperationException("Ya hay una respuesta en curso.");
 
-        var user = new ChatMessage(ChatRole.User, userMessage.Trim());
+        var user = new ChatMessage(ChatRole.User, input.Text.Trim()) { Images = input.Images.Count > 0 ? input.Images : null };
+        lock (_lock)
+        {
+            foreach (var file in input.Attachments.Where(f => !_attachedFiles.Contains(f, StringComparer.OrdinalIgnoreCase)))
+                _attachedFiles.Add(file);
+        }
         var turn = new List<ChatMessage> { user };
         var failed = false;
         var externalContent = false;
@@ -139,8 +154,13 @@ public sealed class ChatService : IChatService
             await CompressHistoryAsync(cancellationToken);
             var history = History;
             var tools = await SelectToolsAsync(user.Content, history, cancellationToken);
-            var messages = await BuildRequestAsync(user, history, tools.Count > 0, cancellationToken);
+            var (messages, external, sources) = await BuildRequestAsync(user, history, tools.Count > 0, cancellationToken);
+            externalContent = external;
+            if (sources.Count > 0)
+                yield return new SourcesAttached(sources);
             var maxSteps = Math.Max(1, _settings.MaxToolSteps);
+            // Pictures go to the vision model when one is configured.
+            var model = user.Images is { Count: > 0 } && _ollamaSettings?.VisionModel is { Length: > 0 } vision ? vision : null;
 
             for (var step = 0; step < maxSteps; step++)
             {
@@ -149,7 +169,8 @@ public sealed class ChatService : IChatService
                 var filter = new ThinkTagFilter();
                 var request = new ModelRequest(messages)
                 {
-                    Tools = tools.Count > 0 ? tools : null,
+                    Model = model,
+                    Tools = tools.Count > 0 && model is null ? tools : null,
                     // After the first tool result the model is filling in arguments: be precise.
                     Temperature = step == 0 ? _ollamaSettings?.Temperature : _ollamaSettings?.ToolTemperature,
                 };
@@ -330,21 +351,50 @@ public sealed class ChatService : IChatService
         return result;
     }
 
-    private async Task<List<ChatMessage>> BuildRequestAsync(ChatMessage user, IReadOnlyList<ChatMessage> history, bool withTools, CancellationToken cancellationToken)
+    private async Task<(List<ChatMessage> Messages, bool External, IReadOnlyList<SourceReference> Sources)> BuildRequestAsync(
+        ChatMessage user, IReadOnlyList<ChatMessage> history, bool withTools, CancellationToken cancellationToken)
     {
         // All system text goes into one message: chat templates handle that best.
         var system = new StringBuilder(_settings.SystemPrompt.Trim());
         var extra = new List<ChatMessage>();
+        var external = false;
+        var sources = new List<SourceReference>();
+        var context = new List<ChatMessage>();
+
+        // Attached files come first; when there are some, they are the sources of this answer.
+        List<string> attached;
+        lock (_lock)
+            attached = _attachedFiles.ToList();
+        if (attached.Count > 0 && _attachments is not null)
+        {
+            try
+            {
+                if (await _attachments.BuildAsync(attached, user.Content, cancellationToken) is { } fromFiles)
+                    context.Add(fromFiles);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(ex, "Could not read the attached files");
+            }
+        }
 
         foreach (var provider in _contextProviders)
+            context.AddRange(await provider.GetContextAsync(user.Content, cancellationToken));
+
+        foreach (var message in context)
         {
-            foreach (var message in await provider.GetContextAsync(user.Content, cancellationToken))
+            // Numbers must stay unique: only the first set of numbered sources is used.
+            if (message.Sources is { Count: > 0 })
             {
-                if (message.Role == ChatRole.System)
-                    Append(system, message.Content);
-                else
-                    extra.Add(message);
+                if (sources.Count > 0)
+                    continue;
+                sources.AddRange(message.Sources);
             }
+            external |= message.IsExternal;
+            if (message.Role == ChatRole.System)
+                Append(system, message.Content);
+            else
+                extra.Add(message);
         }
 
         if (_registry is not null && _settings.EnableTools)
@@ -359,7 +409,7 @@ public sealed class ChatService : IChatService
         messages.AddRange(extra);
         messages.AddRange(history);
         messages.Add(user);
-        return messages;
+        return (messages, external, sources);
     }
 
     private static void Append(StringBuilder system, string text) =>

@@ -104,6 +104,14 @@ internal static class Migrations
             created_at TEXT NOT NULL
         )
         """,
+
+        // 4: settings of the document index (embedding model and vector size)
+        """
+        CREATE TABLE index_meta (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+        """,
     ];
 
     /// <summary>Tables with the user's data, children first (for "delete all my data").</summary>

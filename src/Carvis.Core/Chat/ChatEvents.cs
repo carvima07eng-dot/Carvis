@@ -18,5 +18,8 @@ public sealed record StepCompleted(int Step) : ChatEvent;
 /// <summary>Reasoning shown folded under the answer when thinking is on.</summary>
 public sealed record ThinkingDelta(string Text) : ChatEvent;
 
+/// <summary>Document fragments offered to the model for this answer, numbered as the model cites them.</summary>
+public sealed record SourcesAttached(IReadOnlyList<SourceReference> Sources) : ChatEvent;
+
 /// <summary>Speed of the answer, for the footer.</summary>
 public sealed record StatsReported(GenerationStats Stats) : ChatEvent;

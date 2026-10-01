@@ -22,6 +22,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IMemoryStore _memories;
     private readonly SettingsStore _settingsStore;
     private readonly CarvisSettings _settings;
+    private readonly Carvis.Core.Platform.IShell _shell;
     private CancellationTokenSource? _sendCancellation;
     private bool _isModelLoaded;
     private string? _lastSentMessage;
@@ -37,8 +38,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         ITitleGenerator titles,
         IModelManager models,
         IMemoryStore memories,
-        SettingsStore settingsStore)
+        SettingsStore settingsStore,
+        Carvis.Core.Platform.IShell shell,
+        Carvis.Core.Indexing.IIndexService index)
     {
+        _shell = shell;
+        IndexStatusText = DescribeIndex(index.Status);
+        index.StatusChanged += status => Avalonia.Threading.Dispatcher.UIThread.Post(() => IndexStatusText = DescribeIndex(status));
         _chat = chat;
         _healthCheck = healthCheck;
         _journal = journal;
@@ -109,6 +115,13 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _isHistoryOpen;
 
     public bool ShowConversation => HasMessages && !IsHistoryOpen;
+
+    /// <summary>Files to send with the next message (dropped on the window or chosen with 📎).</summary>
+    public ObservableCollection<string> Attachments { get; } = [];
+
+    /// <summary>"Indexando 3/40…" while documents are being read; empty otherwise.</summary>
+    [ObservableProperty]
+    private string? _indexStatusText;
 
     /// <summary>Speed of the last answer, e.g. "42 tok/s".</summary>
     [ObservableProperty]
@@ -191,12 +204,29 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (text.StartsWith('/') && await RunCommandAsync(text))
             return;
 
-        await AskAsync(text);
+        var attachments = Attachments.ToList();
+        Attachments.Clear();
+        await AskAsync(text, attachments);
     }
 
-    private async Task AskAsync(string text)
+    public void AttachFile(string path)
     {
-        Items.Add(new MessageViewModel(ChatRole.User, text));
+        if (File.Exists(path) && !Attachments.Contains(path, StringComparer.OrdinalIgnoreCase))
+            Attachments.Add(path);
+    }
+
+    [RelayCommand]
+    private void RemoveAttachment(string path) => Attachments.Remove(path);
+
+    [RelayCommand]
+    private Task OpenSourceAsync(SourceReference source) => _shell.OpenAsync(source.Path);
+
+    private static string? DescribeIndex(Carvis.Core.Indexing.IndexStatus status) =>
+        status.IsRunning ? status.Describe() : null;
+
+    private async Task AskAsync(string text, IReadOnlyList<string>? attachments = null)
+    {
+        Items.Add(new MessageViewModel(ChatRole.User, text) { Attachments = attachments ?? [] });
         var reply = NewReply();
 
         IsBusy = true;
@@ -206,10 +236,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            await foreach (var chatEvent in _chat.SendAsync(text, cancellation.Token))
+            var input = new ChatInput(text) { Attachments = attachments ?? [] };
+            await foreach (var chatEvent in _chat.SendAsync(input, cancellation.Token))
             {
                 switch (chatEvent)
                 {
+                    case SourcesAttached attached:
+                        reply ??= NewReply();
+                        foreach (var source in attached.Sources)
+                            reply.Sources.Add(source);
+                        break;
+
                     case TextDelta delta:
                         reply ??= NewReply();
                         reply.Append(delta.Text);
@@ -556,21 +593,29 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             await LoadModelAsync();
     }
 
+    private List<SourceReference> _carriedSources = [];
+
     private MessageViewModel NewReply()
     {
         var reply = new MessageViewModel(ChatRole.Assistant) { IsStreaming = true };
+        foreach (var source in _carriedSources)
+            reply.Sources.Add(source);
+        _carriedSources = [];
         Items.Add(reply);
         return reply;
     }
 
-    // An empty bubble before a tool card adds nothing: remove it.
+    // An empty bubble before a tool card adds nothing: remove it (its sources go to the next one).
     private MessageViewModel? CloseReply(MessageViewModel? reply)
     {
         if (reply is null)
             return null;
         reply.IsStreaming = false;
         if (reply.Content.Length == 0)
+        {
+            _carriedSources = reply.Sources.ToList();
             Items.Remove(reply);
+        }
         return null;
     }
 

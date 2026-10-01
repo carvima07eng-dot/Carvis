@@ -38,6 +38,10 @@ internal static class ToolKeywords
         ["recordar"] = ["recuerda que", "acuerdate de que", "me llamo", "mi nombre es", "guarda que", "apuntate que", "no olvides que"],
         ["olvidar"] = ["olvida", "borra de tu memoria", "ya no recuerdes"],
         ["listar_recuerdos"] = ["que sabes de mi", "que recuerdas", "que tienes guardado", "tu memoria"],
+        ["buscar_en_documentos"] = ["mis apuntes", "mis documentos", "en mis archivos", "segun mis", "busca en mis", "que dicen mis", "en el temario"],
+        ["indexar_documentos"] = ["indexa", "indexar", "actualiza el indice", "lee mis documentos", "vuelve a leer"],
+        ["resumir_documento"] = ["resume el documento", "resumeme", "hazme un resumen", "resumen de", "de que trata"],
+        ["comparar_documentos"] = ["compara", "comparar", "diferencias entre", "en que se parecen"],
         ["buscar_en_web"] = ["busca en google", "busca en internet", "busca en youtube", "googlea", "en google", "en youtube", "wikipedia", "maps", "mapa", "traduce", "como llego"],
     };
 }

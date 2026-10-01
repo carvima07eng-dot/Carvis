@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Carvis.App.Platform;
 using Carvis.App.Services;
@@ -41,6 +42,8 @@ public partial class MainWindow : Window
         ApplyBackdrop(settings.Backdrop);
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DropEvent, OnDrop);
         PromptBox.AddHandler(KeyDownEvent, OnPromptKeyDown, RoutingStrategies.Tunnel);
         TitleBar.PointerPressed += OnTitleBarPointerPressed;
         MessagesScroll.PropertyChanged += OnMessagesScrollPropertyChanged;
@@ -243,6 +246,38 @@ public partial class MainWindow : Window
 
         await Clipboard.SetTextAsync(message.Content);
         await message.ShowCopiedAsync();
+    }
+
+    private void OnDragOver(object? sender, DragEventArgs e) =>
+        e.DragEffects = e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+
+    // Files dropped on the window are attached to the next message.
+    private void OnDrop(object? sender, DragEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel || e.DataTransfer.TryGetFiles() is not { } files)
+            return;
+        foreach (var file in files)
+        {
+            if (file.TryGetLocalPath() is { } path)
+                viewModel.AttachFile(path);
+        }
+        PromptBox.Focus();
+    }
+
+    private async void OnAttachClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+            return;
+        var files = await StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+        {
+            Title = "Adjuntar archivos",
+            AllowMultiple = true,
+        });
+        foreach (var file in files)
+        {
+            if (file.TryGetLocalPath() is { } path)
+                viewModel.AttachFile(path);
+        }
     }
 
     private void OnModelFlyoutOpening(object? sender, EventArgs e)

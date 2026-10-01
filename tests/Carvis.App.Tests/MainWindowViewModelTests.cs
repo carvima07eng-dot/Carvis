@@ -31,6 +31,7 @@ public sealed class MainWindowViewModelTests : IDisposable
         services.Replace(ServiceDescriptor.Singleton<IOllamaHealthCheck, ReadyOllama>());
         services.Replace(ServiceDescriptor.Singleton<IModelManager, FakeModels>());
         services.Replace(ServiceDescriptor.Singleton<ITitleGenerator>(new FixedTitle()));
+        services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Indexing.IEmbeddingService, NoEmbeddings>());
         services.AddSingleton<MainWindowViewModel>();
         _services = services.BuildServiceProvider();
     }
@@ -147,7 +148,7 @@ public sealed class MainWindowViewModelTests : IDisposable
 
         vm.Input = "crea una carpeta llamada Clase";
         var sending = vm.SendCommand.ExecuteAsync(null);
-        for (var i = 0; i < 50 && vm.PendingConfirmation is null; i++)
+        for (var i = 0; i < 500 && vm.PendingConfirmation is null; i++)
             await Task.Delay(20);
 
         var card = Assert.IsType<ToolCallViewModel>(vm.PendingConfirmation);

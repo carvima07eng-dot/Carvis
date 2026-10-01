@@ -34,8 +34,20 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<INotifier, NullNotifier>();
 
         services.TryAddSingleton<IUserFolders, UserFolders>();
+        services.AddSingleton(settings.Documents);
         services.AddSingleton<IDocumentReader, TextDocumentReader>();
+        services.AddSingleton<IDocumentReader, PdfDocumentReader>();
+        services.AddSingleton<IDocumentReader, DocxDocumentReader>();
+        services.AddSingleton<IDocumentReader, XlsxDocumentReader>();
+        services.AddSingleton<IDocumentReader, PptxDocumentReader>();
+        services.AddSingleton<IDocumentReader, ImageDocumentReader>();
         services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
+        services.AddSingleton<DocumentIndex>();
+        services.AddSingleton<DocumentIndexer>();
+        services.AddSingleton<IIndexService>(sp => sp.GetRequiredService<DocumentIndexer>());
+        services.AddSingleton<IChatContextProvider, RagContextProvider>();
+        services.AddSingleton<IAttachmentContextBuilder, AttachmentContextBuilder>();
+        services.AddSingleton<IDocumentSummarizer, DocumentSummarizer>();
         services.AddSingleton<IChatContextProvider, SystemContextProvider>();
         services.AddSingleton<IChatContextProvider, MemoryContextProvider>();
 

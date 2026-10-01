@@ -51,3 +51,13 @@ internal sealed class FakeModels : IModelManager
     public Task PullAsync(string model, IProgress<(string Status, double Progress)>? progress = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task UnloadAsync(string model, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }
+
+/// <summary>No embedding model: the app must work with keywords only (and tests stay offline).</summary>
+internal sealed class NoEmbeddings : Carvis.Core.Indexing.IEmbeddingService
+{
+    public Task<float[]> EmbedAsync(string text, Carvis.Core.Indexing.EmbeddingPurpose purpose, CancellationToken cancellationToken = default) =>
+        throw new HttpRequestException("sin modelo de embeddings");
+
+    public Task<IReadOnlyList<float[]>> EmbedManyAsync(IReadOnlyList<string> texts, Carvis.Core.Indexing.EmbeddingPurpose purpose, CancellationToken cancellationToken = default) =>
+        throw new HttpRequestException("sin modelo de embeddings");
+}

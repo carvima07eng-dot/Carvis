@@ -30,8 +30,11 @@ public sealed class OllamaSettings
     public string BaseUrl { get; set; } = "http://localhost:11434";
     public string ChatModel { get; set; } = "qwen3:8b";
 
-    /// <summary>Used from phase 2 (document indexing).</summary>
+    /// <summary>Turns documents into vectors for searching them.</summary>
     public string EmbeddingModel { get; set; } = "nomic-embed-text";
+
+    /// <summary>Model for questions about images and screenshots.</summary>
+    public string VisionModel { get; set; } = "qwen2.5vl:7b";
 
     /// <summary>qwen3 can "think" before answering; off by default for snappier replies.</summary>
     public bool EnableThinking { get; set; }
