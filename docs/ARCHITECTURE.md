@@ -88,7 +88,7 @@ Con **Ajustes → Permisos → Plugins** activado, Carvis carga al arrancar las 
 
 ## Visión
 
-`ScreenCaptureService` (App) oculta la ventana, captura con GDI (`ScreenGrabber`), deja elegir zona (`RegionSelectWindow`) y devuelve un PNG. Las imágenes van en `ChatInput.Images`; `ChatService` usa entonces `VisionModel` con `KeepAlive` corto y no reenvía imágenes antiguas. `ver_pantalla` hace lo mismo como herramienta mediante `IVisionService`.
+`ScreenCaptureService` (App) oculta la ventana, captura con GDI (`ScreenGrabber`), deja elegir zona (`RegionSelectWindow`) y devuelve un PNG. Las imágenes van en `ChatInput.Images`; `ChatService` usa entonces `VisionModel` con `VisionKeepAlive` (0: se descarga al responder), recarga después el modelo de chat en segundo plano y no reenvía imágenes antiguas. Si `VisionModel` y `ChatModel` son el mismo modelo multimodal, no se descarga nada. Más detalles en [PERFORMANCE.md](PERFORMANCE.md). `ver_pantalla` hace lo mismo como herramienta mediante `IVisionService`.
 
 ## Publicación
 
