@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Carvis.App.Configuration;
+using Carvis.App.Platform;
 using Carvis.App.Services;
 using Carvis.App.ViewModels;
 using Carvis.App.Views;
@@ -18,6 +19,9 @@ namespace Carvis.App;
 
 public partial class App : Application
 {
+    /// <summary>Starts in the tray; used by "Iniciar con Windows".</summary>
+    public const string StartHiddenArgument = "--hidden";
+
     private ServiceProvider? _services;
     private MainWindow? _window;
     private MainWindowViewModel? _viewModel;
@@ -46,7 +50,9 @@ public partial class App : Application
             StartHotkey(settings);
             CreateTrayIcon(_viewModel.HotkeyText);
 
-            if (!settings.Window.StartHidden)
+            // Launched by "Iniciar con Windows": stay in the tray.
+            var startHidden = settings.Window.StartHidden || desktop.Args?.Contains(StartHiddenArgument) == true;
+            if (!startHidden)
                 Dispatcher.UIThread.Post(ShowWindow);
 
             _ = _viewModel.CheckStatusAsync();
@@ -90,12 +96,26 @@ public partial class App : Application
         var open = new NativeMenuItem("Abrir");
         open.Click += (_, _) => ShowWindow();
 
+        var newConversation = new NativeMenuItem("Nueva conversación");
+        newConversation.Click += (_, _) =>
+        {
+            if (_viewModel?.NewConversationCommand.CanExecute(null) == true)
+                _viewModel.NewConversationCommand.Execute(null);
+            ShowWindow();
+        };
+
         var exit = new NativeMenuItem("Salir");
         exit.Click += (_, _) => Exit();
 
         var menu = new NativeMenu();
         menu.Items.Add(open);
+        menu.Items.Add(newConversation);
         menu.Items.Add(new NativeMenuItemSeparator());
+        if (OperatingSystem.IsWindows())
+        {
+            menu.Items.Add(CreateStartupMenuItem());
+            menu.Items.Add(new NativeMenuItemSeparator());
+        }
         menu.Items.Add(exit);
 
         _trayIcon = new TrayIcon
@@ -108,6 +128,22 @@ public partial class App : Application
         _trayIcon.Clicked += (_, _) => ShowWindow();
 
         TrayIcon.SetIcons(this, [_trayIcon]);
+    }
+
+    [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+    private static NativeMenuItem CreateStartupMenuItem()
+    {
+        var item = new NativeMenuItem("Iniciar con Windows")
+        {
+            ToggleType = NativeMenuItemToggleType.CheckBox,
+            IsChecked = WindowsStartup.IsEnabled(),
+        };
+        item.Click += (_, _) =>
+        {
+            WindowsStartup.SetEnabled(!item.IsChecked);
+            item.IsChecked = WindowsStartup.IsEnabled();
+        };
+        return item;
     }
 
     private void Cleanup()
