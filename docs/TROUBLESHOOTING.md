@@ -1,17 +1,17 @@
 # Solución de problemas
 
-**Los logs** están en `%LocalAppData%\Carvis\logs` (uno por día). Para incluir el texto de los mensajes, activa en Ajustes → Privacidad el modo depuración y vuelve a probar.
+**Los logs** están en `%LocalAppData%\Carvis\logs` (uno por día). Para incluir el texto de los mensajes, activa *Incluir el texto de los mensajes* en Ajustes → Privacidad y vuelve a probar (desactívalo después). El botón **Carpeta de registros → Abrir** te lleva a la carpeta.
 
 ## Ollama
 
 | Síntoma | Solución |
 |---|---|
 | «Sin conexión» abajo | Abre Ollama (icono en la bandeja) o ejecuta `ollama serve`. Carvis vuelve a intentarlo solo cada 20 s, o pulsa **Reintentar**. |
-| «Falta el modelo» | `ollama pull qwen3:8b` o Ajustes → Modelo → Descargar. |
+| «Falta el modelo» | `ollama pull qwen3:8b` o Ajustes → Modelo de IA → Descargar. |
 | La primera respuesta tarda mucho | Es la carga del modelo en la gráfica. Sube «Mantener el modelo cargado» (por ejemplo `2h` o `-1`). |
-| Va muy lento / aviso «no cabe en la gráfica» | Escribe `/gpu`. Si sale menos del 100 % en GPU: cierra juegos o programas que usen la gráfica, `/liberar`, baja la ventana de contexto, usa **Optimizar Ollama** (Ajustes → Modelo) y reinicia Ollama. Actualiza el driver de NVIDIA. |
-| Responde pero no hace las acciones | Comprueba que el modelo admite herramientas (`qwen3` sí). Ajustes → Asistente → herramientas activadas. Sé concreto («crea una carpeta llamada X en el escritorio»). |
-| Ollama está en otro PC | Cambia la dirección en Ajustes → Modelo. Carvis avisará de que tus conversaciones salen de este equipo. |
+| Va muy lento / aviso «no cabe en la gráfica» | Escribe `/gpu`. Si sale menos del 100 % en GPU: cierra juegos o programas que usen la gráfica, `/liberar`, baja la ventana de contexto, usa **Ahorrar memoria de la gráfica** (Ajustes → Modelo de IA) y reinicia Ollama. Actualiza el driver de NVIDIA. |
+| Responde pero no hace las acciones | Comprueba que el modelo admite herramientas (`qwen3` sí). Mira que esté activado *Dejar que Carvis haga cosas en el PC* (Ajustes → Permisos). Sé concreto («crea una carpeta llamada X en el escritorio»). |
+| Ollama está en otro PC | Cambia la dirección en Ajustes → Modelo de IA. Carvis avisará de que tus conversaciones salen de este equipo. |
 
 ## Atajos
 

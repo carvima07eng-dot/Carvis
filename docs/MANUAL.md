@@ -17,7 +17,7 @@ Todo se puede cambiar después en **Ajustes** (rueda dentada, Ctrl+, o el icono 
 
 - **Alt+Espacio** la muestra u oculta. Esc la minimiza (o la oculta en modo Spotlight).
 - La caja de abajo es para escribir. **Enter** envía, **Shift+Enter** hace una línea nueva, **↑** recupera lo último que enviaste.
-- Junto a la caja: 📎 adjuntar archivos, ⛶ captura de pantalla, 🎤 hablar (si la voz está activada).
+- Junto a la caja están los botones de adjuntar archivos (clip), captura de pantalla y micrófono (si la voz está activada).
 - Abajo: el modelo (clic para cambiarlo), la velocidad de la última respuesta, la memoria de la gráfica en uso y el estado del indexado.
 - Cada respuesta tiene **Copiar**, y la última **Regenerar**; tu último mensaje se puede **Editar**.
 - El reloj de arriba abre el **historial**: buscar, fijar, renombrar, exportar a Markdown o borrar conversaciones. `/exportar` guarda la actual en Documentos\Carvis\Conversaciones.
@@ -47,7 +47,7 @@ Por seguridad Carvis solo trabaja dentro de tu carpeta de usuario (o de las carp
 | Notas y tareas | «apunta que la contraseña del wifi está en la pizarra», «añade la tarea entregar la práctica el viernes», «¿qué tengo pendiente?», «ya he hecho la tarea 3» |
 | Cálculos | «¿cuánto es 1250 × 1,21?», «el 15 % de 80», «10 millas en km», «¿cuántos días faltan para el 25 de diciembre?», «¿qué hora es en Tokio?» |
 | Memoria | «recuerda que estudio 2º de DAM», «¿qué sabes de mí?», «olvida lo del coche» |
-| PowerShell | lo que no cubren las demás; siempre ves el script entero antes de aceptarlo |
+| PowerShell (Experimental) | lo que no cubren las demás; siempre ves el script entero antes de aceptarlo y lo peligroso se bloquea |
 
 Los recordatorios avisan con una notificación y un sonido aunque la ventana esté cerrada (Carvis tiene que estar en marcha en la bandeja). Si el PC estaba apagado, avisan al encenderlo, indicando que llegan tarde.
 
@@ -55,11 +55,11 @@ Los recordatorios avisan con una notificación y un sonido aunque la ventana est
 
 En **Ajustes → Documentos** eliges las carpetas. Carvis lee PDF, Word, Excel, PowerPoint, texto, Markdown, CSV, HTML y RTF; las imágenes y los PDF escaneados con OCR de Windows. Se actualiza solo cuando cambian los archivos.
 
-Pregunta normalmente («¿qué dicen mis apuntes sobre el modelo OSI?»): la respuesta cita las fuentes [1], [2]… y debajo aparecen los archivos con la página; clic para abrirlos. También puedes **adjuntar** un archivo (📎 o arrastrándolo) para preguntar solo sobre él, y pedir «resume este documento» o «compara estos dos».
+Pregunta normalmente («¿qué dicen mis apuntes sobre el modelo OSI?»): la respuesta cita las fuentes [1], [2]… y debajo aparecen los archivos con la página; clic para abrirlos. También puedes **adjuntar** un archivo (con el clip o arrastrándolo) para preguntar solo sobre él, y pedir «resume este documento» o «compara estos dos».
 
 ## Voz
 
-1. **Ajustes → Voz y pantalla → Activar la voz**.
+1. **Ajustes → Voz → Activar la voz**.
 2. **Descargar modelos de voz** (Whisper para entender, Piper y una voz en español para hablar; entre 100 MB y 1,6 GB según la precisión elegida).
 3. Prueba el micrófono y la voz con los botones.
 
@@ -71,7 +71,7 @@ Todo el audio se procesa en tu PC. Whisper usa la gráfica mediante Vulkan (bast
 
 ## Pantalla e imágenes
 
-- **Ctrl+Alt+S** o el botón ⛶ → **Elegir una zona**: arrastra con el ratón (Intro = pantalla completa, Esc = cancelar). También **Pantalla completa** o **Ventana activa**.
+- **Ctrl+Alt+S** o el botón de captura → **Elegir una zona**: arrastra con el ratón (Intro = pantalla completa, Esc = cancelar). También **Pantalla completa** o **Ventana activa**.
 - **Ctrl+V** en la caja pega una imagen copiada; también puedes arrastrar imágenes.
 - La imagen aparece encima de la caja; escribe la pregunta («¿qué significa este error?») o envíala tal cual.
 - Hace falta el modelo de visión: `ollama pull qwen2.5vl:7b`. Tras usarlo se descarga de la gráfica en 2 minutos para dejar sitio al de chat.
@@ -90,6 +90,27 @@ Todo el audio se procesa en tu PC. Whisper usa la gráfica mediante Vulkan (bast
 | Documentos | Carpetas, exclusiones, tamaño máximo, indexar ahora, pausar, vaciar el índice |
 | Memoria | Ver y borrar lo que recuerda |
 | Privacidad | Cifrado, guardar conversaciones, actualizaciones, logs, **borrar todos mis datos** |
+
+## Experimental
+
+En **Ajustes → Experimental** están las funciones que van bien pero aún no están pulidas. Todas vienen apagadas.
+
+- **Escuchar siempre «Carvis»**, conversación seguida y cortar la voz si hablas.
+- **Pensar antes de responder** (modo razonamiento de qwen3): responde mejor a cosas difíciles, pero tarda más.
+- **Internet**: tiempo, divisas y búsqueda web con un SearXNG propio.
+- **PowerShell**: para lo que no cubren las demás herramientas. Ves el script entero antes de aceptarlo. Lo peligroso de verdad (formatear, borrar carpetas del sistema, descargar y ejecutar, desactivar Defender…) se bloquea, y lo delicado (borrados recursivos, registro…) sale en rojo con la explicación.
+- **Complementos**: DLL propias en `%AppData%\Carvis\plugins`.
+- **Servidores MCP**: añaden herramientas de otros programas.
+  1. Activa *Servidores MCP*.
+  2. Abajo escribe un nombre y elige el tipo:
+     - **stdio**, si Carvis tiene que arrancar el programa (por ejemplo `npx -y @modelcontextprotocol/server-filesystem "C:\Mis apuntes"`);
+     - **http**, si el servidor ya está funcionando (por ejemplo `http://localhost:3001/mcp`).
+  3. Elige el permiso:
+     - **Preguntar siempre**: confirmas cada acción.
+     - **Lecturas sin preguntar**: solo las herramientas que el servidor marca como de solo lectura se ejecutan sin preguntar.
+  4. Guarda y reinicia Carvis. Debajo de la lista verás si cada servidor se ha conectado y cuántas herramientas tiene.
+
+  Un servidor MCP es un programa de otra persona y funciona con tus permisos: añade solo los que conozcas. Lo que devuelve se trata como origen externo.
 
 ## Privacidad
 
