@@ -142,7 +142,11 @@ public class AppMatcherTests
 {
     private static readonly AppEntry[] Apps =
     [
-        new("Spotify", "s"), new("Google Chrome", "c"), new("Notepad", "n"), new("Visual Studio Code", "v"), new("Microsoft Word", "w"),
+        new("Spotify", "s"),
+        new("Google Chrome", "c"),
+        new("Notepad", "n"),
+        new("Visual Studio Code", "v"),
+        new("Microsoft Word", "w"),
     ];
 
     [Theory]

@@ -1,0 +1,120 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Carvis.App.ViewModels"
+        x:Class="Carvis.App.Views.OnboardingWindow"
+        x:DataType="vm:OnboardingViewModel"
+        Title="Bienvenido a Carvis"
+        Icon="/Assets/carvis.ico"
+        Width="620" Height="520" CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="#0B1220"
+        FontFamily="{StaticResource CarvisFont}">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+    <Style Selector="TextBlock.text">
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="LineHeight" Value="22" />
+    </Style>
+    <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="Foreground" Value="#0B1220" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel Margin="32,28">
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,Auto" Margin="0,16,0,0">
+      <TextBlock Text="{Binding StepText}" VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" />
+      <Button Grid.Column="1" Content="Atrás" Margin="0,0,8,0" IsVisible="{Binding CanGoBack}" Command="{Binding BackCommand}" />
+      <Button Grid.Column="2" Classes="primary" Content="{Binding NextLabel}" Command="{Binding NextCommand}" MinWidth="110" />
+    </Grid>
+
+    <Panel>
+      <!-- 0: welcome -->
+      <StackPanel IsVisible="{Binding IsStep0}" Spacing="10">
+        <Image Source="/Assets/carvis.png" Width="64" Height="64" HorizontalAlignment="Left" />
+        <TextBlock Classes="title" Text="Hola, soy Carvis" />
+        <TextBlock Classes="text" Text="Soy un asistente que funciona entero en tu PC: puedo conversar, buscar en tus documentos y hacer cosas por ti (crear carpetas, abrir programas, poner recordatorios...). Siempre te pregunto antes de cambiar algo." />
+        <TextBlock Classes="text" Text="¿Cómo quieres que te llame?" Margin="0,12,0,0" />
+        <TextBox Text="{Binding UserName}" />
+      </StackPanel>
+
+      <!-- 1: Ollama -->
+      <StackPanel IsVisible="{Binding IsStep1}" Spacing="10">
+        <TextBlock Classes="title" Text="Ollama" />
+        <TextBlock Classes="text" Text="Ollama es el programa gratuito que ejecuta los modelos de IA en tu tarjeta gráfica. Carvis lo necesita abierto." />
+        <TextBlock Text="{Binding OllamaStatus}" FontWeight="SemiBold" Margin="0,8" />
+        <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding !IsOllamaRunning}">
+          <Button Content="Instalar con winget" Command="{Binding InstallOllamaWithWingetCommand}" IsVisible="{Binding IsWindows}" />
+          <Button Content="Descargar desde ollama.com" Command="{Binding OpenOllamaDownloadCommand}" />
+        </StackPanel>
+        <Button Content="Comprobar de nuevo" Command="{Binding CheckCommand}" />
+      </StackPanel>
+
+      <!-- 2: models -->
+      <StackPanel IsVisible="{Binding IsStep2}" Spacing="10">
+        <TextBlock Classes="title" Text="Modelos" />
+        <TextBlock Classes="text" Text="Descarga los modelos una sola vez. Después todo funciona sin Internet." />
+        <ItemsControl ItemsSource="{Binding Models}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ModelSetupViewModel">
+              <Border Background="#111A2B" CornerRadius="10" Padding="14,10" Margin="0,6">
+                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Grid.Row="1" Text="{Binding Purpose}" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                  <TextBlock Grid.Column="1" Text="{Binding StateText}" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Grid.Row="1" Content="Descargar" HorizontalAlignment="Right" IsVisible="{Binding !IsInstalled}"
+                          Command="{Binding $parent[Window].((vm:OnboardingViewModel)DataContext).DownloadCommand}" CommandParameter="{Binding}" />
+                  <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Margin="0,6,0,0" IsVisible="{Binding IsDownloading}">
+                    <ProgressBar Value="{Binding Progress}" />
+                    <TextBlock Text="{Binding Status}" FontSize="12" Foreground="{StaticResource TextMuted}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- 3: documents -->
+      <StackPanel IsVisible="{Binding IsStep3}" Spacing="10">
+        <TextBlock Classes="title" Text="Tus documentos (opcional)" />
+        <TextBlock Classes="text" Text="Si eliges carpetas, leeré sus PDF, Word, Excel y textos para responder preguntas sobre ellos. Puedes cambiarlo cuando quieras en Ajustes." />
+        <ItemsControl ItemsSource="{Binding DocumentFolders}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                <TextBlock Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="1" Content="Quitar"
+                        Command="{Binding $parent[Window].((vm:OnboardingViewModel)DataContext).RemoveDocumentFolderCommand}" CommandParameter="{Binding}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Añadir carpeta…" Click="OnAddFolderClick" />
+      </StackPanel>
+
+      <!-- 4: hotkey -->
+      <StackPanel IsVisible="{Binding IsStep4}" Spacing="10">
+        <TextBlock Classes="title" Text="Tu atajo" />
+        <TextBlock Classes="text" Text="Desde cualquier programa, abre Carvis con este atajo. Pruébalo ahora:" />
+        <TextBlock Text="{Binding HotkeyText}" FontSize="28" FontWeight="Bold" Foreground="{StaticResource Accent}" Margin="0,8" />
+        <TextBlock Text="✓ ¡Funciona!" IsVisible="{Binding HotkeyWorked}" FontWeight="SemiBold" Foreground="#34D399" />
+        <TextBlock Classes="text" IsVisible="{Binding !HotkeyWorked}"
+                   Text="Si al pulsarlo no pasa nada, puede que otro programa (como PowerToys Run) lo use. Puedes cambiarlo en Ajustes → General." />
+      </StackPanel>
+
+      <!-- 5: done -->
+      <StackPanel IsVisible="{Binding IsStep5}" Spacing="10">
+        <TextBlock Classes="title" Text="¡Listo!" />
+        <TextBlock Classes="text" Text="Algunas cosas que puedes pedirme:" />
+        <TextBlock Classes="text" Text="• «Créame una carpeta en el escritorio llamada Clase»&#10;• «Abre Spotify y pon la ventana a la izquierda»&#10;• «Recuérdame en 20 minutos que saque la ropa»&#10;• «¿Qué dicen mis apuntes sobre las clases abstractas?»&#10;• «Ordena la carpeta de descargas por tipo»&#10;• Escribe /ayuda para ver los comandos" />
+      </StackPanel>
+    </Panel>
+  </DockPanel>
+</Window>

@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Carvis.Core.Text;
 using Markdig;
 using Markdig.Extensions.Tables;
 using Markdig.Extensions.TaskLists;
@@ -114,15 +115,11 @@ internal static class MarkdownRenderer
                 return new Run($"[imagen: {image.Url}]") { Foreground = MutedBrush };
 
             case LinkInline link:
-                var linkSpan = new Span { Foreground = AccentBrush, TextDecorations = TextDecorations.Underline };
-                if (link.FirstChild is null)
-                    linkSpan.Inlines.Add(new Run(link.Url));
-                else
-                    AddInlines(linkSpan.Inlines, link);
-                return linkSpan;
+                var label = link.FirstChild is null ? link.Url ?? string.Empty : PlainText(link);
+                return Link(label, link.Url);
 
             case AutolinkInline autolink:
-                return new Run(autolink.Url) { Foreground = AccentBrush, TextDecorations = TextDecorations.Underline };
+                return Link(autolink.Url, autolink.IsEmail ? null : autolink.Url);
 
             case TaskList task:
                 return new Run(task.Checked ? "☑ " : "☐ ");
@@ -145,6 +142,60 @@ internal static class MarkdownRenderer
             default:
                 return new Run(inline.ToString());
         }
+    }
+
+    // Only web links open; anything else (file:, javascript:...) is shown as text.
+    private static Avalonia.Controls.Documents.Inline Link(string label, string? url)
+    {
+        if (url is null || !Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https"))
+            return new Run(label) { Foreground = AccentBrush };
+
+        var link = new HyperlinkButton
+        {
+            Content = new TextBlock { Text = label, Foreground = AccentBrush, TextDecorations = TextDecorations.Underline, FontSize = BodySize },
+            NavigateUri = uri,
+            Padding = new Thickness(0),
+            Margin = new Thickness(0),
+        };
+        ToolTip.SetTip(link, uri.AbsoluteUri);
+        return new InlineUIContainer(link) { BaselineAlignment = BaselineAlignment.TextBottom };
+    }
+
+    private static string PlainText(ContainerInline container) =>
+        string.Concat(container.Descendants<LiteralInline>().Select(l => l.Content.ToString()));
+
+    private static readonly IBrush KeywordBrush = Brush.Parse("#C792EA");
+    private static readonly IBrush StringBrush = Brush.Parse("#C3E88D");
+    private static readonly IBrush CommentBrush = Brush.Parse("#697098");
+    private static readonly IBrush NumberBrush = Brush.Parse("#F78C6C");
+    private static readonly IBrush TypeBrush = Brush.Parse("#82AAFF");
+
+    private static SelectableTextBlock HighlightedCode(string code, string? language)
+    {
+        var text = new SelectableTextBlock { FontFamily = Mono, FontSize = BodySize - 1, Foreground = TextBrush };
+        if (!CodeTokenizer.IsKnown(language))
+        {
+            text.Text = code;
+            return text;
+        }
+
+        foreach (var token in CodeTokenizer.Tokenize(code, language))
+        {
+            var run = new Run(token.Text);
+            run.Foreground = token.Kind switch
+            {
+                TokenKind.Keyword => KeywordBrush,
+                TokenKind.String => StringBrush,
+                TokenKind.Comment => CommentBrush,
+                TokenKind.Number => NumberBrush,
+                TokenKind.Type => TypeBrush,
+                _ => TextBrush,
+            };
+            if (token.Kind == TokenKind.Comment)
+                run.FontStyle = FontStyle.Italic;
+            text.Inlines!.Add(run);
+        }
+        return text;
     }
 
     private static Control CodeBox(CodeBlock block)
@@ -179,7 +230,7 @@ internal static class MarkdownRenderer
         {
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-            Content = new SelectableTextBlock { Text = code, FontFamily = Mono, FontSize = BodySize - 1, Foreground = TextBrush },
+            Content = HighlightedCode(code, language?.Split(' ')[0]),
         };
 
         var content = Stack(4);

@@ -29,6 +29,9 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IOllamaHealthCheck, OllamaHealthCheck>();
         services.AddSingleton<IChatModelClient, OllamaChatModelClient>();
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
+        services.AddSingleton<IModelManager, ModelManager>();
+        services.AddSingleton<ITitleGenerator, TitleGenerator>();
+        services.TryAddSingleton<INotifier, NullNotifier>();
 
         services.TryAddSingleton<IUserFolders, UserFolders>();
         services.AddSingleton<IDocumentReader, TextDocumentReader>();

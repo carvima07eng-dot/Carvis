@@ -9,10 +9,14 @@ internal static class Program
     private const string InstanceMutexName = "Carvis.SingleInstance";
     private const string ShowEventName = "Carvis.ShowWindow";
 
+    /// <summary>Passed when Carvis restarts itself: wait for the old instance to exit first.</summary>
+    public const string RestartArgument = "--restart";
+
     [STAThread]
     public static int Main(string[] args)
     {
-        using var mutex = new Mutex(initiallyOwned: true, InstanceMutexName, out var isFirstInstance);
+        using var mutex = new Mutex(initiallyOwned: false, InstanceMutexName);
+        var isFirstInstance = WaitForMutex(mutex, args.Contains(RestartArgument) ? TimeSpan.FromSeconds(15) : TimeSpan.Zero);
         if (!isFirstInstance)
         {
             // Carvis is already running (probably hidden in the tray): ask it to show itself.
@@ -43,6 +47,19 @@ internal static class Program
         {
             log.LogInformation("Carvis stopped");
             bootstrap.Log.Dispose();
+        }
+    }
+
+    private static bool WaitForMutex(Mutex mutex, TimeSpan timeout)
+    {
+        try
+        {
+            return mutex.WaitOne(timeout);
+        }
+        catch (AbandonedMutexException)
+        {
+            // The previous instance crashed: the mutex is ours now.
+            return true;
         }
     }
 

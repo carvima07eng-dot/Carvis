@@ -1,0 +1,245 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Carvis.App.ViewModels"
+        xmlns:storage="using:Carvis.Core.Storage"
+        x:Class="Carvis.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Ajustes de Carvis"
+        Icon="/Assets/carvis.ico"
+        Width="760" Height="640" MinWidth="560" MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="#0B1220"
+        FontFamily="{StaticResource CarvisFont}">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.label">
+      <Setter Property="Foreground" Value="{StaticResource TextSecondary}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,10,0,4" />
+    </Style>
+    <Style Selector="TextBlock.hint">
+      <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+      <Setter Property="Margin" Value="0,2,0,0" />
+    </Style>
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="0,4,0,4" />
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="Padding" Value="12,6" />
+    </Style>
+    <Style Selector="CheckBox">
+      <Setter Property="Margin" Value="0,6,0,0" />
+    </Style>
+    <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="Foreground" Value="#0B1220" />
+    </Style>
+    <Style Selector="Button.danger /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#7F1D1D" />
+      <Setter Property="Foreground" Value="#FECACA" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel>
+    <Border DockPanel.Dock="Bottom" Background="#0F1A2B" Padding="16,10">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{StaticResource TextSecondary}" />
+        <Button Grid.Column="1" Content="Cerrar" Margin="8,0" Click="OnCloseClick" />
+        <Button Grid.Column="2" Classes="primary" Content="Guardar" Command="{Binding SaveCommand}" />
+      </Grid>
+    </Border>
+
+    <TabControl TabStripPlacement="Left" Padding="20,8">
+      <TabItem Header="General">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="General" />
+            <TextBlock Classes="label" Text="Cómo quieres que te llame" />
+            <TextBox Text="{Binding Draft.Assistant.UserName}" Watermark="Tu nombre (si lo dejas vacío uso el de Windows)" />
+
+            <TextBlock Classes="label" Text="Atajo para mostrar u ocultar Carvis" />
+            <TextBox Text="{Binding Draft.Hotkey.ToggleWindow}" Watermark="Alt+Space" />
+            <TextBlock Classes="hint" Text="Ctrl, Alt, Shift o Win + una tecla. Ejemplos: Alt+Space, Ctrl+Shift+J, Win+F1. Si no funciona, puede que otro programa (PowerToys...) lo esté usando." />
+
+            <TextBlock Classes="label" Text="Tipo de ventana" />
+            <ComboBox ItemsSource="{Binding WindowModes}" SelectedIndex="{Binding WindowMode}" HorizontalAlignment="Stretch" />
+
+            <TextBlock Classes="label" Text="Fondo" />
+            <ComboBox ItemsSource="{Binding Backdrops}" SelectedItem="{Binding Draft.Window.Backdrop}" HorizontalAlignment="Stretch" />
+            <TextBlock Classes="hint" Text="Acrylic y Mica son translúcidos (Windows 11). Solid se lee mejor." />
+
+            <TextBlock Classes="label" Text="Tamaño de letra" />
+            <NumericUpDown Value="{Binding Draft.Window.FontSize}" Minimum="10" Maximum="28" Increment="1" FormatString="0" />
+
+            <CheckBox Content="Iniciar con Windows (oculto en la bandeja)" IsChecked="{Binding StartWithWindows}" IsVisible="{Binding IsWindows}" />
+            <CheckBox Content="Arrancar oculto en la bandeja" IsChecked="{Binding Draft.Window.StartHidden}" />
+            <CheckBox Content="Recordar la posición y el tamaño de la ventana" IsChecked="{Binding Draft.Window.RememberPosition}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Modelo">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="Modelo de IA (Ollama)" />
+            <TextBlock Classes="label" Text="Dirección de Ollama" />
+            <TextBox Text="{Binding Draft.Ollama.BaseUrl}" />
+
+            <TextBlock Classes="label" Text="Modelo de chat" />
+            <AutoCompleteBox Text="{Binding Draft.Ollama.ChatModel}" ItemsSource="{Binding InstalledModels}" FilterMode="Contains" MinimumPrefixLength="0" />
+            <TextBlock Classes="label" Text="Modelo de embeddings (documentos)" />
+            <AutoCompleteBox Text="{Binding Draft.Ollama.EmbeddingModel}" ItemsSource="{Binding InstalledModels}" FilterMode="Contains" MinimumPrefixLength="0" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,10,0,0">
+              <Button Content="Descargar modelo de chat" Command="{Binding DownloadModelCommand}" CommandParameter="{Binding Draft.Ollama.ChatModel}" />
+              <Button Content="Descargar embeddings" Command="{Binding DownloadModelCommand}" CommandParameter="{Binding Draft.Ollama.EmbeddingModel}" />
+            </StackPanel>
+            <ProgressBar Value="{Binding DownloadProgress}" IsVisible="{Binding IsDownloading}" Margin="0,8,0,0" />
+            <TextBlock Classes="hint" Text="{Binding DownloadStatus}" />
+
+            <TextBlock Classes="label" Text="Ventana de contexto (tokens)" />
+            <NumericUpDown Value="{Binding Draft.Ollama.ContextLength}" Minimum="2048" Maximum="131072" Increment="2048" FormatString="0" />
+            <TextBlock Classes="hint" Text="Más contexto recuerda conversaciones más largas pero usa más memoria de la GPU. 16384 va bien con 12 GB." />
+
+            <TextBlock Classes="label" Text="{Binding Draft.Ollama.Temperature, StringFormat='Creatividad: {0:0.0}'}" />
+            <Slider Value="{Binding Draft.Ollama.Temperature}" Minimum="0" Maximum="1.5" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+
+            <CheckBox Content="Pensar antes de responder (qwen3, más lento)" IsChecked="{Binding Draft.Ollama.EnableThinking}" />
+
+            <TextBlock Classes="label" Text="Mantener el modelo cargado" />
+            <TextBox Text="{Binding Draft.Ollama.KeepAlive}" />
+            <TextBlock Classes="hint" Text="Ejemplos: 30m, 2h, -1 (siempre). Mientras está cargado, la primera respuesta es inmediata." />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Asistente">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="Comportamiento" />
+            <TextBlock Classes="label" Text="Instrucciones para Carvis" />
+            <TextBox Text="{Binding Draft.Assistant.SystemPrompt}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="110" />
+            <CheckBox Content="Permitir que Carvis actúe en el PC (herramientas)" IsChecked="{Binding Draft.Assistant.EnableTools}" />
+            <TextBlock Classes="label" Text="Pasos máximos por respuesta" />
+            <NumericUpDown Value="{Binding Draft.Assistant.MaxToolSteps}" Minimum="1" Maximum="20" FormatString="0" />
+            <TextBlock Classes="label" Text="Mensajes de la conversación que se envían al modelo" />
+            <NumericUpDown Value="{Binding Draft.Assistant.MaxHistoryMessages}" Minimum="4" Maximum="200" FormatString="0" />
+            <TextBlock Classes="hint" Text="Lo más antiguo se resume automáticamente para que no se pierda." />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Permisos">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="Qué puede hacer Carvis" />
+            <CheckBox Content="Preguntarme antes de crear, mover o renombrar archivos" IsChecked="{Binding Draft.Permissions.ConfirmChanges}" />
+            <CheckBox Content="Preguntarme también antes de abrir programas o páginas web" IsChecked="{Binding Draft.Permissions.ConfirmLowRisk}" />
+            <TextBlock Classes="hint" Text="Borrar, sobrescribir, ejecutar scripts o apagar el PC siempre se confirma." />
+            <CheckBox Content="Permitir herramientas que usan Internet (tiempo, divisas, búsqueda web)" IsChecked="{Binding Draft.Permissions.AllowInternet}" />
+
+            <TextBlock Classes="label" Text="Carpetas en las que puede trabajar" />
+            <TextBlock Classes="hint" Text="Si la lista está vacía, puede trabajar en toda tu carpeta personal (excepto AppData). Nunca toca Windows ni Archivos de programa." />
+            <ItemsControl ItemsSource="{Binding AllowedFolders}" Margin="0,6">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                    <TextBlock Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="1" Content="Quitar"
+                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveAllowedFolderCommand}" CommandParameter="{Binding}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="Añadir carpeta…" Click="OnAddAllowedFolderClick" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Documentos">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="Tus documentos" />
+            <TextBlock Classes="hint" Text="Carvis lee los documentos de estas carpetas (PDF, Word, Excel, PowerPoint, texto...) para responder preguntas sobre ellos citando de dónde saca cada dato. Todo se queda en tu PC." />
+            <ItemsControl ItemsSource="{Binding DocumentFolders}" Margin="0,8">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                    <TextBlock Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <Button Grid.Column="1" Content="Quitar"
+                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveDocumentFolderCommand}" CommandParameter="{Binding}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="Añadir carpeta…" Click="OnAddDocumentFolderClick" />
+            <CheckBox Content="Actualizar el índice cuando cambien los archivos" IsChecked="{Binding Draft.Documents.WatchChanges}" />
+            <TextBlock Classes="label" Text="Tamaño máximo por archivo (MB)" />
+            <NumericUpDown Value="{Binding Draft.Documents.MaxFileSizeMb}" Minimum="1" Maximum="500" FormatString="0" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Memoria">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Classes="section" Text="Lo que Carvis recuerda de ti" />
+            <TextBlock Classes="hint" Text="Se guarda cuando le cuentas algo o le pides que lo recuerde. Puedes borrar lo que quieras." />
+            <ItemsControl ItemsSource="{Binding Memories}" Margin="0,8">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="storage:MemoryItem">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Olvidar" Margin="8,0,0,0"
+                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).DeleteMemoryCommand}" CommandParameter="{Binding}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="Olvidarlo todo" Command="{Binding ClearMemoriesCommand}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Privacidad">
+        <ScrollViewer>
+          <StackPanel MaxWidth="520" HorizontalAlignment="Left" Spacing="4">
+            <TextBlock Classes="section" Text="Privacidad y datos" />
+            <TextBlock Classes="hint" Text="Todo funciona en tu PC: Carvis no envía nada a Internet salvo que actives las herramientas que lo necesitan." />
+            <CheckBox Content="Guardar las conversaciones para poder volver a ellas" IsChecked="{Binding Draft.Privacy.SaveConversations}" />
+            <CheckBox Content="Cifrar conversaciones y recuerdos con mi cuenta de Windows" IsChecked="{Binding Draft.Privacy.EncryptData}" />
+            <CheckBox Content="Incluir el contenido de los mensajes en el log (solo para depurar)" IsChecked="{Binding Draft.Logging.IncludeContent}" />
+            <TextBlock Classes="label" Text="{Binding DataFolder, StringFormat='Tus datos están en {0}'}" TextWrapping="Wrap" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Button Content="Abrir carpeta de datos" Command="{Binding OpenDataFolderCommand}" />
+              <Button Content="Abrir logs" Command="{Binding OpenLogsCommand}" />
+            </StackPanel>
+            <Button Classes="danger" Content="{Binding DeleteDataLabel}" Command="{Binding DeleteAllDataCommand}" Margin="0,16,0,0" />
+            <Button Content="Restablecer los ajustes de fábrica" Command="{Binding ResetToDefaultsCommand}" />
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
+      <TabItem Header="Acerca de">
+        <StackPanel Spacing="8" MaxWidth="520" HorizontalAlignment="Left">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <Image Source="/Assets/carvis.png" Width="48" Height="48" />
+            <StackPanel VerticalAlignment="Center">
+              <TextBlock Text="Carvis" FontSize="20" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Version, StringFormat='Versión {0}'}" Foreground="{StaticResource TextSecondary}" />
+            </StackPanel>
+          </StackPanel>
+          <TextBlock Classes="hint" Text="Asistente de IA local para Windows. Usa modelos que se ejecutan en tu PC con Ollama." />
+          <HyperlinkButton Content="Código en GitHub" NavigateUri="https://github.com/carvima07eng-dot/Carvis" />
+          <HyperlinkButton Content="Ollama" NavigateUri="https://ollama.com" />
+        </StackPanel>
+      </TabItem>
+    </TabControl>
+  </DockPanel>
+</Window>

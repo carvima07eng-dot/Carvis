@@ -17,13 +17,26 @@ public sealed class UserFolders : IUserFolders
 
     private static readonly Dictionary<string, string> Aliases = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["escritorio"] = "Escritorio", ["desktop"] = "Escritorio",
-        ["documentos"] = "Documentos", ["mis documentos"] = "Documentos", ["documents"] = "Documentos",
-        ["descargas"] = "Descargas", ["downloads"] = "Descargas",
-        ["imágenes"] = "Imágenes", ["imagenes"] = "Imágenes", ["fotos"] = "Imágenes", ["pictures"] = "Imágenes",
-        ["música"] = "Música", ["musica"] = "Música", ["music"] = "Música",
-        ["vídeos"] = "Vídeos", ["videos"] = "Vídeos",
-        ["perfil"] = "Perfil", ["carpeta personal"] = "Perfil", ["home"] = "Perfil", ["~"] = "Perfil",
+        ["escritorio"] = "Escritorio",
+        ["desktop"] = "Escritorio",
+        ["documentos"] = "Documentos",
+        ["mis documentos"] = "Documentos",
+        ["documents"] = "Documentos",
+        ["descargas"] = "Descargas",
+        ["downloads"] = "Descargas",
+        ["imágenes"] = "Imágenes",
+        ["imagenes"] = "Imágenes",
+        ["fotos"] = "Imágenes",
+        ["pictures"] = "Imágenes",
+        ["música"] = "Música",
+        ["musica"] = "Música",
+        ["music"] = "Música",
+        ["vídeos"] = "Vídeos",
+        ["videos"] = "Vídeos",
+        ["perfil"] = "Perfil",
+        ["carpeta personal"] = "Perfil",
+        ["home"] = "Perfil",
+        ["~"] = "Perfil",
     };
 
     public UserFolders(IReadOnlyDictionary<string, string>? folders = null)

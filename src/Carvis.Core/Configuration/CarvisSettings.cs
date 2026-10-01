@@ -10,6 +10,7 @@ public sealed class CarvisSettings
     public LoggingSettings Logging { get; set; } = new();
     public PermissionsSettings Permissions { get; set; } = new();
     public PrivacySettings Privacy { get; set; } = new();
+    public DocumentsSettings Documents { get; set; } = new();
 
     /// <summary>The first-run assistant has been completed.</summary>
     public bool FirstRunCompleted { get; set; }
@@ -115,4 +116,24 @@ public sealed class PermissionsSettings
 
     /// <summary>Tools that need Internet (weather, currencies, web search) stay off unless this is on.</summary>
     public bool AllowInternet { get; set; }
+
+    /// <summary>Load extra tools from %AppData%\Carvis\plugins. Only for plugins you trust.</summary>
+    public bool EnablePlugins { get; set; }
+}
+
+public sealed class DocumentsSettings
+{
+    /// <summary>Folders whose documents Carvis indexes to answer questions about them.</summary>
+    public List<string> Folders { get; set; } = [];
+
+    /// <summary>Folder names skipped while indexing.</summary>
+    public List<string> ExcludedFolders { get; set; } = ["node_modules", ".git", "bin", "obj", ".vs", "__pycache__"];
+
+    public int MaxFileSizeMb { get; set; } = 50;
+
+    /// <summary>Re-index changed files automatically while Carvis runs.</summary>
+    public bool WatchChanges { get; set; } = true;
+
+    /// <summary>How many document fragments go into the answer.</summary>
+    public int ResultsPerQuestion { get; set; } = 6;
 }

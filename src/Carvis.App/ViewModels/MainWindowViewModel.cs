@@ -3,6 +3,7 @@ using Carvis.Core.Chat;
 using Carvis.Core.Configuration;
 using Carvis.Core.Input;
 using Carvis.Core.Ollama;
+using Carvis.Core.Storage;
 using Carvis.Core.Tools;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,6 +16,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IOllamaHealthCheck _healthCheck;
     private readonly IActionJournal _journal;
     private readonly ToolPolicy _policy;
+    private readonly IConversationStore _conversations;
+    private readonly ITitleGenerator _titles;
+    private readonly IModelManager _models;
+    private readonly IMemoryStore _memories;
+    private readonly SettingsStore _settingsStore;
+    private readonly CarvisSettings _settings;
     private CancellationTokenSource? _sendCancellation;
     private bool _isModelLoaded;
     private string? _lastSentMessage;
@@ -25,20 +32,49 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         CarvisSettings settings,
         IActionJournal journal,
         ToolPolicy policy,
-        ToolConfirmationBroker confirmations)
+        ToolConfirmationBroker confirmations,
+        IConversationStore conversations,
+        ITitleGenerator titles,
+        IModelManager models,
+        IMemoryStore memories,
+        SettingsStore settingsStore)
     {
         _chat = chat;
         _healthCheck = healthCheck;
         _journal = journal;
         _policy = policy;
-        ModelName = settings.Ollama.ChatModel;
+        _conversations = conversations;
+        _titles = titles;
+        _models = models;
+        _memories = memories;
+        _settingsStore = settingsStore;
+        _settings = settings;
+        _modelName = settings.Ollama.ChatModel;
+
+        History = new ConversationListViewModel(conversations);
+        History.OpenRequested += item => OpenConversation(item.Id);
+        History.Deleted += id =>
+        {
+            if (id == CurrentConversationId)
+                NewConversation();
+        };
+        _chat.TurnCommitted += OnTurnCommitted;
+        _chat.SummaryUpdated += summary =>
+        {
+            if (CurrentConversationId is not null)
+                _conversations.SetSummary(CurrentConversationId, summary);
+        };
 
         HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture);
         HotkeyText = ToDisplay(gesture);
         DismissHint = settings.Window.HideOnFocusLost ? "Esc ocultar" : "Esc minimizar";
 
         confirmations.Handler = ConfirmAsync;
-        Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
+        Items.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasMessages));
+            OnPropertyChanged(nameof(ShowConversation));
+        };
     }
 
     /// <summary>The conversation: messages and action cards in order.</summary>
@@ -49,9 +85,34 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     /// <summary>Informational messages (bad settings, unexpected errors) the user can dismiss.</summary>
     public ObservableCollection<string> Notices { get; } = [];
 
-    public string ModelName { get; }
+    public ConversationListViewModel History { get; }
+    public ObservableCollection<string> AvailableModels { get; } = [];
+
     public string HotkeyText { get; }
     public string DismissHint { get; }
+
+    /// <summary>The window asked to open the settings.</summary>
+    public event Action? SettingsRequested;
+
+    /// <summary>An answer finished; the app shows a notification if the window is hidden.</summary>
+    public event Action<string>? AnswerCompleted;
+
+    [ObservableProperty]
+    private string _modelName;
+
+    /// <summary>The saved conversation shown, or null for a new one not saved yet.</summary>
+    [ObservableProperty]
+    private string? _currentConversationId;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowConversation))]
+    private bool _isHistoryOpen;
+
+    public bool ShowConversation => HasMessages && !IsHistoryOpen;
+
+    /// <summary>Speed of the last answer, e.g. "42 tok/s".</summary>
+    [ObservableProperty]
+    private string? _lastSpeed;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
@@ -127,6 +188,14 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Input = string.Empty;
         _lastSentMessage = text;
 
+        if (text.StartsWith('/') && await RunCommandAsync(text))
+            return;
+
+        await AskAsync(text);
+    }
+
+    private async Task AskAsync(string text)
+    {
         Items.Add(new MessageViewModel(ChatRole.User, text));
         var reply = NewReply();
 
@@ -144,6 +213,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     case TextDelta delta:
                         reply ??= NewReply();
                         reply.Append(delta.Text);
+                        break;
+
+                    case ThinkingDelta thinking:
+                        reply ??= NewReply();
+                        reply.Thinking += thinking.Text;
+                        break;
+
+                    case StatsReported stats:
+                        LastSpeed = $"{stats.Stats.TokensPerSecond:0} tok/s";
                         break;
 
                     case ToolStarted started:
@@ -169,6 +247,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (reply is { Content.Length: 0 } && !anyTool)
                 reply.Content = "(Sin respuesta)";
+            AnswerCompleted?.Invoke(Items.OfType<MessageViewModel>().LastOrDefault(m => !m.IsUser)?.Content ?? string.Empty);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
@@ -190,6 +269,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             PendingConfirmation = null;
             _sendCancellation = null;
             IsBusy = false;
+            UpdateLastMessageFlags();
         }
     }
 
@@ -211,7 +291,237 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         _chat.ClearHistory();
         Items.Clear();
+        CurrentConversationId = null;
+        History.CurrentId = null;
+        LastSpeed = null;
     }
+
+    [RelayCommand]
+    private void ToggleHistory()
+    {
+        IsHistoryOpen = !IsHistoryOpen;
+        if (IsHistoryOpen)
+            History.Refresh();
+    }
+
+    [RelayCommand]
+    private void OpenSettings() => SettingsRequested?.Invoke();
+
+    public void OpenConversation(string id)
+    {
+        if (IsBusy || _conversations.Find(id) is null)
+            return;
+
+        var messages = _conversations.Messages(id);
+        _chat.LoadHistory(messages, _conversations.Summary(id));
+        CurrentConversationId = id;
+        History.CurrentId = id;
+        IsHistoryOpen = false;
+
+        Items.Clear();
+        foreach (var message in messages)
+        {
+            switch (message.Role)
+            {
+                case ChatRole.User:
+                    Items.Add(new MessageViewModel(ChatRole.User, message.Content));
+                    break;
+                case ChatRole.Assistant when message.Content.Length > 0:
+                    Items.Add(new MessageViewModel(ChatRole.Assistant, message.Content));
+                    break;
+                case ChatRole.Tool:
+                    Items.Add(new HistoryToolViewModel(message.ToolName ?? "herramienta", message.Content));
+                    break;
+            }
+        }
+        UpdateLastMessageFlags();
+    }
+
+    /// <summary>Asks again the last question, discarding the last answer.</summary>
+    [RelayCommand]
+    private async Task RegenerateAsync()
+    {
+        var text = TakeBackLastTurn();
+        if (text is not null)
+            await AskAsync(text);
+    }
+
+    /// <summary>Puts the last question back in the prompt to change it.</summary>
+    [RelayCommand]
+    private void EditLast()
+    {
+        var text = TakeBackLastTurn();
+        if (text is not null)
+            Input = text;
+    }
+
+    private string? TakeBackLastTurn()
+    {
+        if (IsBusy)
+            return null;
+        var lastUser = Items.OfType<MessageViewModel>().LastOrDefault(m => m.IsUser);
+        if (lastUser is null)
+            return null;
+
+        _chat.RemoveLastTurn();
+        if (CurrentConversationId is not null)
+            _conversations.RemoveLastTurn(CurrentConversationId);
+
+        var index = Items.IndexOf(lastUser);
+        while (Items.Count > index)
+            Items.RemoveAt(Items.Count - 1);
+        UpdateLastMessageFlags();
+        return lastUser.Content;
+    }
+
+    private void UpdateLastMessageFlags()
+    {
+        var messages = Items.OfType<MessageViewModel>().ToList();
+        foreach (var message in messages)
+        {
+            message.CanRegenerate = false;
+            message.CanEdit = false;
+        }
+        if (IsBusy)
+            return;
+
+        var lastUser = messages.LastOrDefault(m => m.IsUser);
+        if (lastUser is null)
+            return;
+        lastUser.CanEdit = true;
+        if (messages.LastOrDefault() is { IsUser: false } lastAnswer)
+            lastAnswer.CanRegenerate = true;
+    }
+
+    private void OnTurnCommitted(IReadOnlyList<ChatMessage> turn)
+    {
+        if (!_settings.Privacy.SaveConversations)
+            return;
+
+        var question = turn.FirstOrDefault(m => m.Role == ChatRole.User)?.Content ?? string.Empty;
+        var isNew = CurrentConversationId is null;
+        if (isNew)
+        {
+            CurrentConversationId = _conversations.Create(TitleGenerator.Fallback(question)).Id;
+            History.CurrentId = CurrentConversationId;
+        }
+        _conversations.Append(CurrentConversationId!, turn);
+
+        if (isNew)
+        {
+            var id = CurrentConversationId!;
+            var answer = turn.LastOrDefault(m => m.Role == ChatRole.Assistant)?.Content ?? string.Empty;
+            _ = Task.Run(async () =>
+            {
+                var title = await _titles.GenerateAsync(question, answer);
+                _conversations.Rename(id, title);
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    if (IsHistoryOpen)
+                        History.Refresh();
+                });
+            });
+        }
+    }
+
+    [RelayCommand]
+    private async Task LoadModelsAsync()
+    {
+        try
+        {
+            var models = await _models.ListAsync();
+            AvailableModels.Clear();
+            foreach (var model in models.Where(m => !m.Name.Contains("embed", StringComparison.OrdinalIgnoreCase)))
+                AvailableModels.Add(model.Name);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
+        {
+            AvailableModels.Clear();
+        }
+    }
+
+    [RelayCommand]
+    private async Task SelectModelAsync(string model)
+    {
+        if (string.IsNullOrWhiteSpace(model) || model == _settings.Ollama.ChatModel)
+            return;
+        _settings.Ollama.ChatModel = model;
+        _settingsStore.Save(_settings);
+        ModelName = model;
+        _isModelLoaded = false;
+        await CheckStatusAsync();
+    }
+
+    /// <summary>Settings were changed in the settings window.</summary>
+    public void OnSettingsApplied()
+    {
+        ModelName = _settings.Ollama.ChatModel;
+        _isModelLoaded = false;
+        _ = CheckStatusAsync();
+    }
+
+    private async Task<bool> RunCommandAsync(string text)
+    {
+        var parts = text.Split(' ', 2, StringSplitOptions.TrimEntries);
+        var argument = parts.Length > 1 ? parts[1] : string.Empty;
+
+        switch (parts[0].ToLowerInvariant())
+        {
+            case "/nueva":
+                NewConversation();
+                return true;
+            case "/historial":
+                IsHistoryOpen = true;
+                History.Refresh();
+                return true;
+            case "/buscar":
+                IsHistoryOpen = true;
+                History.Search = argument;
+                return true;
+            case "/ajustes":
+                SettingsRequested?.Invoke();
+                return true;
+            case "/modelo" when argument.Length > 0:
+                await SelectModelAsync(argument);
+                Say($"Ahora uso el modelo **{argument}**.");
+                return true;
+            case "/modelo":
+                await LoadModelsAsync();
+                Say("Modelos instalados:\n" + string.Join("\n", AvailableModels.Select(m => $"- {m}{(m == ModelName ? " (actual)" : string.Empty)}")) +
+                    "\n\nCambia con `/modelo nombre`.");
+                return true;
+            case "/memoria":
+                var memories = _memories.All();
+                Say(memories.Count == 0 ? "No tengo nada guardado sobre ti." : "Lo que recuerdo de ti:\n" + string.Join("\n", memories.Select(m => $"- {m.Text}")));
+                return true;
+            case "/olvidar" when argument.Equals("todo", StringComparison.OrdinalIgnoreCase):
+                _memories.Clear();
+                Say("He borrado todo lo que recordaba de ti.");
+                return true;
+            case "/acciones":
+                var entries = _journal.Recent(10);
+                Say(entries.Count == 0 ? "Todavía no he hecho ninguna acción." :
+                    "Últimas acciones:\n" + string.Join("\n", entries.Select(e => $"- {e.Time:dd/MM HH:mm} · {e.Summary}{(e.Undone ? " (deshecha)" : e.Success ? string.Empty : " (falló)")}")));
+                return true;
+            case "/ayuda":
+            case "/olvidar":
+                Say("""
+                    Comandos:
+                    - `/nueva`: empezar una conversación nueva
+                    - `/historial` y `/buscar texto`: conversaciones guardadas
+                    - `/modelo` y `/modelo nombre`: ver o cambiar el modelo
+                    - `/memoria`: lo que recuerdo de ti · `/olvidar todo`: borrarlo
+                    - `/acciones`: lo último que he hecho en el PC
+                    - `/ajustes`: abrir los ajustes
+                    """);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // Local answers to commands: shown but not sent to the model.
+    private void Say(string markdown) => Items.Add(new MessageViewModel(ChatRole.Assistant, markdown));
 
     private bool CanStartNewConversation() => !IsBusy;
 

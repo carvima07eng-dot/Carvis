@@ -9,15 +9,20 @@
         x:DataType="vm:MainWindowViewModel"
         Title="Carvis"
         Icon="/Assets/carvis.ico"
-        Width="760" MaxHeight="560"
+        Width="760" MaxHeight="560" MinWidth="520" MinHeight="140"
         SizeToContent="Height"
         SystemDecorations="None"
-        CanResize="False"
+        CanResize="True"
         CanMaximize="False"
         ShowInTaskbar="True"
         Background="Transparent"
         TransparencyLevelHint="Transparent"
         FontFamily="{StaticResource CarvisFont}">
+
+  <Window.Resources>
+    <StreamGeometry x:Key="HistoryIcon">M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3</StreamGeometry>
+    <StreamGeometry x:Key="SettingsIcon">M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z</StreamGeometry>
+  </Window.Resources>
 
   <Window.Styles>
     <!-- Prompt box without the default Fluent chrome -->
@@ -143,6 +148,28 @@
       <Setter Property="Foreground" Value="#1F0A0A" />
     </Style>
 
+    <Style Selector="Border.conversation">
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="Margin" Value="0,1" />
+    </Style>
+    <Style Selector="Border.conversation:pointerover">
+      <Setter Property="Background" Value="#14FFFFFF" />
+    </Style>
+    <Style Selector="Border.conversation.current">
+      <Setter Property="Background" Value="#1E3A5F" />
+    </Style>
+    <Style Selector="Button.conversationOpen">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+    </Style>
+    <Style Selector="Button.conversationOpen:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
     <Style Selector="Ellipse.status">
       <Setter Property="Width" Value="8" />
       <Setter Property="Height" Value="8" />
@@ -156,24 +183,34 @@
     </Style>
   </Window.Styles>
 
+  <Panel>
   <Border x:Name="RootBorder" Background="{StaticResource Background}"
           BorderBrush="#2A3A4F" BorderThickness="1"
           CornerRadius="18" Margin="8"
           BoxShadow="0 10 30 0 #66000000"
           ClipToBounds="True">
-    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
 
       <!-- Title bar: drag to move -->
-      <Grid x:Name="TitleBar" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto"
+      <Grid x:Name="TitleBar" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
             Background="Transparent" Margin="16,8,8,0">
         <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
           <Image Source="/Assets/carvis.png" Width="18" Height="18" />
           <TextBlock Text="Carvis" FontWeight="SemiBold" FontSize="13"
                      Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center" />
         </StackPanel>
-        <Button Grid.Column="2" Classes="caption" Content="—"
+        <Button Grid.Column="2" Classes="caption" ToolTip.Tip="Conversaciones guardadas"
+                AutomationProperties.Name="Conversaciones guardadas"
+                Command="{Binding ToggleHistoryCommand}">
+          <PathIcon Data="{StaticResource HistoryIcon}" Width="14" Height="14" />
+        </Button>
+        <Button Grid.Column="3" Classes="caption" ToolTip.Tip="Ajustes" AutomationProperties.Name="Ajustes"
+                Command="{Binding OpenSettingsCommand}">
+          <PathIcon Data="{StaticResource SettingsIcon}" Width="14" Height="14" />
+        </Button>
+        <Button Grid.Column="4" Classes="caption" Content="—" AutomationProperties.Name="Minimizar"
                 ToolTip.Tip="Minimizar" Click="OnMinimizeClick" />
-        <Button Grid.Column="3" Classes="caption" Content="✕"
+        <Button Grid.Column="5" Classes="caption" Content="✕" AutomationProperties.Name="Ocultar en la bandeja"
                 ToolTip.Tip="Ocultar en la bandeja del sistema" Click="OnHideClick" />
       </Grid>
 
@@ -233,28 +270,104 @@
       </StackPanel>
 
       <!-- Conversation -->
+      <!-- Saved conversations -->
+      <Border Grid.Row="3" BorderBrush="#1F2A3A" BorderThickness="0,1,0,0" IsVisible="{Binding IsHistoryOpen}">
+        <Grid x:Name="HistoryPanel" RowDefinitions="Auto,Auto,*" Margin="18,10" Height="360">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Conversaciones" FontWeight="SemiBold" VerticalAlignment="Center"
+                       Foreground="{StaticResource TextPrimary}" />
+            <Button Grid.Column="1" Classes="ghost" Content="Nueva conversación" Command="{Binding NewConversationCommand}" />
+          </Grid>
+          <TextBox Grid.Row="1" Margin="0,8" Watermark="Buscar en las conversaciones…"
+                   Text="{Binding History.Search}" />
+          <Panel Grid.Row="2">
+            <TextBlock Text="Todavía no hay conversaciones guardadas." IsVisible="{Binding History.IsEmpty}"
+                       Foreground="{StaticResource TextMuted}" HorizontalAlignment="Center" Margin="0,20" />
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding History.Items}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ConversationItemViewModel">
+                    <Border Classes="conversation" Classes.current="{Binding IsCurrent}">
+                      <Grid ColumnDefinitions="*,Auto,Auto">
+                        <Button Classes="conversationOpen"
+                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.OpenCommand}"
+                                CommandParameter="{Binding}" IsVisible="{Binding !IsRenaming}">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="📌" IsVisible="{Binding Pinned}" FontSize="11" />
+                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                          </StackPanel>
+                        </Button>
+                        <TextBox Text="{Binding Title}" IsVisible="{Binding IsRenaming}" Padding="6,2">
+                          <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter"
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.FinishRenameCommand}"
+                                        CommandParameter="{Binding}" />
+                          </TextBox.KeyBindings>
+                        </TextBox>
+                        <TextBlock Grid.Column="1" Text="{Binding When}" FontSize="11" Margin="8,0"
+                                   VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" />
+                        <Button Grid.Column="2" Classes="caption" Content="⋯" AutomationProperties.Name="Opciones">
+                          <Button.Flyout>
+                            <MenuFlyout>
+                              <MenuItem Header="Fijar / quitar"
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.TogglePinCommand}"
+                                        CommandParameter="{Binding}" />
+                              <MenuItem Header="Renombrar"
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.StartRenameCommand}"
+                                        CommandParameter="{Binding}" />
+                              <MenuItem Header="Borrar"
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.DeleteCommand}"
+                                        CommandParameter="{Binding}" />
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Panel>
+        </Grid>
+      </Border>
+
       <Border Grid.Row="3" BorderBrush="#1F2A3A" BorderThickness="0,1,0,0"
-              IsVisible="{Binding HasMessages}">
-        <ScrollViewer x:Name="MessagesScroll" MaxHeight="380"
+              IsVisible="{Binding ShowConversation}">
+        <ScrollViewer x:Name="MessagesScroll" MaxHeight="380" VerticalAlignment="Top"
                       HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding Items}" Margin="18,10">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.DataTemplates>
               <DataTemplate DataType="vm:MessageViewModel">
                 <Border Classes="bubble"
                         Classes.user="{Binding IsUser}"
                         Classes.error="{Binding IsError}">
                   <StackPanel Spacing="4">
+                    <Button Classes="ghost" Content="Razonamiento" IsVisible="{Binding HasThinking}"
+                            Command="{Binding ToggleThinkingCommand}" Padding="6,1" FontSize="11"
+                            Margin="-6,0,0,0" HorizontalAlignment="Left" />
+                    <TextBlock Text="{Binding Thinking}" IsVisible="{Binding ShowThinking}" TextWrapping="Wrap"
+                               FontSize="12" FontStyle="Italic" Foreground="{StaticResource TextMuted}" />
                     <SelectableTextBlock Text="{Binding Content}" IsVisible="{Binding IsUser}"
                                          TextWrapping="Wrap"
                                          Foreground="{StaticResource TextPrimary}" />
                     <controls:MarkdownView Markdown="{Binding Content}" IsVisible="{Binding !IsUser}" />
                     <TextBlock Text="Pensando…" IsVisible="{Binding IsWaiting}"
                                FontStyle="Italic" Foreground="{StaticResource TextMuted}" />
-                    <Button Classes="ghost" Content="{Binding CopyLabel}"
-                            IsVisible="{Binding CanCopy}"
-                            HorizontalAlignment="Right" Margin="0,0,-8,-6"
-                            Padding="8,2" FontSize="11"
-                            Click="OnCopyMessageClick" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="2" Margin="0,0,-8,-6">
+                      <Button Classes="ghost" Content="Regenerar" IsVisible="{Binding CanRegenerate}"
+                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RegenerateCommand}"
+                              Padding="8,2" FontSize="11" />
+                      <Button Classes="ghost" Content="{Binding CopyLabel}" IsVisible="{Binding CanCopy}"
+                              Padding="8,2" FontSize="11" Click="OnCopyMessageClick" />
+                      <Button Classes="ghost" Content="Editar" IsVisible="{Binding CanEdit}"
+                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).EditLastCommand}"
+                              Padding="8,2" FontSize="11" />
+                    </StackPanel>
                   </StackPanel>
                 </Border>
               </DataTemplate>
@@ -311,6 +424,10 @@
                   </StackPanel>
                 </Border>
               </DataTemplate>
+              <DataTemplate DataType="vm:HistoryToolViewModel">
+                <TextBlock Text="{Binding Text, StringFormat='↳ {0}'}" FontSize="12" Margin="4,2" TextWrapping="Wrap"
+                           Foreground="{StaticResource TextMuted}" />
+              </DataTemplate>
             </ItemsControl.DataTemplates>
           </ItemsControl>
         </ScrollViewer>
@@ -323,11 +440,31 @@
             <Ellipse Classes="status"
                      Classes.ready="{Binding IsOllamaReady}"
                      Classes.checking="{Binding IsCheckingStatus}" />
-            <TextBlock FontSize="12" Foreground="{StaticResource TextSecondary}">
-              <Run Text="{Binding ModelName}" />
-              <Run Text=" · " />
-              <Run Text="{Binding ConnectionText}" />
-            </TextBlock>
+            <Button Classes="ghost" Padding="4,2" Margin="-4,0,0,0" ToolTip.Tip="Cambiar de modelo">
+              <TextBlock FontSize="12" Foreground="{StaticResource TextSecondary}">
+                <Run Text="{Binding ModelName}" />
+                <Run Text=" · " />
+                <Run Text="{Binding ConnectionText}" />
+              </TextBlock>
+              <Button.Flyout>
+                <Flyout Placement="TopEdgeAlignedLeft" Opening="OnModelFlyoutOpening">
+                  <StackPanel Spacing="4" MinWidth="220">
+                    <TextBlock Text="Modelos instalados" FontWeight="SemiBold" Margin="4,0,0,4" />
+                    <ItemsControl ItemsSource="{Binding AvailableModels}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <Button Classes="ghost" Content="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectModelCommand}"
+                                  CommandParameter="{Binding}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <TextBlock Text="{Binding LastSpeed}" FontSize="12" VerticalAlignment="Center"
+                       Foreground="{StaticResource TextMuted}" />
           </StackPanel>
           <TextBlock Grid.Column="1" FontSize="12" Foreground="{StaticResource TextMuted}"
                      HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -342,4 +479,17 @@
       </Border>
     </Grid>
   </Border>
+
+  <!-- Resize handles in the transparent margin around the card -->
+  <Grid x:Name="ResizeHandles" RowDefinitions="10,*,10" ColumnDefinitions="10,*,10">
+    <Border Grid.Row="0" Grid.Column="0" Tag="NorthWest" Cursor="TopLeftCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="0" Grid.Column="1" Tag="North" Cursor="TopSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="0" Grid.Column="2" Tag="NorthEast" Cursor="TopRightCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="1" Grid.Column="0" Tag="West" Cursor="LeftSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="1" Grid.Column="2" Tag="East" Cursor="RightSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="2" Grid.Column="0" Tag="SouthWest" Cursor="BottomLeftCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="2" Grid.Column="1" Tag="South" Cursor="BottomSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="2" Grid.Column="2" Tag="SouthEast" Cursor="BottomRightCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+  </Grid>
+  </Panel>
 </Window>

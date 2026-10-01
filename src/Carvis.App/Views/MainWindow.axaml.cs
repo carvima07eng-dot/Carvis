@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private readonly WindowSettings _settings;
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _hasBeenPositioned;
+    private bool _manualHeight;
 
     // Used by the XAML designer.
     public MainWindow() : this(null, new WindowSettings())
@@ -49,8 +50,26 @@ public partial class MainWindow : Window
                 Hide();
         };
 
+        DataContextChanged += (_, _) =>
+        {
+            if (DataContext is MainWindowViewModel viewModel)
+            {
+                viewModel.PropertyChanged += (_, e) =>
+                {
+                    // Coming back from the history panel or opening a conversation: show its end.
+                    if (e.PropertyName is nameof(MainWindowViewModel.ShowConversation) or nameof(MainWindowViewModel.CurrentConversationId))
+                        ScrollToEndSoon();
+                };
+            }
+        };
+
         _saveTimer.Tick += (_, _) => SavePlacement();
         PositionChanged += (_, _) =>
+        {
+            if (_hasBeenPositioned)
+                _saveTimer.Start();
+        };
+        Resized += (_, _) =>
         {
             if (_hasBeenPositioned)
                 _saveTimer.Start();
@@ -98,11 +117,18 @@ public partial class MainWindow : Window
             WindowState = WindowState.Minimized;
     }
 
+    public void ApplySettings(WindowSettings settings)
+    {
+        HideOnFocusLost = settings.HideOnFocusLost;
+        FontSize = settings.FontSize;
+        ApplyBackdrop(settings.Backdrop);
+    }
+
     public void SavePlacement()
     {
         _saveTimer.Stop();
         if (_settings.RememberPosition && _hasBeenPositioned && WindowState == WindowState.Normal)
-            _stateStore?.Save(new WindowPlacement(Position.X, Position.Y, Finite(Width), Finite(Height)));
+            _stateStore?.Save(new WindowPlacement(Position.X, Position.Y, Finite(Width), _manualHeight ? Finite(Height) : 0));
     }
 
     // Width/Height are NaN while the window sizes itself to its content.
@@ -142,6 +168,10 @@ public partial class MainWindow : Window
         {
             _hasBeenPositioned = true;
             var saved = _settings.RememberPosition ? _stateStore?.Load() : null;
+            if (saved is not null && saved.Width >= MinWidth)
+                Width = saved.Width;
+            if (saved is not null && saved.Height >= MinHeight)
+                UseManualHeight(saved.Height);
             if (saved is not null && Screens.ScreenFromPoint(new PixelPoint(saved.X + 40, saved.Y + 20)) is { } savedScreen
                 && (mouse is null || savedScreen.Equals(target)))
             {
@@ -163,7 +193,7 @@ public partial class MainWindow : Window
         var area = screen.WorkingArea;
         var scale = screen.Scaling;
         var width = (int)(Width * scale);
-        var height = (int)(MaxHeight * scale);
+        var height = (int)((_manualHeight ? Height : MaxHeight) * scale);
         Position = new PixelPoint(
             area.X + (area.Width - width) / 2,
             area.Y + Math.Max(0, (area.Height - height) / 2));
@@ -215,15 +245,56 @@ public partial class MainWindow : Window
         await message.ShowCopiedAsync();
     }
 
+    private void OnModelFlyoutOpening(object? sender, EventArgs e)
+    {
+        if (DataContext is MainWindowViewModel viewModel)
+            viewModel.LoadModelsCommand.Execute(null);
+    }
+
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             BeginMoveDrag(e);
     }
 
+    // Edges resize the window; changing its height switches from automatic to fixed height.
+    private void OnResizePressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control { Tag: string tag } || !Enum.TryParse<WindowEdge>(tag, out var edge)
+            || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+
+        if (edge is not (WindowEdge.East or WindowEdge.West))
+            UseManualHeight(Bounds.Height);
+        BeginResizeDrag(edge, e);
+        e.Handled = true;
+    }
+
+    private void UseManualHeight(double height)
+    {
+        if (!_manualHeight)
+        {
+            _manualHeight = true;
+            SizeToContent = SizeToContent.Manual;
+            MaxHeight = double.PositiveInfinity;
+            RootGrid.RowDefinitions[3].Height = GridLength.Star;
+            MessagesScroll.MaxHeight = double.PositiveInfinity;
+            MessagesScroll.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
+            HistoryPanel.Height = double.NaN;
+        }
+        Height = height;
+    }
+
     private void OnMinimizeClick(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
     private void OnHideClick(object? sender, RoutedEventArgs e) => Hide();
+
+    private void ScrollToEndSoon()
+    {
+        Dispatcher.UIThread.Post(() => MessagesScroll.ScrollToEnd(), DispatcherPriority.Background);
+        // Virtualized items get their real height after a layout pass: settle once more.
+        DispatcherTimer.RunOnce(() => MessagesScroll.ScrollToEnd(), TimeSpan.FromMilliseconds(120));
+    }
 
     // Keep following the answer while it streams, unless the user scrolled up to read.
     private void OnMessagesScrollPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)

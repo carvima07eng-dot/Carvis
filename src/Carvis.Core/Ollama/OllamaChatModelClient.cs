@@ -34,7 +34,7 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
             },
         };
 
-        await foreach (var response in ollama.ChatAsync(chatRequest, cancellationToken))
+        await foreach (var response in WithRetriesAsync(chatRequest, cancellationToken))
         {
             // Thinking tokens arrive in Message.Thinking and are not shown.
             var message = response?.Message;
@@ -58,6 +58,43 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
                     Stats = stats,
                 };
             }
+        }
+    }
+
+    // Ollama sometimes refuses a connection while it is still loading a model: retry, but only
+    // before the first piece of the answer arrived (never repeat half an answer).
+    private async IAsyncEnumerable<ChatResponseStream?> WithRetriesAsync(ChatRequest request, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        TimeSpan[] delays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3)];
+        for (var attempt = 0; ; attempt++)
+        {
+            var started = false;
+            var enumerator = ollama.ChatAsync(request, cancellationToken).GetAsyncEnumerator(cancellationToken);
+            try
+            {
+                while (true)
+                {
+                    ChatResponseStream? current;
+                    try
+                    {
+                        if (!await enumerator.MoveNextAsync())
+                            yield break;
+                        current = enumerator.Current;
+                    }
+                    catch (HttpRequestException) when (!started && attempt < delays.Length)
+                    {
+                        break;
+                    }
+                    started = true;
+                    yield return current;
+                }
+            }
+            finally
+            {
+                await enumerator.DisposeAsync();
+            }
+
+            await Task.Delay(delays[attempt], cancellationToken);
         }
     }
 

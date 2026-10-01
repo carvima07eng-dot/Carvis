@@ -28,6 +28,8 @@ public partial class App : Application
     private GlobalHotkeyService? _hotkey;
     private TrayIcon? _trayIcon;
     private ILogger? _logger;
+    private SettingsWindow? _settingsWindow;
+    private OnboardingViewModel? _onboarding;
 
     /// <summary>Set by Program before Avalonia starts; the designer runs without it.</summary>
     public static Bootstrap? Bootstrap { get; set; }
@@ -48,7 +50,14 @@ public partial class App : Application
             _logger = _services.GetRequiredService<ILogger<App>>();
             Dispatcher.UIThread.UnhandledException += OnUiException;
 
+            if (settings.Permissions.EnablePlugins)
+            {
+                Carvis.Core.Tools.PluginLoader.LoadInto(_services.GetRequiredService<Carvis.Core.Tools.IToolRegistry>(), _services,
+                    bootstrap.Paths.PluginsDirectory, _logger);
+            }
+
             _viewModel = _services.GetRequiredService<MainWindowViewModel>();
+            StartReconnectTimer();
             foreach (var warning in bootstrap.Warnings)
                 _viewModel.AddNotice(warning);
 
@@ -56,16 +65,24 @@ public partial class App : Application
             {
                 DataContext = _viewModel,
             };
+            _viewModel.SettingsRequested += OpenSettings;
+            _viewModel.AnswerCompleted += OnAnswerCompleted;
 
             StartHotkey(settings);
             CreateTrayIcon(_viewModel.HotkeyText);
 
-            // Launched by "Iniciar con Windows": stay in the tray.
-            var startHidden = settings.Window.StartHidden || desktop.Args?.Contains(StartHiddenArgument) == true;
-            if (!startHidden)
-                Dispatcher.UIThread.Post(ShowWindow);
-
-            _ = _viewModel.CheckStatusAsync();
+            if (!settings.FirstRunCompleted)
+            {
+                Dispatcher.UIThread.Post(ShowOnboarding);
+            }
+            else
+            {
+                // Launched by "Iniciar con Windows": stay in the tray.
+                var startHidden = settings.Window.StartHidden || desktop.Args?.Contains(StartHiddenArgument) == true;
+                if (!startHidden)
+                    Dispatcher.UIThread.Post(ShowWindow);
+                _ = _viewModel.CheckStatusAsync();
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -85,6 +102,11 @@ public partial class App : Application
     {
         if (_window is null)
             return;
+        if (_onboarding is not null)
+        {
+            _onboarding.OnHotkeyPressed();
+            return;
+        }
 
         if (_window.IsInFront)
             _window.Dismiss();
@@ -102,6 +124,87 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
+    }
+
+    // If Ollama was closed or started late, find it again without the user doing anything.
+    private void StartReconnectTimer()
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(20) };
+        timer.Tick += (_, _) =>
+        {
+            if (_viewModel is { IsOllamaReady: false, IsCheckingStatus: false, IsBusy: false })
+                _ = _viewModel.CheckStatusAsync();
+        };
+        timer.Start();
+    }
+
+    /// <summary>Starts a new Carvis and closes this one (some settings need it).</summary>
+    public void Restart()
+    {
+        if (Environment.ProcessPath is { } path)
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path, Program.RestartArgument) { UseShellExecute = false })?.Dispose();
+        Exit();
+    }
+
+    private void ShowOnboarding()
+    {
+        if (_services is null || _viewModel is null)
+            return;
+        _onboarding = new OnboardingViewModel(
+            _services.GetRequiredService<CarvisSettings>(), _services.GetRequiredService<SettingsStore>(),
+            _services.GetRequiredService<Carvis.Core.Ollama.IOllamaHealthCheck>(), _services.GetRequiredService<Carvis.Core.Ollama.IModelManager>(),
+            _services.GetRequiredService<Carvis.Core.Platform.IShell>(), _viewModel.HotkeyText);
+
+        var window = new OnboardingWindow { DataContext = _onboarding };
+        _onboarding.Finished += () => window.Close();
+        window.Closed += (_, _) =>
+        {
+            _onboarding = null;
+            ShowWindow();
+        };
+        window.Show();
+        window.Activate();
+    }
+
+    private void OpenSettings()
+    {
+        if (_services is null)
+            return;
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+
+        var viewModel = ActivatorUtilities.CreateInstance<SettingsViewModel>(_services);
+        viewModel.Saved += OnSettingsSaved;
+        _settingsWindow = new SettingsWindow { DataContext = viewModel };
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
+    }
+
+    private void OnSettingsSaved(bool restartNeeded)
+    {
+        if (_services is null || _window is null || _viewModel is null)
+            return;
+        var settings = _services.GetRequiredService<CarvisSettings>();
+        _window.ApplySettings(settings.Window);
+
+        if (HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture) && _hotkey is not null)
+            _viewModel.HotkeyWarning = _hotkey.TryChange(gesture, out var error) ? null : error;
+
+        _viewModel.OnSettingsApplied();
+        if (restartNeeded)
+            _viewModel.AddNotice("Algunos cambios se aplicarán cuando reinicies Carvis (icono de la bandeja → Reiniciar).");
+    }
+
+    // Long answers can finish while the window is hidden: let the user know.
+    private void OnAnswerCompleted(string answer)
+    {
+        if (_window is null || _window.IsInFront || _services is null)
+            return;
+        var text = answer.Length > 160 ? answer[..160] + "…" : answer;
+        _services.GetRequiredService<Carvis.Core.Platform.INotifier>().Notify("Carvis ha respondido", text, ShowWindow);
     }
 
     // A bug in one handler shouldn't take the whole assistant down.
@@ -125,18 +228,26 @@ public partial class App : Application
             ShowWindow();
         };
 
+        var settingsItem = new NativeMenuItem("Ajustes");
+        settingsItem.Click += (_, _) => OpenSettings();
+
+        var restart = new NativeMenuItem("Reiniciar");
+        restart.Click += (_, _) => Restart();
+
         var exit = new NativeMenuItem("Salir");
         exit.Click += (_, _) => Exit();
 
         var menu = new NativeMenu();
         menu.Items.Add(open);
         menu.Items.Add(newConversation);
+        menu.Items.Add(settingsItem);
         menu.Items.Add(new NativeMenuItemSeparator());
         if (OperatingSystem.IsWindows())
         {
             menu.Items.Add(CreateStartupMenuItem());
             menu.Items.Add(new NativeMenuItemSeparator());
         }
+        menu.Items.Add(restart);
         menu.Items.Add(exit);
 
         _trayIcon = new TrayIcon
@@ -203,6 +314,7 @@ public partial class App : Application
             services.AddCarvisWindows();
         services.AddSingleton(new WindowStateStore(bootstrap.Paths.WindowStateFile));
         services.AddSingleton<GlobalHotkeyService>();
+        services.AddSingleton<Carvis.Core.Platform.INotifier, ToastNotifier>();
         services.AddSingleton<MainWindowViewModel>();
         return services.BuildServiceProvider();
     }

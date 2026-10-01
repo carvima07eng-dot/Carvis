@@ -177,7 +177,7 @@ public sealed class ChatService : IChatService
 
                     var visible = TrimLeading(filter.Process(chunk.Text ?? string.Empty), text);
                     var thinking = (chunk.Thinking ?? string.Empty) + filter.TakeThinking();
-                    if (thinking.Length > 0)
+                    if (!string.IsNullOrWhiteSpace(thinking))
                         yield return new ThinkingDelta(thinking);
                     if (visible.Length > 0)
                     {

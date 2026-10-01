@@ -49,6 +49,24 @@ public sealed class GlobalHotkeyService(ILogger<GlobalHotkeyService> logger) : I
         return true;
     }
 
+    /// <summary>Changes the shortcut without restarting the hook.</summary>
+    public bool TryChange(HotkeyGesture gesture, out string? error)
+    {
+        if (_hook is null)
+            return TryStart(gesture, out error);
+        if (!TryMapKey(gesture.Key, out var key))
+        {
+            error = $"La tecla «{gesture.Key}» del atajo no es válida.";
+            return false;
+        }
+        _key = key;
+        _modifiers = gesture.Modifiers;
+        _isDown = false;
+        logger.LogInformation("Global hotkey changed to {Gesture}", gesture);
+        error = null;
+        return true;
+    }
+
     public void Dispose()
     {
         if (_hook is { IsDisposed: false })
