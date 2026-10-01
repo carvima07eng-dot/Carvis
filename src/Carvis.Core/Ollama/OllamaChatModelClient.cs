@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Carvis.Core.Chat;
 using Carvis.Core.Configuration;
 using Carvis.Core.Tools;
+using Microsoft.Extensions.Logging;
 using OllamaSharp;
 using OllamaSharp.Models;
 using OllamaSharp.Models.Chat;
@@ -13,7 +14,7 @@ using OllamaRole = OllamaSharp.Models.Chat.ChatRole;
 
 namespace Carvis.Core.Ollama;
 
-public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSettings settings) : IChatModelClient
+public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSettings settings, ILogger<OllamaChatModelClient>? logger = null) : IChatModelClient
 {
     public async IAsyncEnumerable<ModelChunk> StreamAsync(
         ModelRequest request,
@@ -35,6 +36,8 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
             },
         };
 
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        TimeSpan? firstToken = null;
         await foreach (var response in WithRetriesAsync(chatRequest, cancellationToken))
         {
             // Thinking tokens arrive in Message.Thinking and are not shown.
@@ -51,6 +54,11 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
                 ? new GenerationStats(done.EvalCount, TimeSpan.FromTicks(done.EvalDuration / 100))
                 : null;
 
+            if (firstToken is null && (!string.IsNullOrEmpty(message.Content) || calls is { Count: > 0 } || !string.IsNullOrEmpty(message.Thinking)))
+                firstToken = System.Diagnostics.Stopwatch.GetElapsedTime(started);
+            if (response is ChatDoneResponseStream finished)
+                LogTimings(chatRequest.Model, firstToken, finished);
+
             if (!string.IsNullOrEmpty(message.Content) || calls is { Count: > 0 } || !string.IsNullOrEmpty(message.Thinking) || stats is not null)
             {
                 yield return new ModelChunk(message.Content, calls is { Count: > 0 } ? calls : null)
@@ -60,6 +68,18 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
                 };
             }
         }
+    }
+
+    // Only numbers: never the prompt or the answer.
+    private void LogTimings(string? model, TimeSpan? firstToken, ChatDoneResponseStream done)
+    {
+        if (logger is null)
+            return;
+        var seconds = done.EvalDuration / 1e9;
+        logger.LogInformation(
+            "Perf: {Model} first token after {FirstToken:0} ms (load {Load:0} ms, prompt {PromptTokens} tokens in {Prompt:0} ms), {Tokens} tokens at {Speed:0.0} tokens/s",
+            model, firstToken?.TotalMilliseconds, done.LoadDuration / 1e6, done.PromptEvalCount, done.PromptEvalDuration / 1e6,
+            done.EvalCount, seconds > 0 ? done.EvalCount / seconds : 0);
     }
 
     // Ollama sometimes refuses a connection while it is still loading a model: retry, but only

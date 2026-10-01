@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OllamaSharp;
 using OllamaSharp.Models;
 
@@ -24,13 +25,22 @@ public interface IModelManager
     Task UnloadAsync(string model, CancellationToken cancellationToken = default);
 }
 
-public sealed class ModelManager(IOllamaApiClient ollama) : IModelManager
+public sealed class ModelManager(IOllamaApiClient ollama, ILogger<ModelManager>? logger = null) : IModelManager
 {
     public async Task<IReadOnlyList<LocalModel>> ListAsync(CancellationToken cancellationToken = default) =>
         (await ollama.ListLocalModelsAsync(cancellationToken)).Select(m => new LocalModel(m.Name, m.Size)).OrderBy(m => m.Name).ToList();
 
-    public async Task<IReadOnlyList<LoadedModel>> LoadedAsync(CancellationToken cancellationToken = default) =>
-        (await ollama.ListRunningModelsAsync(cancellationToken)).Select(m => new LoadedModel(m.Name, m.Size, m.SizeVram, m.ContextLength)).ToList();
+    public async Task<IReadOnlyList<LoadedModel>> LoadedAsync(CancellationToken cancellationToken = default)
+    {
+        var loaded = (await ollama.ListRunningModelsAsync(cancellationToken))
+            .Select(m => new LoadedModel(m.Name, m.Size, m.SizeVram, m.ContextLength)).ToList();
+        foreach (var model in loaded)
+        {
+            logger?.LogInformation("Perf: {Model} uses {Vram:0.0} GB of VRAM ({Gpu:0} % on the GPU, context {Context})",
+                model.Name, model.VramBytes / 1e9, model.GpuShare * 100, model.ContextLength);
+        }
+        return loaded;
+    }
 
     public async Task<bool> IsInstalledAsync(string model, CancellationToken cancellationToken = default) =>
         (await ListAsync(cancellationToken)).Any(m => ModelNames.AreSame(m.Name, model));

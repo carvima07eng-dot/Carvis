@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -94,7 +95,17 @@ public partial class App : Application
                 // Launched by "Iniciar con Windows": stay in the tray.
                 var startHidden = settings.Window.StartHidden || desktop.Args?.Contains(StartHiddenArgument) == true;
                 if (!startHidden)
-                    Dispatcher.UIThread.Post(ShowWindow);
+                {
+                    Dispatcher.UIThread.Post(() =>
+                    {
+                        ShowWindow();
+                        AfterNextFrame(() => _logger.LogInformation("Perf: window visible {Ms:0} ms after the process started", SinceProcessStart().TotalMilliseconds));
+                    });
+                }
+                else
+                {
+                    _logger.LogInformation("Perf: ready in the tray {Ms:0} ms after the process started", SinceProcessStart().TotalMilliseconds);
+                }
                 _ = _viewModel.CheckStatusAsync();
             }
         }
@@ -114,7 +125,8 @@ public partial class App : Application
             _ = _viewModel.CheckStatusAsync();
     }
 
-    public void ToggleWindow()
+    /// <param name="pressedAt">Stopwatch timestamp of the key press, to log how long the window took to appear.</param>
+    public void ToggleWindow(long? pressedAt = null)
     {
         if (_window is null)
             return;
@@ -125,9 +137,33 @@ public partial class App : Application
         }
 
         if (_window.IsInFront)
+        {
             _window.Dismiss();
+            return;
+        }
+
+        ShowWindow();
+        if (pressedAt is { } start)
+            AfterNextFrame(() => LogShowTime(Stopwatch.GetElapsedTime(start)));
+    }
+
+    // The target is under 300 ms from the key press to the window on screen.
+    private void LogShowTime(TimeSpan elapsed)
+    {
+        if (elapsed.TotalMilliseconds > 300)
+            _logger?.LogWarning("Perf: window visible {Ms:0} ms after the hotkey (target 300 ms)", elapsed.TotalMilliseconds);
         else
-            ShowWindow();
+            _logger?.LogInformation("Perf: window visible {Ms:0} ms after the hotkey", elapsed.TotalMilliseconds);
+    }
+
+    // RequestAnimationFrame runs just before the frame is drawn; the post after it runs once it's on screen.
+    private void AfterNextFrame(Action action) =>
+        _window?.RequestAnimationFrame(_ => Dispatcher.UIThread.Post(action, DispatcherPriority.Background));
+
+    private static TimeSpan SinceProcessStart()
+    {
+        using var process = Process.GetCurrentProcess();
+        return DateTime.Now - process.StartTime;
     }
 
     public void Exit()
@@ -491,7 +527,11 @@ public partial class App : Application
         HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture);
 
         _hotkey = _services.GetRequiredService<GlobalHotkeyService>();
-        _hotkey.Pressed += (_, _) => Dispatcher.UIThread.Post(ToggleWindow);
+        _hotkey.Pressed += (_, _) =>
+        {
+            var pressedAt = Stopwatch.GetTimestamp();
+            Dispatcher.UIThread.Post(() => ToggleWindow(pressedAt));
+        };
         _hotkey.Failed += (_, message) => Dispatcher.UIThread.Post(() => _viewModel.HotkeyWarning = message);
 
         if (!_hotkey.TryStart(gesture, out var error))
