@@ -42,8 +42,9 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private bool _isBusy;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsOllamaReady))]
     [NotifyPropertyChangedFor(nameof(ConnectionText))]
-    private bool _isOllamaReady;
+    private OllamaState? _connectionState;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ConnectionText))]
@@ -67,8 +68,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     public bool HasStatusCommand => !string.IsNullOrEmpty(StatusCommand);
     public bool HasHotkeyWarning => !string.IsNullOrEmpty(HotkeyWarning);
 
-    public string ConnectionText =>
-        IsCheckingStatus ? "Comprobando…" : IsOllamaReady ? "Conectado" : "Sin conexión";
+    public bool IsOllamaReady => ConnectionState == OllamaState.Ready;
+
+    public string ConnectionText => IsCheckingStatus
+        ? "Comprobando…"
+        : ConnectionState switch
+        {
+            OllamaState.Ready => "Conectado",
+            OllamaState.ModelMissing => "Falta el modelo",
+            _ => "Sin conexión",
+        };
 
     private bool CanSend() => !IsBusy && !string.IsNullOrWhiteSpace(Input);
 
@@ -135,7 +144,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         try
         {
             var status = await _healthCheck.CheckAsync();
-            IsOllamaReady = status.IsReady;
+            ConnectionState = status.State;
             (StatusMessage, StatusCommand) = status.State switch
             {
                 OllamaState.ServerUnavailable => (
