@@ -46,13 +46,15 @@ Tamaños en la biblioteca de Ollama, con la cuantización por defecto Q4_K_M:
 
 Con el contexto de 16K que usa Carvis, la caché KV de un modelo de 8B en fp16 ocupa unos 2,4 GB (36 capas × 8 cabezas KV × 128 × 2 × 2 bytes × 16 384 tokens). Las cuentas de VRAM salen así:
 
-- **Ahora (dos modelos):** chat ≈ 5,2 + 2,4 ≈ 7,6 GB. Visión ≈ 6 GB más. En una gráfica de 8 GB no caben los dos, así que cada captura obliga a cambiar de modelo: se descarga el chat, se carga la visión y luego se vuelve a cargar el chat. Eso son varios segundos de disco a VRAM cada vez, que se ven en `load … ms`.
-- **Con `qwen3-vl:8b` para todo:** ≈ 6,1 + 2,4 ≈ 8,5 GB, siempre el mismo modelo. Las capturas no cambian nada de lo que hay cargado. En 8 GB va justo: puede quedar algo en la CPU. Se puede arreglar activando `OLLAMA_FLASH_ATTENTION=1` y `OLLAMA_KV_CACHE_TYPE=q8_0` (la caché baja a ~1,2 GB) o bajando el contexto a 8K.
+Cuentas para tu gráfica de **12 GB** (Windows y el escritorio ya usan unos 0,5–1 GB):
 
-**Mi recomendación:** no cambiar el modelo por defecto en la v1.1, pero dejarlo preparado. Carvis ya funciona con un solo modelo: si pones el mismo nombre en *Modelo de chat* y *Modelo de visión*, nunca lo descarga después de una imagen y mantiene las herramientas activas (hay test). Antes de hacerlo predeterminado:
+- **Ahora (dos modelos):** el chat ocupa ≈ 5,2 + 2,4 ≈ 7,6 GB y la visión ≈ 6 GB más, así que juntos se van a ~13,6 GB y no caben a la vez. Con cada captura Ollama tiene que sacar el chat, cargar la visión y, al terminar, volver a cargar el chat. Son varios segundos de disco a VRAM cada vez, y se ven en `load … ms`. Carvis ya lo lleva lo mejor posible: descarga la visión nada más responder y recarga el chat en segundo plano.
+- **Con `qwen3-vl:8b` para todo:** ≈ 6,1 + 2,4 ≈ 8,5 GB, siempre el mismo modelo. Cabe entero en 12 GB con margen (unos 2,5 GB libres), las capturas no cambian nada de lo que hay cargado, y se pueden usar herramientas en el mismo turno que la imagen (por ejemplo, "mira este error y apúntalo en mis tareas"). En gráficas de 8 GB iría justo; ahí ayudaría `OLLAMA_FLASH_ATTENTION=1` con `OLLAMA_KV_CACHE_TYPE=q8_0`, que deja la caché en ~1,2 GB.
+
+**Mi recomendación para tu PC:** pasar a `qwen3-vl:8b` como modelo único, pero solo después de comprobar que con las herramientas acierta igual que `qwen3:8b`. Es lo único que no puedo medir aquí, y si una captura va más rápida pero falla en "pon un recordatorio", no compensa. En la v1.1 no cambio el modelo predeterminado. Carvis ya está preparado: si pones el mismo nombre en *Modelo de chat* y *Modelo de visión*, nunca descarga el modelo después de una imagen y mantiene las herramientas (hay test). Para decidirlo:
 
 1. `ollama pull qwen3-vl:8b` (necesita una versión reciente de Ollama).
-2. `dotnet run --project tests/Carvis.Evals -- --model qwen3-vl:8b` y compararlo con `--model qwen3:8b`, mirando el porcentaje por categoría.
-3. Si acierta igual o más con las herramientas y `Perf: … uses … GB` queda al 100 % en la GPU, cambiar el predeterminado. Para gráficas de 12 GB o más es casi seguro que compensa.
+2. `dotnet run --project tests/Carvis.Evals -- --model qwen3:8b --report qwen3.md` y lo mismo con `--model qwen3-vl:8b --report qwen3-vl.md`.
+3. Si `qwen3-vl` saca un porcentaje igual o mayor en casi todas las categorías y `Perf: … uses … GB` dice 100 % en la GPU, ponlo en los dos campos de Ajustes → Modelo. Si pierde más de un 5 % en alguna categoría importante (recordatorios, documentos, música), quédate con dos modelos.
 
 Fuente de los tamaños: [biblioteca de Ollama, qwen3-vl](https://ollama.com/library/qwen3-vl/tags).
