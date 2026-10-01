@@ -1,5 +1,44 @@
 # Cambios
 
+## 1.1.0 (pulido)
+
+Una versión para que Carvis parezca y funcione como un producto de Windows 11.
+
+**Diseño**
+- Sistema de diseño en un solo archivo con colores por tema, espaciado de 4 px, radios, sombras y 5 tallas de letra. Un test impide colores o márgenes a mano en las vistas.
+- Iconos Fluent UI System Icons, fondo Mica o Acrylic en Windows 11 (sólido en Windows 10) y el acento de Windows.
+- Animaciones de 150–250 ms que respetan la opción de Windows de reducir animaciones.
+- Ventana principal, Ajustes y primer arranque rediseñados en tema claro, oscuro y alto contraste.
+- Orbe de voz que sigue el volumen real del micrófono y cambia al hablar.
+- Estados vacíos con icono, frase y acción, y esqueletos de carga en lugar de pantallas quietas.
+- Las acciones salen como tarjetas compactas con icono y resultado.
+- Textos revisados: los errores dicen qué ha pasado y qué hacer.
+
+**Foco**
+- Nueva sección *Experimental* en Ajustes, todo apagado de fábrica: PowerShell, servidores MCP, complementos, escucha continua y modo razonamiento.
+
+**Rendimiento**
+- El registro apunta el tiempo de arranque, lo que tarda la ventana tras Alt+Espacio (aviso si pasa de 300 ms), el primer token y la VRAM de cada modelo.
+- El modelo de chat se queda cargado (`KeepAlive -1`). El de visión se descarga al responder y el de chat se vuelve a cargar en segundo plano. Funciona también con un único modelo multimodal (Qwen3-VL); ver [PERFORMANCE.md](docs/PERFORMANCE.md).
+- La búsqueda en documentos y en el historial ya no bloquea la interfaz.
+
+**Fiabilidad**
+- Registro con Serilog en archivos que rotan, sin rutas ni nombres. Botón en Ajustes para abrir la carpeta.
+- Si Carvis se cierra por un error, al volver a abrirlo ofrece copiar el informe o crear un issue ya relleno.
+- 80 frases de evaluación por categorías con informe en Markdown (`tests/Carvis.Evals`).
+- Arreglado: una frase clave exacta («¿tengo instalado…?») no traía su herramienta si no coincidía también la categoría.
+
+**Seguridad**
+- PowerShell bloquea lo peligroso de verdad (formatear, borrar carpetas del sistema, descargar y ejecutar, desactivar Defender o el cortafuegos, código en Base64) y marca en rojo lo delicado, con la explicación.
+- Las respuestas que salen de webs o documentos llevan la marca *Origen externo*, y sus comandos traen aviso. Después de leer contenido externo no se puede «permitir siempre».
+- Nuevo [SECURITY.md](SECURITY.md).
+
+**Integraciones**
+- Cliente MCP (stdio y HTTP), experimental. Cada servidor tiene su permiso: *Preguntar siempre* o *Lecturas sin preguntar*. Su estado sale en Ajustes.
+
+**Repositorio**
+- Acciones de GitHub sin Node 20, licencia MIT, revisión de licencias de terceros, README nuevo con demo, CONTRIBUTING.md y formularios de issues.
+
 ## 1.0.0
 
 Primera versión completa.
