@@ -32,6 +32,10 @@ public sealed class MainWindowViewModelTests : IDisposable
         services.Replace(ServiceDescriptor.Singleton<IModelManager, FakeModels>());
         services.Replace(ServiceDescriptor.Singleton<ITitleGenerator>(new FixedTitle()));
         services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Indexing.IEmbeddingService, NoEmbeddings>());
+        // A fake profile: on Windows the temp folder is inside AppData, which Carvis never touches.
+        var home = Path.Combine(_dir, "home");
+        services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Context.IUserFolders>(new Carvis.Core.Context.UserFolders(
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["Perfil"] = home, ["Escritorio"] = Path.Combine(home, "Desktop") })));
         services.AddSingleton<MainWindowViewModel>();
         _services = services.BuildServiceProvider();
     }
@@ -142,7 +146,6 @@ public sealed class MainWindowViewModelTests : IDisposable
     public async Task ToolCards_WaitForTheUserAndRunAfterApproval()
     {
         var folder = Path.Combine(_dir, "home", "Desktop", "Clase");
-        _services.GetRequiredService<PermissionsSettings>().AllowedFolders.Add(Path.Combine(_dir, "home"));
         _model.CallTool("crear_carpeta", $$"""{"ruta": {{System.Text.Json.JsonSerializer.Serialize(folder)}}}""").Answer("Creada.");
         var vm = ViewModel;
 

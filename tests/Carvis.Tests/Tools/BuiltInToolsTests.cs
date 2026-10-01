@@ -85,14 +85,14 @@ public sealed class BuiltInToolsTests : IDisposable
     }
 
     [Fact]
-    public async Task PowerShellIsUnavailableOutsideWindowsAndAlwaysDangerous()
+    public void PowerShellNeedsTheWindowsRunnerAndIsAlwaysDangerous()
     {
+        // Only the Core is registered here: the Windows runner isn't.
         var tool = Registry.Find("ejecutar_powershell")!;
-        Assert.Equal(OperatingSystem.IsWindows(), ((IConditionalTool)tool).IsEnabled);
+        Assert.False(((IConditionalTool)tool).IsEnabled);
         var preview = tool.Preview(new ToolArguments(new JsonObject { ["script"] = "Get-Date\nGet-Process", ["explicacion"] = "ver la hora" }), ToolContext.Default);
         Assert.Equal(ToolRisk.Dangerous, preview.Risk);
         Assert.Contains(preview.Details!, d => d.Contains("Get-Process"));
-        await Task.CompletedTask;
     }
 
     [Fact]
