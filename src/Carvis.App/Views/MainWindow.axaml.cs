@@ -171,11 +171,15 @@ public partial class MainWindow : Window
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape)
-        {
+        if (e.Key != Key.Escape)
+            return;
+
+        // Esc first answers a pending confirmation; only then it hides the window.
+        if (DataContext is MainWindowViewModel { PendingConfirmation: { } pending })
+            pending.Deny();
+        else
             Dismiss();
-            e.Handled = true;
-        }
+        e.Handled = true;
     }
 
     // Enter sends, Shift+Enter adds a line, arrow up recalls the last message.
@@ -184,7 +188,12 @@ public partial class MainWindow : Window
         if (DataContext is not MainWindowViewModel viewModel)
             return;
 
-        if (e.Key == Key.Enter && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        if (e.Key == Key.Enter && viewModel.PendingConfirmation is { } pending && string.IsNullOrWhiteSpace(viewModel.Input))
+        {
+            pending.Approve();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
         {
             if (viewModel.SendCommand.CanExecute(null))
                 viewModel.SendCommand.Execute(null);

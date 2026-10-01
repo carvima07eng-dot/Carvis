@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Carvis.App.ViewModels;
 
-public sealed partial class MessageViewModel(ChatRole role, string content = "") : ViewModelBase
+public sealed partial class MessageViewModel(ChatRole role, string content = "") : ChatItemViewModel
 {
     public ChatRole Role { get; } = role;
     public bool IsUser => Role == ChatRole.User;

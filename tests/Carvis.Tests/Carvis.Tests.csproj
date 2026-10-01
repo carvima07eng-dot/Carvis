@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Carvis.Core\Carvis.Core.csproj" />
+    <ProjectReference Include="..\..\src\Carvis.Windows\Carvis.Windows.csproj" />
   </ItemGroup>
 
 </Project>

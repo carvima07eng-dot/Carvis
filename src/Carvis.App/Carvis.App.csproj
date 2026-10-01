@@ -31,6 +31,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Carvis.Core\Carvis.Core.csproj" />
+    <ProjectReference Include="..\Carvis.Windows\Carvis.Windows.csproj" />
   </ItemGroup>
 
 </Project>

@@ -106,6 +106,43 @@
       <Setter Property="BorderThickness" Value="1" />
     </Style>
 
+    <Style Selector="Border.tool">
+      <Setter Property="Background" Value="#111A2B" />
+      <Setter Property="BorderBrush" Value="#24324A" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="Margin" Value="0,4" />
+      <Setter Property="MaxWidth" Value="640" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Border.tool.pending">
+      <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
+    </Style>
+    <Style Selector="Border.tool.pending.dangerous">
+      <Setter Property="BorderBrush" Value="#F87171" />
+      <Setter Property="Background" Value="#2A1519" />
+    </Style>
+    <Style Selector="Border.tool Border.toolIcon">
+      <Setter Property="Background" Value="#24324A" />
+    </Style>
+    <Style Selector="Border.tool.pending Border.toolIcon">
+      <Setter Property="Background" Value="{StaticResource Accent}" />
+      <Setter Property="TextElement.Foreground" Value="#0B1220" />
+    </Style>
+    <Style Selector="Border.tool.done Border.toolIcon">
+      <Setter Property="Background" Value="#065F46" />
+      <Setter Property="TextElement.Foreground" Value="#A7F3D0" />
+    </Style>
+    <Style Selector="Border.tool.failed Border.toolIcon">
+      <Setter Property="Background" Value="#7F1D1D" />
+      <Setter Property="TextElement.Foreground" Value="#FECACA" />
+    </Style>
+    <Style Selector="Button.primary.danger /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#F87171" />
+      <Setter Property="Foreground" Value="#1F0A0A" />
+    </Style>
+
     <Style Selector="Ellipse.status">
       <Setter Property="Width" Value="8" />
       <Setter Property="Height" Value="8" />
@@ -200,9 +237,9 @@
               IsVisible="{Binding HasMessages}">
         <ScrollViewer x:Name="MessagesScroll" MaxHeight="380"
                       HorizontalScrollBarVisibility="Disabled">
-          <ItemsControl ItemsSource="{Binding Messages}" Margin="18,10">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:MessageViewModel">
+          <ItemsControl ItemsSource="{Binding Items}" Margin="18,10">
+            <ItemsControl.DataTemplates>
+              <DataTemplate DataType="vm:MessageViewModel">
                 <Border Classes="bubble"
                         Classes.user="{Binding IsUser}"
                         Classes.error="{Binding IsError}">
@@ -221,7 +258,60 @@
                   </StackPanel>
                 </Border>
               </DataTemplate>
-            </ItemsControl.ItemTemplate>
+
+              <DataTemplate DataType="vm:ToolCallViewModel">
+                <Border Classes="tool"
+                        Classes.pending="{Binding IsPending}"
+                        Classes.dangerous="{Binding IsDangerous}"
+                        Classes.done="{Binding IsDone}"
+                        Classes.failed="{Binding IsFailed}">
+                  <StackPanel Spacing="6">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Classes="toolIcon" Width="22" Height="22" CornerRadius="11" VerticalAlignment="Top">
+                        <TextBlock Text="{Binding StateIcon}" FontWeight="Bold" FontSize="12"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="2">
+                        <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" FontWeight="SemiBold"
+                                   Foreground="{StaticResource TextPrimary}" />
+                        <TextBlock Text="{Binding StateText}" FontSize="12" Foreground="{StaticResource TextSecondary}" />
+                      </StackPanel>
+                      <Button Grid.Column="2" Classes="ghost" Content="Detalles" VerticalAlignment="Top"
+                              IsVisible="{Binding HasOutput}" Command="{Binding ToggleOutputCommand}"
+                              Padding="8,2" FontSize="11" />
+                    </Grid>
+
+                    <ItemsControl ItemsSource="{Binding Details}" IsVisible="{Binding HasDetails}" Margin="32,0,0,0">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <TextBlock Text="{Binding}" FontFamily="Cascadia Mono,Consolas,Menlo,monospace" FontSize="12"
+                                     TextWrapping="Wrap" Foreground="{StaticResource TextSecondary}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border IsVisible="{Binding ShowOutput}" Background="#0B1220" CornerRadius="8" Padding="10,6" Margin="32,0,0,0">
+                      <SelectableTextBlock Text="{Binding Output}" TextWrapping="Wrap" FontSize="12"
+                                           FontFamily="Cascadia Mono,Consolas,Menlo,monospace"
+                                           Foreground="{StaticResource TextSecondary}" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="32,2,0,0" IsVisible="{Binding IsPending}">
+                      <Button Classes="primary" Classes.danger="{Binding IsDangerous}" Content="{Binding ApproveLabel}"
+                              Command="{Binding ApproveCommand}" Padding="14,5" />
+                      <Button Classes="ghost" Content="Permitir en esta sesión" Command="{Binding ApproveForSessionCommand}"
+                              IsVisible="{Binding CanApproveForSession}" />
+                      <Button Classes="ghost" Content="Cancelar" Command="{Binding DenyCommand}" />
+                      <TextBlock Text="Enter acepta · Esc cancela" FontSize="11" VerticalAlignment="Center"
+                                 Foreground="{StaticResource TextMuted}" />
+                    </StackPanel>
+
+                    <Button Classes="ghost" Content="Deshacer" IsVisible="{Binding CanUndo}" Command="{Binding UndoCommand}"
+                            HorizontalAlignment="Left" Margin="24,0,0,0" Padding="8,2" FontSize="12" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.DataTemplates>
           </ItemsControl>
         </ScrollViewer>
       </Border>

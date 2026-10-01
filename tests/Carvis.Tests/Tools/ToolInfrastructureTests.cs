@@ -103,6 +103,25 @@ public sealed class ToolSelectorTests : IDisposable
     }
 
     [Fact]
+    public async Task MatchesWholeWordsOnly()
+    {
+        // "ordena" (sort) must not match "ordenador" (computer).
+        var tools = await new ToolSelector(_registry).SelectAsync("bloquea el ordenador", []);
+
+        Assert.DoesNotContain(tools, t => t.Category == "archivos");
+        Assert.True(ToolSelector.Matches("hay archivos duplicados", "duplicad*"));
+        Assert.False(ToolSelector.Matches("bloquea el ordenador", "ordena"));
+    }
+
+    [Fact]
+    public async Task PutsTheMostSpecificToolFirst()
+    {
+        var tools = await new ToolSelector(_registry).SelectAsync("créame una carpeta llamada Clase", []);
+
+        Assert.Equal("crear_carpeta", tools[0].Name);
+    }
+
+    [Fact]
     public async Task KeepsThePreviousTurnCategoriesForFollowUps()
     {
         var history = new List<ChatMessage>

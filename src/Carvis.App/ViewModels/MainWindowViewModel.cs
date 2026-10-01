@@ -3,6 +3,7 @@ using Carvis.Core.Chat;
 using Carvis.Core.Configuration;
 using Carvis.Core.Input;
 using Carvis.Core.Ollama;
+using Carvis.Core.Tools;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -12,37 +13,41 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 {
     private readonly IChatService _chat;
     private readonly IOllamaHealthCheck _healthCheck;
+    private readonly IActionJournal _journal;
+    private readonly ToolPolicy _policy;
     private CancellationTokenSource? _sendCancellation;
     private bool _isModelLoaded;
     private string? _lastSentMessage;
 
-    public MainWindowViewModel(IChatService chat, IOllamaHealthCheck healthCheck, CarvisSettings settings)
+    public MainWindowViewModel(
+        IChatService chat,
+        IOllamaHealthCheck healthCheck,
+        CarvisSettings settings,
+        IActionJournal journal,
+        ToolPolicy policy,
+        ToolConfirmationBroker confirmations)
     {
         _chat = chat;
         _healthCheck = healthCheck;
+        _journal = journal;
+        _policy = policy;
         ModelName = settings.Ollama.ChatModel;
 
         HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture);
         HotkeyText = ToDisplay(gesture);
         DismissHint = settings.Window.HideOnFocusLost ? "Esc ocultar" : "Esc minimizar";
 
-        Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
+        confirmations.Handler = ConfirmAsync;
+        Items.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
     }
 
-    public ObservableCollection<MessageViewModel> Messages { get; } = [];
+    /// <summary>The conversation: messages and action cards in order.</summary>
+    public ObservableCollection<ChatItemViewModel> Items { get; } = [];
+
+    public bool HasMessages => Items.Count > 0;
 
     /// <summary>Informational messages (bad settings, unexpected errors) the user can dismiss.</summary>
     public ObservableCollection<string> Notices { get; } = [];
-
-    public void AddNotice(string notice)
-    {
-        if (!Notices.Contains(notice))
-            Notices.Add(notice);
-    }
-
-    [RelayCommand]
-    private void DismissNotice(string notice) => Notices.Remove(notice);
-    public bool HasMessages => Messages.Count > 0;
 
     public string ModelName { get; }
     public string HotkeyText { get; }
@@ -84,6 +89,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(HasHotkeyWarning))]
     private string? _hotkeyWarning;
 
+    /// <summary>The action waiting for the user's answer, if any (Enter accepts, Esc cancels).</summary>
+    [ObservableProperty]
+    private ToolCallViewModel? _pendingConfirmation;
+
     public bool HasStatusMessage => !string.IsNullOrEmpty(StatusMessage);
     public bool HasStatusCommand => !string.IsNullOrEmpty(StatusCommand);
     public bool HasHotkeyWarning => !string.IsNullOrEmpty(HotkeyWarning);
@@ -100,6 +109,15 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             _ => "Sin conexión",
         };
 
+    public void AddNotice(string notice)
+    {
+        if (!Notices.Contains(notice))
+            Notices.Add(notice);
+    }
+
+    [RelayCommand]
+    private void DismissNotice(string notice) => Notices.Remove(notice);
+
     private bool CanSend() => !IsBusy && !string.IsNullOrWhiteSpace(Input);
 
     [RelayCommand(CanExecute = nameof(CanSend))]
@@ -109,36 +127,67 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         Input = string.Empty;
         _lastSentMessage = text;
 
-        Messages.Add(new MessageViewModel(ChatRole.User, text));
-        var reply = new MessageViewModel(ChatRole.Assistant) { IsStreaming = true };
-        Messages.Add(reply);
+        Items.Add(new MessageViewModel(ChatRole.User, text));
+        var reply = NewReply();
 
         IsBusy = true;
         using var cancellation = new CancellationTokenSource();
         _sendCancellation = cancellation;
+        var anyTool = false;
 
         try
         {
-            await foreach (var chunk in _chat.SendAsync(text, cancellation.Token))
-                reply.Append(chunk);
+            await foreach (var chatEvent in _chat.SendAsync(text, cancellation.Token))
+            {
+                switch (chatEvent)
+                {
+                    case TextDelta delta:
+                        reply ??= NewReply();
+                        reply.Append(delta.Text);
+                        break;
 
-            if (reply.Content.Length == 0)
+                    case ToolStarted started:
+                        anyTool = true;
+                        reply = CloseReply(reply);
+                        Items.Add(new ToolCallViewModel(started.Invocation, _policy.CanApproveForSession(started.Invocation.Preview), UndoAsync));
+                        break;
+
+                    case ToolFinished finished:
+                        if (FindCard(finished.Invocation.Id) is { } card)
+                        {
+                            var entry = finished.Result.JournalEntryId is { } id ? _journal.Find(id) : null;
+                            card.Complete(finished.Result, entry?.CanUndo == true);
+                        }
+                        break;
+
+                    case StepCompleted:
+                        // The model continues after the tool results: show that it's thinking again.
+                        reply ??= NewReply();
+                        break;
+                }
+            }
+
+            if (reply is { Content.Length: 0 } && !anyTool)
                 reply.Content = "(Sin respuesta)";
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            if (reply.Content.Length == 0)
+            if (reply is { Content.Length: 0 })
                 reply.Content = "(Respuesta cancelada)";
         }
         catch (Exception ex)
         {
+            reply ??= NewReply();
             reply.IsError = true;
             reply.Content = DescribeError(ex);
             _ = CheckStatusAsync();
         }
         finally
         {
-            reply.IsStreaming = false;
+            CloseReply(reply);
+            foreach (var card in Items.OfType<ToolCallViewModel>().Where(c => c.IsPending))
+                card.Deny();
+            PendingConfirmation = null;
             _sendCancellation = null;
             IsBusy = false;
         }
@@ -161,7 +210,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private void NewConversation()
     {
         _chat.ClearHistory();
-        Messages.Clear();
+        Items.Clear();
     }
 
     private bool CanStartNewConversation() => !IsBusy;
@@ -196,6 +245,46 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         if (IsOllamaReady)
             await LoadModelAsync();
     }
+
+    private MessageViewModel NewReply()
+    {
+        var reply = new MessageViewModel(ChatRole.Assistant) { IsStreaming = true };
+        Items.Add(reply);
+        return reply;
+    }
+
+    // An empty bubble before a tool card adds nothing: remove it.
+    private MessageViewModel? CloseReply(MessageViewModel? reply)
+    {
+        if (reply is null)
+            return null;
+        reply.IsStreaming = false;
+        if (reply.Content.Length == 0)
+            Items.Remove(reply);
+        return null;
+    }
+
+    private ToolCallViewModel? FindCard(string id) =>
+        Items.OfType<ToolCallViewModel>().LastOrDefault(c => c.Invocation.Id == id);
+
+    private async Task<ConfirmationDecision> ConfirmAsync(ToolInvocation invocation, CancellationToken cancellationToken)
+    {
+        var card = FindCard(invocation.Id);
+        if (card is null)
+            return ConfirmationDecision.Deny;
+
+        PendingConfirmation = card;
+        try
+        {
+            return await card.WaitForDecisionAsync(cancellationToken);
+        }
+        finally
+        {
+            PendingConfirmation = null;
+        }
+    }
+
+    private Task<string> UndoAsync(string journalEntryId) => _journal.UndoAsync(journalEntryId);
 
     // Loading qwen3:8b into the GPU takes a few seconds; do it before the first question.
     private async Task LoadModelAsync()

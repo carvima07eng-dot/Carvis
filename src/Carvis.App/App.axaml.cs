@@ -11,6 +11,7 @@ using Carvis.App.Views;
 using Carvis.Core;
 using Carvis.Core.Configuration;
 using Carvis.Core.Input;
+using Carvis.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -197,7 +198,9 @@ public partial class App : Application
             .SetMinimumLevel(LogLevel.Trace));
         services.AddSingleton(bootstrap.Paths);
         services.AddSingleton(bootstrap.SettingsStore);
-        services.AddCarvisCore(bootstrap.Settings);
+        services.AddCarvisCore(bootstrap.Settings, bootstrap.Paths);
+        if (OperatingSystem.IsWindows())
+            services.AddCarvisWindows();
         services.AddSingleton(new WindowStateStore(bootstrap.Paths.WindowStateFile));
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<MainWindowViewModel>();
