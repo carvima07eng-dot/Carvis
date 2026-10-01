@@ -87,7 +87,7 @@ Los complementos (`%AppData%\Carvis\plugins`) son DLL de .NET que se cargan dent
 
 ### 7. Registros e informes de fallos
 
-- Los registros (`%LOCALAPPDATA%\Carvis\logs`) no guardan lo que escribes ni lo que responde el modelo (salvo que pongas `Logging.IncludeContent` a `true` en `settings.json` para depurar). Antes de escribir nada se cambian tu carpeta de usuario por `%USERPROFILE%` y tu nombre por `<usuario>`.
+- Los registros (`%LOCALAPPDATA%\Carvis\logs`) no guardan lo que escribes ni lo que responde el modelo (salvo que actives *Incluir el texto de los mensajes* en Ajustes → Privacidad para depurar algo). Antes de escribir nada se cambian tu carpeta de usuario por `%USERPROFILE%` y tu nombre por `<usuario>`.
 - Si Carvis se cierra por un error, guarda un informe con esas mismas protecciones. Al volver a abrirlo te ofrece copiarlo o abrir un issue en GitHub, y solo se envía si tú lo mandas.
 
 ## Fuera de alcance
