@@ -250,4 +250,8 @@ public sealed class McpServerSettings
 
     /// <summary>"ask": every call needs confirmation. "read": tools marked read-only run without asking.</summary>
     public string Permission { get; set; } = "ask";
+
+    /// <summary>What Ajustes shows under the name: the command line or the address.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string Target => Transport == "http" ? Url : $"{Command} {Arguments}".Trim();
 }

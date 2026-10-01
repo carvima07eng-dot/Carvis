@@ -39,6 +39,9 @@ public sealed record ToolPreview(string Summary, ToolRisk Risk)
     public IReadOnlyList<ToolWarning> Warnings { get; init; } = [];
 
     public bool IsBlocked => Warnings.Any(w => w.Blocks);
+
+    /// <summary>Ask every time, whatever the confirmation settings (tools from third-party MCP servers).</summary>
+    public bool AlwaysConfirm { get; init; }
 }
 
 /// <summary>Why an action is risky, in words for the user.</summary>

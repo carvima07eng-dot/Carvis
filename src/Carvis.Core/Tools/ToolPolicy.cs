@@ -8,7 +8,7 @@ public sealed class ToolPolicy(PermissionsSettings settings)
     private readonly HashSet<string> _sessionApprovals = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _lock = new();
 
-    public bool NeedsConfirmation(ToolPreview preview, ToolContext context) => preview.Risk switch
+    public bool NeedsConfirmation(ToolPreview preview, ToolContext context) => preview.AlwaysConfirm || preview.Risk switch
     {
         ToolRisk.Read => false,
         ToolRisk.Low => settings.ConfirmLowRisk || context.ExternalContentInTurn,
@@ -18,7 +18,7 @@ public sealed class ToolPolicy(PermissionsSettings settings)
     };
 
     public bool CanApproveForSession(ToolPreview preview) =>
-        preview.Risk is ToolRisk.Modify or ToolRisk.Low && preview.PermissionScope is not null;
+        preview.Risk is ToolRisk.Modify or ToolRisk.Low && preview.PermissionScope is not null && !preview.AlwaysConfirm;
 
     public void ApproveForSession(ToolPreview preview)
     {

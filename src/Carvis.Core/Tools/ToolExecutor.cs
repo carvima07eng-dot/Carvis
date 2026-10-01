@@ -101,7 +101,7 @@ public sealed class ToolExecutor(
                     AfterExternalContent = context.ExternalContentInTurn,
                 };
             }
-            var confirm = policy?.NeedsConfirmation(preview, context) ?? preview.Risk >= ToolRisk.Modify;
+            var confirm = policy?.NeedsConfirmation(preview, context) ?? (preview.AlwaysConfirm || preview.Risk >= ToolRisk.Modify);
             return new ToolInvocation(id, tool.Name, preview, confirm)
             {
                 Category = tool.Category,

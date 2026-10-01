@@ -82,6 +82,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ToolConfirmationBroker>();
         services.AddSingleton<IToolConfirmation>(sp => sp.GetRequiredService<ToolConfirmationBroker>());
         services.AddSingleton<IToolRegistry, ToolRegistry>();
+        services.AddSingleton<Mcp.McpConnections>();
         services.AddSingleton<IToolSelector, ToolSelector>();
         services.AddCarvisTools();
 
