@@ -85,6 +85,7 @@ public partial class App : Application
 
             StartHotkey(settings);
             CreateTrayIcon(_viewModel.HotkeyText);
+            StartMcp(settings);
 
             if (!settings.FirstRunCompleted)
             {
@@ -358,6 +359,7 @@ public partial class App : Application
             _services.GetRequiredService<Carvis.Core.Voice.IAudioOutput>());
         viewModel.AttachPersonalStores(_services.GetRequiredService<Carvis.Core.Storage.IReminderStore>(),
             _services.GetRequiredService<Carvis.Core.Storage.IRoutineStore>());
+        viewModel.ShowMcpStatus(_services.GetRequiredService<Carvis.Core.Mcp.McpConnections>().Status);
         if (page is not null)
             viewModel.OpenPage(page);
         viewModel.Saved += OnSettingsSaved;
@@ -510,6 +512,20 @@ public partial class App : Application
             item.IsChecked = WindowsStartup.IsEnabled();
         };
         return item;
+    }
+
+    // Experimental: servers start in the background; a failing one is reported and the rest keep working.
+    private void StartMcp(CarvisSettings settings)
+    {
+        if (!settings.Experimental.Mcp || _services is null || _viewModel is null)
+            return;
+        var connections = _services.GetRequiredService<Carvis.Core.Mcp.McpConnections>();
+        _ = Task.Run(async () =>
+        {
+            var status = await connections.ConnectAsync();
+            foreach (var problem in status.Where(s => !s.Connected))
+                Dispatcher.UIThread.Post(() => _viewModel.AddNotice($"El servidor MCP «{problem.Name}» no está disponible: {problem.Problem}"));
+        });
     }
 
     private void Cleanup()

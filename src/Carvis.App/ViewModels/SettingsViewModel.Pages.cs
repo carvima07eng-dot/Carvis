@@ -112,7 +112,20 @@ public sealed partial class SettingsViewModel
 
     public ObservableCollection<McpServerSettings> McpServers { get; } = [];
     public string[] McpTransports { get; } = ["stdio", "http"];
-    public string[] McpPermissions { get; } = ["ask", "read"];
+    public McpPermissionOption[] McpPermissions { get; } =
+    [
+        new("ask", "Preguntar siempre"),
+        new("read", "Lecturas sin preguntar"),
+    ];
+
+    /// <summary>How the servers did when Carvis started ("GitHub: conectado, 12 herramientas").</summary>
+    [ObservableProperty]
+    private string? _mcpStatus;
+
+    public void ShowMcpStatus(IReadOnlyList<Carvis.Core.Mcp.McpServerStatus> status) =>
+        McpStatus = status.Count == 0 ? null : string.Join("\n", status.Select(s => s.Connected
+            ? $"{s.Name}: conectado, {s.Tools} {(s.Tools == 1 ? "herramienta" : "herramientas")}"
+            : $"{s.Name}: {s.Problem}"));
 
     [ObservableProperty]
     private string _newMcpName = string.Empty;
@@ -140,9 +153,9 @@ public sealed partial class SettingsViewModel
         }
         else
         {
-            var parts = target.Split(' ', 2, StringSplitOptions.TrimEntries);
+            var parts = Carvis.Core.Mcp.McpConnections.SplitArguments(target);
             server.Command = parts[0];
-            server.Arguments = parts.Length > 1 ? parts[1] : string.Empty;
+            server.Arguments = string.Join(' ', parts.Skip(1).Select(a => a.Contains(' ') ? $"\"{a}\"" : a));
         }
         McpServers.Add(server);
         NewMcpName = NewMcpTarget = string.Empty;
@@ -151,3 +164,5 @@ public sealed partial class SettingsViewModel
     [RelayCommand]
     private void RemoveMcpServer(McpServerSettings server) => McpServers.Remove(server);
 }
+
+public sealed record McpPermissionOption(string Key, string Label);

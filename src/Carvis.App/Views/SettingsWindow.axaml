@@ -438,7 +438,7 @@
             <c:SettingsCard Icon="{StaticResource Icon.Plug}" Header="Plugins" Description="DLL de %AppData%\Carvis\plugins. Pueden hacer cualquier cosa con tus permisos: usa solo los que conozcas. Se cargan al reiniciar.">
               <ToggleSwitch IsChecked="{Binding Draft.Permissions.EnablePlugins}" OnContent="Sí" OffContent="No" />
             </c:SettingsCard>
-            <c:SettingsCard Icon="{StaticResource Icon.Plug}" Header="Servidores MCP" Description="Añaden herramientas de otros programas. Cada acción se confirma. Se conectan al reiniciar.">
+            <c:SettingsCard Icon="{StaticResource Icon.Plug}" Header="Servidores MCP" Description="Añaden herramientas de otros programas. Te pregunto antes de cada acción, salvo las de solo lectura si lo permites. Se conectan al reiniciar.">
               <ToggleSwitch IsChecked="{Binding Draft.Experimental.Mcp}" OnContent="Sí" OffContent="No" />
               <c:SettingsCard.Footer>
                 <StackPanel Spacing="{StaticResource Space.8}" IsEnabled="{Binding Draft.Experimental.Mcp}">
@@ -449,10 +449,13 @@
                           <c:FluentIcon Data="{StaticResource Icon.Plug}" Classes="accent" Margin="{StaticResource Gap.R8}" />
                           <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding Name}" />
-                            <TextBlock Classes="caption" Text="{Binding Transport}" />
+                            <TextBlock Classes="caption" Text="{Binding Target}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Target}" />
                           </StackPanel>
-                          <ComboBox Grid.Column="2" Classes="narrow" ToolTip.Tip="ask: pregunta siempre · read: lo que sea solo lectura no pregunta"
-                                    ItemsSource="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).McpPermissions}" SelectedItem="{Binding Permission}" Margin="{StaticResource Gap.R8}" />
+                          <ComboBox Grid.Column="2" ToolTip.Tip="«Lecturas sin preguntar» solo vale para las herramientas que el servidor marca como de solo lectura. Lo demás siempre pregunta."
+                                    ItemsSource="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).McpPermissions}"
+                                    DisplayMemberBinding="{Binding Label, x:DataType=vm:McpPermissionOption}"
+                                    SelectedValueBinding="{Binding Key, x:DataType=vm:McpPermissionOption}"
+                                    SelectedValue="{Binding Permission}" Margin="{StaticResource Gap.R8}" />
                           <ToggleSwitch Grid.Column="3" IsChecked="{Binding Enabled}" OnContent="" OffContent="" />
                           <Button Grid.Column="4" Classes="icon" ToolTip.Tip="Quitar" AutomationProperties.Name="Quitar servidor"
                                   Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveMcpServerCommand}" CommandParameter="{Binding}">
@@ -462,6 +465,9 @@
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
+                  <TextBlock Classes="caption secondary wrap" Text="{Binding McpStatus}" IsVisible="{Binding McpStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                  <TextBlock Classes="caption tertiary wrap" Text="Un servidor MCP es un programa de otra persona que funciona con tus permisos. Añade solo los que conozcas."
+                             IsVisible="{Binding !McpServers.Count}" />
                   <Grid ColumnDefinitions="*,Auto,2*,Auto" ColumnSpacing="{StaticResource Space.8}">
                     <TextBox Text="{Binding NewMcpName}" Watermark="Nombre" />
                     <ComboBox Grid.Column="1" ItemsSource="{Binding McpTransports}" SelectedItem="{Binding NewMcpTransport}" />
