@@ -92,7 +92,11 @@ public sealed class ToolExecutor(
         {
             var preview = tool.Preview(arguments, context);
             var confirm = policy?.NeedsConfirmation(preview, context) ?? preview.Risk >= ToolRisk.Modify;
-            return new ToolInvocation(id, tool.Name, preview, confirm);
+            return new ToolInvocation(id, tool.Name, preview, confirm)
+            {
+                Category = tool.Category,
+                AfterExternalContent = context.ExternalContentInTurn,
+            };
         }
         catch (ToolArgumentException ex)
         {

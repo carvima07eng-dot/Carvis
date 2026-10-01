@@ -10,7 +10,7 @@ namespace Carvis.Core.Tools.Scripts;
 /// its output counts as external content (it can contain anything).
 /// </summary>
 [BuiltInTool]
-public sealed class PowerShellTool(IScriptRunner runner) : ITool, IConditionalTool
+public sealed class PowerShellTool(IScriptRunner runner, Configuration.ExperimentalSettings experimental) : ITool, IConditionalTool
 {
     private const int MaxOutput = 8000;
 
@@ -23,8 +23,10 @@ public sealed class PowerShellTool(IScriptRunner runner) : ITool, IConditionalTo
         Required("script", String("El script de PowerShell")),
         Required("explicacion", String("Qué hace el script, en una frase para el usuario")));
 
-    public bool IsEnabled => runner.IsAvailable;
-    public string DisabledReason => "PowerShell solo está disponible en Windows.";
+    public bool IsEnabled => runner.IsAvailable && experimental.PowerShell;
+    public string DisabledReason => runner.IsAvailable
+        ? "Ejecutar scripts de PowerShell está desactivado. El usuario puede activarlo en Ajustes → Experimental."
+        : "PowerShell solo está disponible en Windows.";
 
     public ToolPreview Preview(ToolArguments arguments, ToolContext context)
     {

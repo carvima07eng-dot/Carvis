@@ -13,6 +13,7 @@ public sealed class CarvisSettings
     public DocumentsSettings Documents { get; set; } = new();
     public VoiceSettings Voice { get; set; } = new();
     public VisionSettings Vision { get; set; } = new();
+    public ExperimentalSettings Experimental { get; set; } = new();
 
     /// <summary>The first-run assistant has been completed.</summary>
     public bool FirstRunCompleted { get; set; }
@@ -96,7 +97,7 @@ public sealed class WindowSettings
     public bool HideOnFocusLost { get; set; }
 
     /// <summary>"Solid", "Acrylic" or "Mica" (the last two need Windows 11).</summary>
-    public string Backdrop { get; set; } = "Solid";
+    public string Backdrop { get; set; } = "Mica";
 
     public double FontSize { get; set; } = 14;
 
@@ -210,4 +211,36 @@ public sealed class VisionSettings
 
     /// <summary>Keep captures in Pictures\Carvis. Off = they only live in memory.</summary>
     public bool SaveCaptures { get; set; }
+}
+
+/// <summary>Features that work but are not polished yet. All off by default.</summary>
+public sealed class ExperimentalSettings
+{
+    /// <summary>Let Carvis write and run PowerShell scripts (always shown and confirmed first).</summary>
+    public bool PowerShell { get; set; }
+
+    /// <summary>Connect to MCP servers to get more tools.</summary>
+    public bool Mcp { get; set; }
+
+    public List<McpServerSettings> McpServers { get; set; } = [];
+}
+
+public sealed class McpServerSettings
+{
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>"stdio" (a program Carvis starts) or "http" (a server already running).</summary>
+    public string Transport { get; set; } = "stdio";
+
+    /// <summary>For stdio: the program and its arguments, e.g. npx -y @modelcontextprotocol/server-filesystem C:\\Apuntes</summary>
+    public string Command { get; set; } = string.Empty;
+    public string Arguments { get; set; } = string.Empty;
+
+    /// <summary>For http: the address, e.g. http://localhost:3001/mcp</summary>
+    public string Url { get; set; } = string.Empty;
+
+    public bool Enabled { get; set; } = true;
+
+    /// <summary>"ask": every call needs confirmation. "read": tools marked read-only run without asking.</summary>
+    public string Permission { get; set; } = "ask";
 }

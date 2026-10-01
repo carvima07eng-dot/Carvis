@@ -23,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(settings.Assistant);
         services.AddSingleton(settings.Permissions);
         services.AddSingleton(settings.Logging);
+        services.AddSingleton(settings.Experimental);
         services.TryAddSingleton(paths ?? new AppPaths());
         services.TryAddSingleton(TimeProvider.System);
 

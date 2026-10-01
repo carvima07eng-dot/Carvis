@@ -75,7 +75,14 @@ public interface ITool
 public sealed class ToolArgumentException(string message) : Exception(message);
 
 /// <summary>One tool call as the UI sees it.</summary>
-public sealed record ToolInvocation(string Id, string ToolName, ToolPreview Preview, bool NeedsConfirmation);
+public sealed record ToolInvocation(string Id, string ToolName, ToolPreview Preview, bool NeedsConfirmation)
+{
+    /// <summary>The tool's category (archivos, sistema, recordatorios...), for its icon.</summary>
+    public string? Category { get; init; }
+
+    /// <summary>Text from outside (web, documents, captures, script output) entered this turn before the call.</summary>
+    public bool AfterExternalContent { get; init; }
+}
 
 public enum ConfirmationDecision
 {
