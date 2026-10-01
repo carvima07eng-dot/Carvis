@@ -13,6 +13,9 @@ public interface IChatService
 
     void ClearHistory();
 
+    /// <summary>Runs tool calls without asking the model (routines, scheduled tasks), with the usual confirmations.</summary>
+    IAsyncEnumerable<ChatEvent> RunToolsAsync(string description, IReadOnlyList<Tools.ToolCall> calls, CancellationToken cancellationToken = default);
+
     /// <summary>Replaces the history, e.g. when reopening a saved conversation.</summary>
     void LoadHistory(IEnumerable<ChatMessage> messages, string? summary = null);
 

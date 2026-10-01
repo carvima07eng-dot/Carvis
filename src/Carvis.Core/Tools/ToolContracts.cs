@@ -44,6 +44,9 @@ public sealed record ToolResult(bool Success, string Output)
     /// <summary>The output contains text from outside (files, web pages): treat it as untrusted.</summary>
     public bool ContainsExternalContent { get; init; }
 
+    /// <summary>More calls to run right after this one (the steps of a routine).</summary>
+    public IReadOnlyList<ToolCall>? FollowUpCalls { get; init; }
+
     public static ToolResult Ok(string output) => new(true, output);
     public static ToolResult Fail(string output) => new(false, output);
 }

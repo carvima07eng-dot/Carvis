@@ -57,12 +57,21 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IContentProtector>(_ => new ContentProtector(settings.Privacy.EncryptData));
         services.TryAddSingleton<IConversationStore, SqliteConversationStore>();
         services.TryAddSingleton<IMemoryStore, SqliteMemoryStore>();
+        services.TryAddSingleton<INoteStore, SqliteNoteStore>();
+        services.TryAddSingleton<ITodoStore, SqliteTodoStore>();
+        services.TryAddSingleton<IReminderStore, SqliteReminderStore>();
+        services.TryAddSingleton<IRoutineStore, SqliteRoutineStore>();
+        services.AddSingleton<Scheduling.ReminderScheduler>();
 
         // Actions
         services.TryAddSingleton<IRecycleBin, TrashFolderRecycleBin>();
         services.TryAddSingleton<IShell, DefaultShell>();
         services.TryAddSingleton<IAppCatalog, DefaultAppCatalog>();
         services.TryAddSingleton<IWindowManager, DefaultWindowManager>();
+        services.TryAddSingleton<ISystemControl, DefaultSystemControl>();
+        services.TryAddSingleton<IScriptRunner, UnavailableScriptRunner>();
+        services.TryAddSingleton<IClipboardService, MemoryClipboard>();
+        services.TryAddSingleton(_ => new Tools.Internet.InternetClient());
         services.TryAddSingleton<IJournalStore, SqliteJournalStore>();
         services.AddSingleton<IActionJournal, ActionJournal>();
         services.AddSingleton<IPathPolicy, PathPolicy>();

@@ -10,14 +10,16 @@ public sealed class ToastNotifier : INotifier
     private const int MaxVisible = 4;
     private readonly List<ToastWindow> _open = [];
 
-    public void Notify(string title, string message, Action? onClick = null)
+    public void Notify(string title, string message, Action? onClick = null, bool important = false)
     {
         Dispatcher.UIThread.Post(() =>
         {
             if (_open.Count >= MaxVisible)
                 _open[0].Close();
 
-            var toast = new ToastWindow(title, message, onClick);
+            var toast = new ToastWindow(title, message, onClick, important);
+            if (important)
+                Platform.WindowsNative.PlayNotificationSound();
             toast.Closed += (_, _) =>
             {
                 _open.Remove(toast);

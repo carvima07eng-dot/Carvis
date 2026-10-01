@@ -13,7 +13,7 @@ public sealed class ToastWindow : Window
 {
     private readonly DispatcherTimer _timer;
 
-    public ToastWindow(string title, string message, Action? onClick)
+    public ToastWindow(string title, string message, Action? onClick, bool important = false)
     {
         SystemDecorations = SystemDecorations.None;
         ShowInTaskbar = false;
@@ -43,7 +43,7 @@ public sealed class ToastWindow : Window
         Content = new Border
         {
             Background = Brush.Parse("#0B1220"),
-            BorderBrush = Brush.Parse("#2A3A4F"),
+            BorderBrush = Brush.Parse(important ? "#38BDF8" : "#2A3A4F"),
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(14),
             Padding = new Thickness(14, 12, 8, 12),
@@ -64,8 +64,17 @@ public sealed class ToastWindow : Window
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
         _timer.Tick += (_, _) => Close();
         PointerEntered += (_, _) => _timer.Stop();
-        PointerExited += (_, _) => _timer.Start();
-        Opened += (_, _) => _timer.Start();
+        PointerExited += (_, _) =>
+        {
+            if (!important)
+                _timer.Start();
+        };
+        // Important ones (reminders) stay until closed.
+        Opened += (_, _) =>
+        {
+            if (!important)
+                _timer.Start();
+        };
         Closed += (_, _) => _timer.Stop();
     }
 

@@ -70,6 +70,8 @@ public partial class App : Application
             {
                 DataContext = _viewModel,
             };
+            _services.GetRequiredService<AvaloniaClipboard>().Owner = _window;
+            StartReminders();
             _viewModel.SettingsRequested += OpenSettings;
             _viewModel.AnswerCompleted += OnAnswerCompleted;
 
@@ -129,6 +131,27 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
+    }
+
+    private void StartReminders()
+    {
+        var scheduler = _services!.GetRequiredService<Carvis.Core.Scheduling.ReminderScheduler>();
+        var routines = _services!.GetRequiredService<Carvis.Core.Storage.IRoutineStore>();
+        var notifier = _services!.GetRequiredService<Carvis.Core.Platform.INotifier>();
+        scheduler.ReminderDue += (reminder, late) => Dispatcher.UIThread.Post(() =>
+        {
+            var when = late ? $" (era para las {reminder.DueAt:HH:mm})" : string.Empty;
+            if (reminder.Routine is { } name && routines.Find(name) is { } routine)
+            {
+                notifier.Notify("Rutina programada", $"Ejecutando «{routine.Name}»{when}", ShowWindow);
+                _ = _viewModel!.RunToolsAsync($"⏰ Rutina programada «{routine.Name}»{when}", routine.Steps);
+            }
+            else
+            {
+                notifier.Notify("Recordatorio", reminder.Text + when, ShowWindow, important: true);
+            }
+        });
+        scheduler.Start();
     }
 
     private bool _indexingStarted;
@@ -336,6 +359,8 @@ public partial class App : Application
         services.AddSingleton(new WindowStateStore(bootstrap.Paths.WindowStateFile));
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<Carvis.Core.Platform.INotifier, ToastNotifier>();
+        services.AddSingleton<AvaloniaClipboard>();
+        services.AddSingleton<Carvis.Core.Platform.IClipboardService>(sp => sp.GetRequiredService<AvaloniaClipboard>());
         services.AddSingleton<MainWindowViewModel>();
         return services.BuildServiceProvider();
     }

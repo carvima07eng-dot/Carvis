@@ -120,6 +120,9 @@ public sealed class PermissionsSettings
     /// <summary>Tools that need Internet (weather, currencies, web search) stay off unless this is on.</summary>
     public bool AllowInternet { get; set; }
 
+    /// <summary>Address of a SearXNG instance for web search (e.g. http://localhost:8080). Empty = no web search.</summary>
+    public string SearchUrl { get; set; } = string.Empty;
+
     /// <summary>Load extra tools from %AppData%\Carvis\plugins. Only for plugins you trust.</summary>
     public bool EnablePlugins { get; set; }
 }

@@ -35,5 +35,12 @@
   { "message": "¿cuánto es 1234 por 5678?", "tool": "calcular" },
   { "message": "convierte 25 grados celsius a fahrenheit", "tool": "convertir_unidades" },
   { "message": "recuerda que me llamo Carlos y estudio DAM", "tool": "recordar" },
-  { "message": "¿qué hora es en Tokio?", "tool": "fecha_hora" }
+  { "message": "¿qué hora es en Tokio?", "tool": "fecha_hora" },
+  { "message": "pausa la música", "tool": "multimedia", "args": { "accion": "pausa" } },
+  { "message": "pon windows en modo oscuro", "tool": "tema_windows", "args": { "modo": "oscuro" } },
+  { "message": "¿qué tareas tengo pendientes?", "tool": "listar_tareas" },
+  { "message": "activa el modo estudio", "tool": "ejecutar_rutina", "args": { "nombre": "estudio" } },
+  { "message": "¿cuántos días faltan para el 25 de diciembre?", "tool": "fecha_hora|calcular" },
+  { "message": "apaga el ordenador dentro de 30 minutos", "tool": "energia", "args": { "accion": "apagar" } },
+  { "message": "¿cuánto es el 21% de 350?", "tool": "calcular" }
 ]

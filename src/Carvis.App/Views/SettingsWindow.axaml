@@ -143,6 +143,9 @@
             <CheckBox Content="Preguntarme también antes de abrir programas o páginas web" IsChecked="{Binding Draft.Permissions.ConfirmLowRisk}" />
             <TextBlock Classes="hint" Text="Borrar, sobrescribir, ejecutar scripts o apagar el PC siempre se confirma." />
             <CheckBox Content="Permitir herramientas que usan Internet (tiempo, divisas, búsqueda web)" IsChecked="{Binding Draft.Permissions.AllowInternet}" />
+            <TextBlock Classes="label" Text="Buscador web (SearXNG, opcional)" />
+            <TextBox Text="{Binding Draft.Permissions.SearchUrl}" Watermark="http://localhost:8080" IsEnabled="{Binding Draft.Permissions.AllowInternet}" />
+            <TextBlock Classes="hint" Text="Para que Carvis lea resultados de búsqueda hace falta un SearXNG propio. Sin él, solo abre la búsqueda en el navegador." />
 
             <TextBlock Classes="label" Text="Carpetas en las que puede trabajar" />
             <TextBlock Classes="hint" Text="Si la lista está vacía, puede trabajar en toda tu carpeta personal (excepto AppData). Nunca toca Windows ni Archivos de programa." />

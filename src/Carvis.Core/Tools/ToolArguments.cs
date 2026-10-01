@@ -49,7 +49,9 @@ public sealed class ToolArguments(JsonObject json)
         var node = Json[name];
         if (node is not JsonValue value)
             return null;
-        if (value.TryGetValue<double>(out var d))
+        // A value built in code from an int doesn't convert to double with TryGetValue.
+        if (value.GetValueKind() == JsonValueKind.Number &&
+            double.TryParse(value.ToJsonString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
             return d;
         if (value.TryGetValue<string>(out var s) &&
             double.TryParse(s.Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))

@@ -227,7 +227,23 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private async Task AskAsync(string text, IReadOnlyList<string>? attachments = null)
     {
         Items.Add(new MessageViewModel(ChatRole.User, text) { Attachments = attachments ?? [] });
-        var reply = NewReply();
+        var input = new ChatInput(text) { Attachments = attachments ?? [] };
+        await RunTurnAsync(token => _chat.SendAsync(input, token), expectAnswer: true);
+    }
+
+    /// <summary>Runs a routine's steps without the model (a scheduled routine, for example).</summary>
+    public async Task RunToolsAsync(string description, IReadOnlyList<ToolCall> calls)
+    {
+        // A scheduled routine waits for the answer in progress to finish.
+        while (IsBusy)
+            await Task.Delay(500);
+        Items.Add(new MessageViewModel(ChatRole.User, description));
+        await RunTurnAsync(token => _chat.RunToolsAsync(description, calls, token), expectAnswer: false);
+    }
+
+    private async Task RunTurnAsync(Func<CancellationToken, IAsyncEnumerable<ChatEvent>> run, bool expectAnswer)
+    {
+        var reply = expectAnswer ? NewReply() : null;
 
         IsBusy = true;
         using var cancellation = new CancellationTokenSource();
@@ -236,8 +252,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         try
         {
-            var input = new ChatInput(text) { Attachments = attachments ?? [] };
-            await foreach (var chatEvent in _chat.SendAsync(input, cancellation.Token))
+            await foreach (var chatEvent in run(cancellation.Token))
             {
                 switch (chatEvent)
                 {
@@ -284,7 +299,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
             if (reply is { Content.Length: 0 } && !anyTool)
                 reply.Content = "(Sin respuesta)";
-            AnswerCompleted?.Invoke(Items.OfType<MessageViewModel>().LastOrDefault(m => !m.IsUser)?.Content ?? string.Empty);
+            if (expectAnswer)
+                AnswerCompleted?.Invoke(Items.OfType<MessageViewModel>().LastOrDefault(m => !m.IsUser)?.Content ?? string.Empty);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {

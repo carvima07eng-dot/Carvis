@@ -16,6 +16,17 @@ internal static class WindowsNative
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool GetCursorPos(out Point point);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool MessageBeep(uint type);
+
+    /// <summary>The Windows notification sound (reminders).</summary>
+    public static void PlayNotificationSound()
+    {
+        if (OperatingSystem.IsWindows())
+            MessageBeep(0x40 /* MB_ICONASTERISK */);
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     private struct Point
     {

@@ -138,15 +138,18 @@ public sealed class ToolSelector(
             "musica",
             "reproduce",
             "informacion del equipo",
+            "configuracion de windows",
+            "ajustes de windows",
+            "conexion",
         ],
-        ["recordatorios"] = ["recuerdame", "recordatorio", "alarma", "temporizador", "avisame", "en 5 minutos", "minutos", "a las", "manana", "cada lunes", "programa una tarea"],
-        ["notas"] = ["nota", "apunta", "anota", "tarea", "pendiente", "lista de tareas", "por hacer", "to do", "todo list"],
-        ["calculos"] = ["calcula", "cuanto es", "cuanto son", "convierte", "conversion", "raiz", "porcentaje", "%", "dias entre", "dias faltan", "que dia", "que hora", "hora en", "divisa", "euros", "dolares"],
+        ["recordatorios"] = ["recuerdame", "recordatorio*", "alarma*", "temporizador", "cuenta atras", "avisame", "despiertame", "minutos", "segundos", "a las", "manana", "cada lunes", "cada dia", "programa una tarea", "programado"],
+        ["notas"] = ["nota", "notas", "apunta", "anota", "tarea", "tareas", "pendiente", "lista de tareas", "por hacer", "to do", "todo list", "tengo que"],
+        ["calculos"] = ["calcula", "cuanto es", "cuanto son", "cuanto da", "convierte", "conversion", "pasa a", "raiz", "porcentaje", "%", "dias entre", "dias faltan", "cuantos dias", "que dia", "que hora", "hora en", "grados", "millas", "km", "kilos", "libras", "pulgadas"],
         ["memoria"] = ["recuerda que", "acuerdate", "me llamo", "mi nombre", "olvida", "que sabes de mi", "que recuerdas"],
         ["documentos"] = ["mis apuntes", "mis documentos", "segun", "en mis archivos", "en el pdf", "indexa", "indexar", "busca en mis"],
-        ["scripts"] = ["powershell", "script", "comando", "terminal", "consola", "rutina", "modo estudio", "automatiza"],
+        ["scripts"] = ["powershell", "script", "comando", "terminal", "consola", "rutina*", "modo estudio", "modo gaming", "activa el modo", "automatiza"],
         ["vision"] = ["pantalla", "captura", "screenshot", "que ves", "que hay en mi pantalla", "este error", "imagen"],
-        ["internet"] = ["tiempo hace", "el tiempo", "temperatura en", "llueve", "clima", "noticias", "busca en la web"],
+        ["internet"] = ["tiempo hace", "el tiempo", "que tiempo", "temperatura en", "llueve", "llover", "clima", "prevision", "noticias", "busca en la web", "busca en internet", "divisa*", "dolares", "libras", "cambio"],
         ["acciones"] = ["deshaz", "deshacer", "revierte", "vuelve a como estaba", "que has hecho", "historial de acciones"],
     };
 
@@ -160,7 +163,7 @@ public sealed class ToolSelector(
 
     public async Task<IReadOnlyList<ITool>> SelectAsync(string userMessage, IReadOnlyList<ChatMessage> history, CancellationToken cancellationToken = default)
     {
-        var tools = registry.All;
+        var tools = registry.All.Where(t => t is not IConditionalTool { IsEnabled: false }).ToList();
         if (tools.Count == 0)
             return [];
 

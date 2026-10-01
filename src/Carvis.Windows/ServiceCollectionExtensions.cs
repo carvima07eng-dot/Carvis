@@ -15,6 +15,8 @@ public static class ServiceCollectionExtensions
         services.Replace(ServiceDescriptor.Singleton<IAppCatalog, WindowsAppCatalog>());
         services.Replace(ServiceDescriptor.Singleton<IWindowManager, WindowsWindowManager>());
         services.Replace(ServiceDescriptor.Singleton<Carvis.Core.Indexing.Readers.IOcrEngine, WindowsOcrEngine>());
+        services.Replace(ServiceDescriptor.Singleton<ISystemControl, WindowsSystemControl>());
+        services.Replace(ServiceDescriptor.Singleton<IScriptRunner, WindowsScriptRunner>());
         return services;
     }
 }
