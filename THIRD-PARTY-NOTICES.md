@@ -29,10 +29,9 @@ Carvis se distribuye con licencia MIT (ver [LICENSE](LICENSE)). Incluye o descar
 | [Whisper.net](https://github.com/sandrohanea/whisper.net) (+ runtimes CPU y Vulkan, basados en whisper.cpp/ggml) | 1.9.1 | MIT |
 | [NAudio](https://github.com/naudio/NAudio) (Core y WinMM) | 2.2.1 | MIT |
 | [Velopack](https://github.com/velopack/velopack) | 1.2.161 | MIT |
-| [FluentAvaloniaUI](https://github.com/amwx/FluentAvalonia) | 2.x | MIT |
 | [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) (iconos) | — | MIT |
-| [Serilog](https://github.com/serilog/serilog) (+ Extensions.Logging, Sinks.File) | 4.x | Apache-2.0 |
-| [ModelContextProtocol C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) | — | MIT |
+| [Serilog](https://github.com/serilog/serilog) (+ Extensions.Logging 10.0, Sinks.File 7.0) | 4.4.0 | Apache-2.0 |
+| [ModelContextProtocol C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) (ModelContextProtocol.Core) | 2.2.0 | Apache-2.0 |
 
 \* SharpHook es MIT y distribuye libuiohook 1.3, que es LGPL-3.0.
 
