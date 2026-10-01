@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+# A newer push to the same branch cancels the run in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -12,9 +17,9 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: true
       AVALONIA_TELEMETRY_OPTOUT: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
@@ -32,7 +37,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results
           path: "**/TestResults/*.trx"
@@ -49,7 +54,7 @@ jobs:
 
       - name: Upload installer
         if: github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Carvis-Setup
           path: installer/*-Setup.exe

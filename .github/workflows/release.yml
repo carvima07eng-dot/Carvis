@@ -23,9 +23,9 @@ jobs:
   release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 8.0.x
 
@@ -60,7 +60,7 @@ jobs:
           vpk upload github --repoUrl ${{ github.server_url }}/${{ github.repository }} --token ${{ secrets.GITHUB_TOKEN }}
           -o releases --publish --releaseName "Carvis ${{ steps.version.outputs.value }}" --tag v${{ steps.version.outputs.value }}
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: carvis-${{ steps.version.outputs.value }}
           path: releases/*
