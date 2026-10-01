@@ -35,7 +35,11 @@ public sealed class PowerShellTool(IScriptRunner runner, Configuration.Experimen
             throw new ToolArgumentException("El script es demasiado largo.");
         var details = new List<string> { "  Script:" };
         details.AddRange(script.Replace("\r", string.Empty).Split('\n').Select(line => "    " + line));
-        return new ToolPreview($"Ejecutar PowerShell: {arguments.String("explicacion")}", ToolRisk.Dangerous) { Details = details };
+        return new ToolPreview($"Ejecutar PowerShell: {arguments.String("explicacion")}", ToolRisk.Dangerous)
+        {
+            Details = details,
+            Warnings = ScriptSafety.Analyze(script),
+        };
     }
 
     public async Task<ToolResult> ExecuteAsync(ToolArguments arguments, ToolContext context, CancellationToken cancellationToken = default)

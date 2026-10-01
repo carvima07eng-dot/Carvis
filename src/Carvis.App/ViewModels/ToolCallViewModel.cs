@@ -23,7 +23,8 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
     public ToolCallViewModel(ToolInvocation invocation, bool canApproveForSession, Func<string, Task<string>> undo)
     {
         Invocation = invocation;
-        CanApproveForSession = canApproveForSession;
+        // Never "always allow" something risky or proposed after reading outside text.
+        CanApproveForSession = canApproveForSession && !invocation.AfterExternalContent && invocation.Preview.Warnings.Count == 0;
         _undo = undo;
         _state = invocation.NeedsConfirmation ? ToolCallState.AwaitingConfirmation : ToolCallState.Running;
     }
@@ -36,7 +37,12 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
     public bool AfterExternalContent => Invocation.AfterExternalContent && Invocation.Preview.Risk != ToolRisk.Read;
     public IReadOnlyList<string> Details => Invocation.Preview.Details;
     public bool HasDetails => Details.Count > 0;
-    public bool IsDangerous => Invocation.Preview.Risk == ToolRisk.Dangerous;
+    public bool IsDangerous => Invocation.Preview.Risk == ToolRisk.Dangerous || HasWarnings;
+
+    /// <summary>Red lines explaining what is risky (e.g. a script that deletes folders).</summary>
+    public IReadOnlyList<ToolWarning> Warnings => Invocation.Preview.Warnings;
+    public bool HasWarnings => Warnings.Count > 0;
+    public bool IsBlocked => Invocation.Preview.IsBlocked;
     public bool CanApproveForSession { get; }
     public string ApproveLabel => IsDangerous ? "Sí, hazlo" : "Aceptar";
 
@@ -72,7 +78,7 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
         ToolCallState.AwaitingConfirmation => IsDangerous ? "Es una acción delicada: revísala antes de aceptar." : "¿Lo hago?",
         ToolCallState.Running => "Haciéndolo…",
         ToolCallState.Succeeded => "Hecho",
-        ToolCallState.Failed => "No se ha podido hacer",
+        ToolCallState.Failed => IsBlocked ? "Bloqueado por seguridad: no lo he ejecutado" : "No se ha podido hacer",
         ToolCallState.Denied => "Cancelado",
         ToolCallState.Undone => "Deshecho",
         _ => string.Empty,
@@ -83,7 +89,7 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
     {
         get
         {
-            if (State is ToolCallState.AwaitingConfirmation or ToolCallState.Running or ToolCallState.Denied || Output.Length == 0)
+            if (State is ToolCallState.AwaitingConfirmation or ToolCallState.Running or ToolCallState.Denied || Output.Length == 0 || IsBlocked)
                 return StateText;
             var line = Output.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? StateText;
             if (State == ToolCallState.Undone)
@@ -95,7 +101,7 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
     public string StateIconKey => State switch
     {
         ToolCallState.Succeeded => "Success",
-        ToolCallState.Failed => "Error",
+        ToolCallState.Failed => IsBlocked ? "ShieldError" : "Error",
         ToolCallState.Denied => "Dismiss",
         ToolCallState.Undone => "Undo",
         ToolCallState.AwaitingConfirmation when IsDangerous => "ShieldError",

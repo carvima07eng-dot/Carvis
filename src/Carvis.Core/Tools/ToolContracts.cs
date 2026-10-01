@@ -34,7 +34,15 @@ public sealed record ToolPreview(string Summary, ToolRisk Risk)
 
     /// <summary>Key used for "allow during this session" (e.g. tool + folder).</summary>
     public string? PermissionScope { get; init; }
+
+    /// <summary>Shown in red on the card. A blocking one stops the action before the user is asked.</summary>
+    public IReadOnlyList<ToolWarning> Warnings { get; init; } = [];
+
+    public bool IsBlocked => Warnings.Any(w => w.Blocks);
 }
+
+/// <summary>Why an action is risky, in words for the user.</summary>
+public sealed record ToolWarning(string Text, bool Blocks = false);
 
 public sealed record ToolResult(bool Success, string Output)
 {

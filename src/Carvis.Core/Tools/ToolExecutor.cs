@@ -91,6 +91,16 @@ public sealed class ToolExecutor(
         try
         {
             var preview = tool.Preview(arguments, context);
+            if (preview.IsBlocked)
+            {
+                error = "Bloqueado por seguridad: " + string.Join(" ", preview.Warnings.Where(w => w.Blocks).Select(w => w.Text)) +
+                        " No lo intentes de otra manera: explícale al usuario el riesgo y, si de verdad lo necesita, que lo haga él a mano.";
+                return new ToolInvocation(id, tool.Name, preview, false)
+                {
+                    Category = tool.Category,
+                    AfterExternalContent = context.ExternalContentInTurn,
+                };
+            }
             var confirm = policy?.NeedsConfirmation(preview, context) ?? preview.Risk >= ToolRisk.Modify;
             return new ToolInvocation(id, tool.Name, preview, confirm)
             {
