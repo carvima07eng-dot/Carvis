@@ -22,10 +22,19 @@ public interface ITextChunker
     IEnumerable<TextChunk> Split(string sourcePath, string text);
 }
 
+/// <summary>nomic-embed-text wants different prefixes for what is stored and what is searched.</summary>
+public enum EmbeddingPurpose
+{
+    Document,
+    Query,
+}
+
 /// <summary>Turns text into vectors (nomic-embed-text through Ollama).</summary>
 public interface IEmbeddingService
 {
-    Task<float[]> EmbedAsync(string text, CancellationToken cancellationToken = default);
+    Task<float[]> EmbedAsync(string text, EmbeddingPurpose purpose, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<float[]>> EmbedManyAsync(IReadOnlyList<string> texts, EmbeddingPurpose purpose, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Stores chunks with their embeddings (SQLite + sqlite-vec).</summary>

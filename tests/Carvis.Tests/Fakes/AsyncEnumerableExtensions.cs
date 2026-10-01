@@ -1,3 +1,5 @@
+using Carvis.Core.Chat;
+
 namespace Carvis.Tests.Fakes;
 
 internal static class AsyncEnumerableExtensions
@@ -9,4 +11,8 @@ internal static class AsyncEnumerableExtensions
             list.Add(item);
         return list;
     }
+
+    /// <summary>The text chunks of a chat answer, ignoring tool events.</summary>
+    public static async Task<List<string>> TextAsync(this IAsyncEnumerable<ChatEvent> source) =>
+        (await source.ToListAsync()).OfType<TextDelta>().Select(d => d.Text).ToList();
 }

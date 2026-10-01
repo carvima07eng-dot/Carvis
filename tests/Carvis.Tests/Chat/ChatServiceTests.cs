@@ -17,7 +17,7 @@ public class ChatServiceTests
     {
         _client.Reply("Ho", "la", ", ¿qué tal?");
 
-        var chunks = await CreateService().SendAsync("hola").ToListAsync();
+        var chunks = await CreateService().SendAsync("hola").TextAsync();
 
         Assert.Equal(["Ho", "la", ", ¿qué tal?"], chunks);
     }
@@ -31,7 +31,7 @@ public class ChatServiceTests
 
         Assert.Equal(
             [new ChatMessage(ChatRole.System, "Eres Carvis."), new ChatMessage(ChatRole.User, "hola")],
-            _client.Requests.Single());
+            _client.Requests.Single().Messages);
     }
 
     [Fact]
@@ -50,7 +50,7 @@ public class ChatServiceTests
                 new ChatMessage(ChatRole.Assistant, "¡Hola!"),
                 new ChatMessage(ChatRole.User, "¿qué tal?"),
             ],
-            _client.Requests[1]);
+            _client.Requests[1].Messages);
         Assert.Equal(4, service.History.Count);
         Assert.Equal(new ChatMessage(ChatRole.Assistant, "Bien, gracias."), service.History[^1]);
     }
@@ -61,7 +61,7 @@ public class ChatServiceTests
         _client.Reply("<thi", "nk>\nLet me think", "...</th", "ink>\n\n", "Hola", " Carlos");
         var service = CreateService();
 
-        var answer = string.Concat(await service.SendAsync("hola").ToListAsync());
+        var answer = string.Concat(await service.SendAsync("hola").TextAsync());
 
         Assert.Equal("Hola Carlos", answer);
         Assert.Equal("Hola Carlos", service.History[^1].Content);
@@ -90,7 +90,7 @@ public class ChatServiceTests
         {
             await foreach (var chunk in service.SendAsync("cuéntame algo", cancellation.Token))
             {
-                received.Add(chunk);
+                received.Add(((TextDelta)chunk).Text);
                 cancellation.Cancel();
             }
         });
@@ -124,7 +124,7 @@ public class ChatServiceTests
         await CreateService(new FixedContextProvider(context)).SendAsync("¿qué dicen mis notas?").ToListAsync();
 
         // System text from providers is merged into the single system message.
-        var request = _client.Requests.Single();
+        var request = _client.Requests.Single().Messages;
         Assert.Equal(new ChatMessage(ChatRole.System, "Eres Carvis.\n\nFragmento de notas.txt"), request[0]);
         Assert.Equal(2, request.Count);
     }
@@ -161,7 +161,7 @@ public class ChatServiceTests
         service.ClearHistory();
         await service.SendAsync("otra vez").ToListAsync();
 
-        Assert.Equal(2, _client.Requests[1].Count); // system prompt + new message
+        Assert.Equal(2, _client.Requests[1].Messages.Count); // system prompt + new message
     }
 
     [Fact]

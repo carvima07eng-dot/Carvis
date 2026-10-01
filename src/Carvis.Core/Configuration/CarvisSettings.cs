@@ -8,6 +8,7 @@ public sealed class CarvisSettings
     public AssistantSettings Assistant { get; set; } = new();
     public WindowSettings Window { get; set; } = new();
     public LoggingSettings Logging { get; set; } = new();
+    public PermissionsSettings Permissions { get; set; } = new();
 }
 
 public sealed class OllamaSettings
@@ -53,6 +54,12 @@ public sealed class AssistantSettings
 
     /// <summary>Older messages are dropped from the context beyond this limit.</summary>
     public int MaxHistoryMessages { get; set; } = 40;
+
+    /// <summary>Let the assistant act on the PC through tools.</summary>
+    public bool EnableTools { get; set; } = true;
+
+    /// <summary>Most tool rounds in one answer, so a confused model can't loop forever.</summary>
+    public int MaxToolSteps { get; set; } = 8;
 }
 
 public sealed class WindowSettings
@@ -80,4 +87,19 @@ public sealed class LoggingSettings
     public bool IncludeContent { get; set; }
 
     public int RetainDays { get; set; } = 14;
+}
+
+public sealed class PermissionsSettings
+{
+    /// <summary>Folders Carvis may read and change. Empty = the whole user profile except AppData.</summary>
+    public List<string> AllowedFolders { get; set; } = [];
+
+    /// <summary>Ask before changing files (create, move, rename...). Deleting and running code always asks.</summary>
+    public bool ConfirmChanges { get; set; } = true;
+
+    /// <summary>Ask also before harmless actions such as opening a program or a web page.</summary>
+    public bool ConfirmLowRisk { get; set; }
+
+    /// <summary>Tools that need Internet (weather, currencies, web search) stay off unless this is on.</summary>
+    public bool AllowInternet { get; set; }
 }
