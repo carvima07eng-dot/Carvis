@@ -43,6 +43,27 @@ public class ChatServiceTests
     }
 
     [Fact]
+    public async Task SendAsync_AnnouncesExternalContentOnce()
+    {
+        _client.Reply("Según tus apuntes…");
+        var context = new ChatMessage(ChatRole.System, "Fragmentos: ...") { IsExternal = true };
+
+        var events = await CreateService(new FixedContextProvider(context)).SendAsync("¿qué dicen mis apuntes de bases de datos?").ToListAsync();
+
+        Assert.Single(events.OfType<ExternalContentUsed>());
+    }
+
+    [Fact]
+    public async Task SendAsync_WithoutOutsideText_AnnouncesNothing()
+    {
+        _client.Reply("Hola");
+
+        var events = await CreateService().SendAsync("hola").ToListAsync();
+
+        Assert.Empty(events.OfType<ExternalContentUsed>());
+    }
+
+    [Fact]
     public async Task SendAsync_StreamsChunksInOrder()
     {
         _client.Reply("Ho", "la", ", ¿qué tal?");

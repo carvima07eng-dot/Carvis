@@ -48,11 +48,13 @@
         <TextBlock Classes="title" Text="Ollama" />
         <TextBlock Classes="secondary wrap" Text="Es el programa gratuito que hace funcionar la IA en tu tarjeta gráfica. Tiene que estar abierto para que yo pueda pensar." />
         <Border Classes="infobar" Classes.success="{Binding IsOllamaRunning}" Classes.warning="{Binding !IsOllamaRunning}">
-          <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
-            <c:FluentIcon Data="{StaticResource Icon.Success}" Classes="success" IsVisible="{Binding IsOllamaRunning}" />
-            <c:FluentIcon Data="{StaticResource Icon.Warning}" Classes="warning" IsVisible="{Binding !IsOllamaRunning}" />
-            <TextBlock Classes="wrap" Text="{Binding OllamaStatus}" VerticalAlignment="Center" />
-          </StackPanel>
+          <Grid ColumnDefinitions="Auto,*">
+            <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+              <c:FluentIcon Data="{StaticResource Icon.Success}" Classes="success" IsVisible="{Binding IsOllamaRunning}" />
+              <c:FluentIcon Data="{StaticResource Icon.Warning}" Classes="warning" IsVisible="{Binding !IsOllamaRunning}" />
+            </Panel>
+            <TextBlock Grid.Column="1" Classes="wrap" Text="{Binding OllamaStatus}" VerticalAlignment="Center" />
+          </Grid>
         </Border>
         <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" IsVisible="{Binding !IsOllamaRunning}">
           <Button Classes="primary" Content="Instalar" Command="{Binding InstallOllamaWithWingetCommand}" IsVisible="{Binding IsWindows}" />

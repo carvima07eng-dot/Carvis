@@ -23,3 +23,6 @@ public sealed record SourcesAttached(IReadOnlyList<SourceReference> Sources) : C
 
 /// <summary>Speed of the answer, for the footer.</summary>
 public sealed record StatsReported(GenerationStats Stats) : ChatEvent;
+
+/// <summary>Text from outside (web, documents, script output) is part of this answer: the UI marks it.</summary>
+public sealed record ExternalContentUsed : ChatEvent;

@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Text.RegularExpressions;
 using Carvis.Core.Chat;
+using Carvis.Core.Tools.Scripts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
@@ -7,6 +9,8 @@ namespace Carvis.App.ViewModels;
 
 public sealed partial class MessageViewModel(ChatRole role, string content = "") : ChatItemViewModel
 {
+    private static readonly Regex CodeBlock = new(@"```[^\n]*\n(.*?)```", RegexOptions.Singleline);
+
     public ChatRole Role { get; } = role;
     public bool IsUser => Role == ChatRole.User;
 
@@ -18,7 +22,35 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsWaiting))]
     [NotifyPropertyChangedFor(nameof(CanCopy))]
+    [NotifyPropertyChangedFor(nameof(ShowExternalNote), nameof(CommandWarning), nameof(HasCommandWarning), nameof(IsCommandDangerous))]
     private bool _isStreaming;
+
+    /// <summary>The answer was written after reading a web page, a document or the output of an action.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowExternalNote), nameof(CommandWarning), nameof(HasCommandWarning), nameof(IsCommandDangerous))]
+    private bool _usesExternalContent;
+
+    public bool ShowExternalNote => UsesExternalContent && !IsStreaming && !HasCommandWarning;
+
+    /// <summary>Commands in an answer based on outside text are never trusted silently.</summary>
+    public string? CommandWarning
+    {
+        get
+        {
+            if (!UsesExternalContent || IsStreaming)
+                return null;
+            var code = CodeBlock.Matches(Content).Select(m => m.Groups[1].Value).ToList();
+            if (code.Count == 0)
+                return null;
+            var risks = code.SelectMany(ScriptSafety.Analyze).Select(w => w.Text).Distinct().ToList();
+            return risks.Count > 0
+                ? "Cuidado: estos comandos salen de contenido externo y son peligrosos. " + string.Join(" ", risks) + " No los ejecutes."
+                : "Estos comandos salen de contenido externo (una web o un documento). Revísalos antes de ejecutarlos: no los he comprobado.";
+        }
+    }
+
+    public bool HasCommandWarning => CommandWarning is not null;
+    public bool IsCommandDangerous => CommandWarning?.StartsWith("Cuidado", StringComparison.Ordinal) == true;
 
     [ObservableProperty]
     private bool _isError;

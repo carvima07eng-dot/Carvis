@@ -162,6 +162,9 @@ public sealed class ChatService : IChatService
             var tools = await SelectToolsAsync(user.Content, history, cancellationToken);
             var (messages, external, sources) = await BuildRequestAsync(user, history, tools.Count > 0, cancellationToken);
             externalContent = external;
+            var announcedExternal = external;
+            if (external)
+                yield return new ExternalContentUsed();
             if (sources.Count > 0)
                 yield return new SourcesAttached(sources);
             var maxSteps = Math.Max(1, _settings.MaxToolSteps);
@@ -242,6 +245,12 @@ public sealed class ChatService : IChatService
                         messages.Add(toolMessage);
                         turn.Add(toolMessage);
                     }
+                }
+
+                if (externalContent && !announcedExternal)
+                {
+                    announcedExternal = true;
+                    yield return new ExternalContentUsed();
                 }
 
                 yield return new StepCompleted(step);

@@ -5,6 +5,7 @@
         xmlns:vm="using:Carvis.App.ViewModels"
         xmlns:controls="using:Carvis.App.Views.Controls"
         xmlns:chat="using:Carvis.Core.Chat"
+        xmlns:tools="using:Carvis.Core.Tools"
         DragDrop.AllowDrop="True"
         mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="420"
         x:Class="Carvis.App.Views.MainWindow"
@@ -510,6 +511,21 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                    <!-- Written from outside text: always said, and commands get a warning -->
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.4}" IsVisible="{Binding ShowExternalNote}"
+                                ToolTip.Tip="Carvis ha leído una web, un documento o el resultado de una acción para responder. Ese texto no puede darle órdenes.">
+                      <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="tertiary" />
+                      <TextBlock Classes="caption tertiary" Text="Origen externo" />
+                    </StackPanel>
+                    <Border Classes="infobar warning" Classes.error="{Binding IsCommandDangerous}" IsVisible="{Binding HasCommandWarning}">
+                      <Grid ColumnDefinitions="Auto,*">
+                        <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+                          <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="warning" IsVisible="{Binding !IsCommandDangerous}" />
+                          <controls:FluentIcon Data="{StaticResource Icon.ShieldError}" Classes="danger" IsVisible="{Binding IsCommandDangerous}" />
+                        </Panel>
+                        <TextBlock Grid.Column="1" Classes="caption wrap" Text="{Binding CommandWarning}" />
+                      </Grid>
+                    </Border>
                     <StackPanel Classes="messageActions" Orientation="Horizontal" Spacing="{StaticResource Space.4}">
                       <Button Classes="icon" IsVisible="{Binding CanCopy}" Click="OnCopyMessageClick" ToolTip.Tip="{Binding CopyLabel}" AutomationProperties.Name="Copiar">
                         <controls:FluentIcon Data="{StaticResource Icon.Copy}" />
@@ -557,11 +573,28 @@
                     </Grid>
 
                     <Border Classes="infobar warning" IsVisible="{Binding AfterExternalContent}" Margin="{StaticResource Gap.UnderIcon}">
-                      <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
-                        <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="warning" />
-                        <TextBlock Classes="caption wrap" Text="Origen externo: lo propongo después de leer una web, un documento o una captura. Revísalo bien." />
-                      </StackPanel>
+                      <Grid ColumnDefinitions="Auto,*">
+                        <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+                          <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="warning" />
+                        </Panel>
+                        <TextBlock Grid.Column="1" Classes="caption wrap" Text="Origen externo: lo propongo después de leer una web, un documento o una captura. Revísalo bien." />
+                      </Grid>
                     </Border>
+
+                    <ItemsControl ItemsSource="{Binding Warnings}" IsVisible="{Binding HasWarnings}" Margin="{StaticResource Gap.UnderIcon}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="tools:ToolWarning">
+                          <Border Classes="infobar error" Margin="{StaticResource Gap.B4}">
+                            <Grid ColumnDefinitions="Auto,*">
+                              <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+                                <controls:FluentIcon Data="{StaticResource Icon.ShieldError}" Classes="danger" />
+                              </Panel>
+                              <TextBlock Grid.Column="1" Classes="caption wrap" Text="{Binding Text}" />
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
                     <ItemsControl ItemsSource="{Binding Details}" IsVisible="{Binding HasDetails}" Margin="{StaticResource Gap.UnderIcon}">
                       <ItemsControl.ItemTemplate>

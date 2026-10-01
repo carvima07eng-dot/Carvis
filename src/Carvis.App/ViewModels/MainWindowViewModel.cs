@@ -326,6 +326,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         using var cancellation = new CancellationTokenSource();
         _sendCancellation = cancellation;
         var anyTool = false;
+        var external = false;
 
         try
         {
@@ -333,6 +334,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
             {
                 switch (chatEvent)
                 {
+                    case ExternalContentUsed:
+                        external = true;
+                        break;
+
                     case SourcesAttached attached:
                         reply ??= NewReply();
                         foreach (var source in attached.Sources)
@@ -341,6 +346,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
                     case TextDelta delta:
                         reply ??= NewReply();
+                        reply.UsesExternalContent |= external;
                         reply.Append(delta.Text);
                         _speech?.Push(delta.Text);
                         break;
