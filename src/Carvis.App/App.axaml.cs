@@ -67,6 +67,7 @@ public partial class App : Application
             };
             foreach (var warning in bootstrap.Warnings)
                 _viewModel.AddNotice(warning);
+            _viewModel.CrashReport = CrashReporter.TakePending(bootstrap.Paths);
 
             _window = new MainWindow(_services.GetRequiredService<WindowStateStore>(), settings.Window)
             {
@@ -78,6 +79,7 @@ public partial class App : Application
             StartReminders();
             StartUpdateChecks();
             _viewModel.SettingsRequested += OpenSettings;
+            _viewModel.SettingsPageRequested += page => OpenSettings(page);
             _viewModel.AnswerCompleted += OnAnswerCompleted;
 
             StartHotkey(settings);
@@ -300,12 +302,16 @@ public partial class App : Application
         window.Activate();
     }
 
-    private void OpenSettings()
+    private void OpenSettings() => OpenSettings(null);
+
+    private void OpenSettings(string? page)
     {
         if (_services is null)
             return;
         if (_settingsWindow is not null)
         {
+            if (page is not null && _settingsWindow.DataContext is SettingsViewModel open)
+                open.OpenPage(page);
             _settingsWindow.Activate();
             return;
         }
@@ -314,6 +320,10 @@ public partial class App : Application
         viewModel.AttachVoice(_services.GetRequiredService<Carvis.Core.Voice.VoiceModels>(), _services.GetRequiredService<Carvis.Core.Voice.ModelDownloader>(),
             _services.GetRequiredService<Carvis.Core.Voice.VoiceAssistant>(), _services.GetRequiredService<Carvis.Core.Voice.IAudioInput>(),
             _services.GetRequiredService<Carvis.Core.Voice.IAudioOutput>());
+        viewModel.AttachPersonalStores(_services.GetRequiredService<Carvis.Core.Storage.IReminderStore>(),
+            _services.GetRequiredService<Carvis.Core.Storage.IRoutineStore>());
+        if (page is not null)
+            viewModel.OpenPage(page);
         viewModel.Saved += OnSettingsSaved;
         _settingsWindow = new SettingsWindow { DataContext = viewModel };
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;

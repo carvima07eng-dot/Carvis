@@ -22,7 +22,6 @@ public partial class MainWindow : Window
     private readonly WindowSettings _settings;
     private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _hasBeenPositioned;
-    private bool _manualHeight;
 
     // Used by the XAML designer.
     public MainWindow() : this(null, new WindowSettings())
@@ -34,14 +33,15 @@ public partial class MainWindow : Window
         _stateStore = stateStore;
         _settings = settings;
 
-        // Must be registered before XAML sets the decorations, which is when the styles are applied.
-        WindowsNative.KeepTaskbarBehaviour(this);
         InitializeComponent();
+        ConfigureChrome();
 
         HideOnFocusLost = settings.HideOnFocusLost;
         FontSize = settings.FontSize;
         ThemeColors.Apply(settings);
         ApplyBackdrop(settings.Backdrop);
+        UpdateMotion();
+        ThemeColors.Changed += UpdateMotion;
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
@@ -64,7 +64,16 @@ public partial class MainWindow : Window
                     // Coming back from the history panel or opening a conversation: show its end.
                     if (e.PropertyName is nameof(MainWindowViewModel.ShowConversation) or nameof(MainWindowViewModel.CurrentConversationId))
                         ScrollToEndSoon();
+                    if (e.PropertyName is nameof(MainWindowViewModel.HasMessages) or nameof(MainWindowViewModel.IsHistoryOpen))
+                        UpdateLayoutMode();
                 };
+                viewModel.CopyToClipboard = text => Clipboard?.SetTextAsync(text) ?? Task.CompletedTask;
+                viewModel.FocusPromptRequested += () =>
+                {
+                    PromptBox.Focus();
+                    PromptBox.CaretIndex = PromptBox.Text?.Length ?? 0;
+                };
+                UpdateLayoutMode();
             }
         };
 
@@ -76,6 +85,9 @@ public partial class MainWindow : Window
         };
         Resized += (_, _) =>
         {
+            // A height the user chose while there is a conversation is kept for next time.
+            if (_expanded && SizeToContent == SizeToContent.Manual && double.IsFinite(Height))
+                _expandedHeight = Height;
             if (_hasBeenPositioned)
                 _saveTimer.Start();
         };
@@ -111,7 +123,7 @@ public partial class MainWindow : Window
         Show();
         Activate();
         WindowsNative.BringToFront(this);
-        if (appearing && _settings.Animations)
+        if (appearing && ThemeColors.MotionEnabled)
             AnimateIn();
         Dispatcher.UIThread.Post(() => PromptBox.Focus(), DispatcherPriority.Input);
     }
@@ -137,7 +149,66 @@ public partial class MainWindow : Window
     {
         _saveTimer.Stop();
         if (_settings.RememberPosition && _hasBeenPositioned && WindowState == WindowState.Normal)
-            _stateStore?.Save(new WindowPlacement(Position.X, Position.Y, Finite(Width), _manualHeight ? Finite(Height) : 0));
+            _stateStore?.Save(new WindowPlacement(Position.X, Position.Y, Finite(Width), _expandedHeight));
+    }
+
+    // Windows 11 draws the rounded corners, the shadow, the resize border and Mica itself;
+    // elsewhere (tests on Linux) the window draws a frame of its own.
+    private void ConfigureChrome()
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            SystemDecorations = SystemDecorations.Full;
+            ExtendClientAreaToDecorationsHint = true;
+            ExtendClientAreaChromeHints = Avalonia.Platform.ExtendClientAreaChromeHints.NoChrome;
+            ExtendClientAreaTitleBarHeightHint = -1;
+            ResizeHandles.IsVisible = false;
+        }
+        else
+        {
+            SystemDecorations = SystemDecorations.None;
+            RootBorder.Margin = Resource<Thickness>("Gap.Window");
+            RootBorder.CornerRadius = Resource<CornerRadius>("Radius.8");
+            RootBorder.BorderThickness = Resource<Thickness>("Border.1");
+            RootBorder[!Border.BorderBrushProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("StrokeStrong");
+            RootBorder[!Border.BoxShadowProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension("Shadow.Window");
+        }
+    }
+
+    private static T Resource<T>(string key) =>
+        Avalonia.Application.Current!.TryGetResource(key, null, out var value) && value is T typed ? typed : default!;
+
+    private void UpdateMotion() => Classes.Set("motion", ThemeColors.MotionEnabled);
+
+    private const double DefaultExpandedHeight = 600;
+    private double _expandedHeight = DefaultExpandedHeight;
+    private bool _expanded;
+
+    // Compact while there is nothing to show; a comfortable fixed height with a conversation.
+    private void UpdateLayoutMode()
+    {
+        var expand = DataContext is MainWindowViewModel { HasMessages: true } or MainWindowViewModel { IsHistoryOpen: true };
+        if (expand == _expanded)
+            return;
+        _expanded = expand;
+        if (expand)
+        {
+            var height = Math.Min(_expandedHeight, MaxScreenHeight());
+            SizeToContent = SizeToContent.Manual;
+            RootGrid.RowDefinitions[3].Height = GridLength.Star;
+            Height = height;
+        }
+        else
+        {
+            RootGrid.RowDefinitions[3].Height = GridLength.Auto;
+            SizeToContent = SizeToContent.Height;
+        }
+    }
+
+    private double MaxScreenHeight()
+    {
+        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
+        return screen is null ? DefaultExpandedHeight : screen.WorkingArea.Height / screen.Scaling * 0.85;
     }
 
     // Width/Height are NaN while the window sizes itself to its content.
@@ -148,16 +219,16 @@ public partial class MainWindow : Window
     {
         RootBorder.Transitions ??=
         [
-            new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(140) },
+            new Avalonia.Animation.DoubleTransition { Property = OpacityProperty, Duration = TimeSpan.FromMilliseconds(150) },
             new Avalonia.Animation.TransformOperationsTransition
             {
                 Property = RenderTransformProperty,
-                Duration = TimeSpan.FromMilliseconds(160),
-                Easing = new Avalonia.Animation.Easings.CubicEaseOut()
+                Duration = TimeSpan.FromMilliseconds(200),
+                Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
             },
         ];
         RootBorder.Opacity = 0;
-        RootBorder.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(10px)");
+        RootBorder.RenderTransform = Avalonia.Media.Transformation.TransformOperations.Parse("translateY(8px)");
         Dispatcher.UIThread.Post(() =>
         {
             RootBorder.Opacity = 1;
@@ -170,22 +241,29 @@ public partial class MainWindow : Window
     public void ApplyBackdrop(string backdrop)
     {
         _backdrop = backdrop;
-        var background = ThemeColors.Color("Background");
-        Color WithAlpha(byte alpha) => Color.FromArgb(alpha, background.R, background.G, background.B);
-        (TransparencyLevelHint, RootBorder.Background) = backdrop switch
+        // Windows picks the first effect it supports: Mica on Windows 11, nothing on Windows 10.
+        TransparencyLevelHint = backdrop switch
         {
-            "Acrylic" => ([WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], new SolidColorBrush(WithAlpha(0xCC))),
-            "Mica" => ([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], new SolidColorBrush(WithAlpha(0xB3))),
-            _ => ((IReadOnlyList<WindowTransparencyLevel>)[WindowTransparencyLevel.Transparent], new SolidColorBrush(background)),
+            "Mica" => [WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None],
+            "Acrylic" => [WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.None],
+            _ => OperatingSystem.IsWindows() ? [WindowTransparencyLevel.None] : [WindowTransparencyLevel.Transparent],
         };
+        UpdateBackground();
+    }
+
+    // Over Mica the content sits on a clear layer; with no effect it needs a solid base.
+    private void UpdateBackground()
+    {
+        var key = Backdrop.KeyFor(ActualTransparencyLevel);
+        RootBorder[!Border.BackgroundProperty] = new Avalonia.Markup.Xaml.MarkupExtensions.DynamicResourceExtension(key);
     }
 
     // The background is built from the theme colour: rebuild it when the theme changes.
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == ActualThemeVariantProperty && RootBorder is not null)
-            ApplyBackdrop(_backdrop);
+        if (change.Property == ActualTransparencyLevelProperty && RootBorder is not null)
+            UpdateBackground();
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -214,8 +292,8 @@ public partial class MainWindow : Window
             var saved = _settings.RememberPosition ? _stateStore?.Load() : null;
             if (saved is not null && saved.Width >= MinWidth)
                 Width = saved.Width;
-            if (saved is not null && saved.Height >= MinHeight)
-                UseManualHeight(saved.Height);
+            if (saved is not null && saved.Height >= MinHeight * 2)
+                _expandedHeight = saved.Height;
             if (saved is not null && Screens.ScreenFromPoint(new PixelPoint(saved.X + 40, saved.Y + 20)) is { } savedScreen
                 && (mouse is null || savedScreen.Equals(target)))
             {
@@ -237,7 +315,7 @@ public partial class MainWindow : Window
         var area = screen.WorkingArea;
         var scale = screen.Scaling;
         var width = (int)(Width * scale);
-        var height = (int)((_manualHeight ? Height : MaxHeight) * scale);
+        var height = (int)(Math.Min(_expandedHeight, area.Height / scale * 0.85) * scale);
         Position = new PixelPoint(
             area.X + (area.Width - width) / 2,
             area.Y + Math.Max(0, (area.Height - height) / 2));
@@ -414,32 +492,20 @@ public partial class MainWindow : Window
             BeginMoveDrag(e);
     }
 
-    // Edges resize the window; changing its height switches from automatic to fixed height.
+    // Edges resize the window (only where Windows doesn't draw a resize border).
     private void OnResizePressed(object? sender, PointerPressedEventArgs e)
     {
         if (sender is not Control { Tag: string tag } || !Enum.TryParse<WindowEdge>(tag, out var edge)
             || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
-
-        if (edge is not (WindowEdge.East or WindowEdge.West))
-            UseManualHeight(Bounds.Height);
+        if (edge is not (WindowEdge.East or WindowEdge.West) && !_expanded)
+        {
+            _expanded = true;
+            SizeToContent = SizeToContent.Manual;
+            RootGrid.RowDefinitions[3].Height = GridLength.Star;
+        }
         BeginResizeDrag(edge, e);
         e.Handled = true;
-    }
-
-    private void UseManualHeight(double height)
-    {
-        if (!_manualHeight)
-        {
-            _manualHeight = true;
-            SizeToContent = SizeToContent.Manual;
-            MaxHeight = double.PositiveInfinity;
-            RootGrid.RowDefinitions[3].Height = GridLength.Star;
-            MessagesScroll.MaxHeight = double.PositiveInfinity;
-            MessagesScroll.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
-            HistoryPanel.Height = double.NaN;
-        }
-        Height = height;
     }
 
     private void OnMinimizeClick(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;

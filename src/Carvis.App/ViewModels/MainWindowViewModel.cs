@@ -80,10 +80,12 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         DismissHint = settings.Window.HideOnFocusLost ? "Esc ocultar" : "Esc minimizar";
 
         confirmations.Handler = ConfirmAsync;
+        Notices.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasAnyNotice));
         Items.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasMessages));
             OnPropertyChanged(nameof(ShowConversation));
+            OnPropertyChanged(nameof(ShowHome));
         };
     }
 
@@ -116,9 +118,42 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowConversation))]
+    [NotifyPropertyChangedFor(nameof(ShowHome))]
     private bool _isHistoryOpen;
 
     public bool ShowConversation => HasMessages && !IsHistoryOpen;
+
+    /// <summary>Nothing said yet: greeting and suggestions.</summary>
+    public bool ShowHome => !HasMessages && !IsHistoryOpen;
+
+    public string Greeting => string.IsNullOrWhiteSpace(_settings.Assistant.UserName) ? "Hola" : $"Hola, {_settings.Assistant.UserName}";
+
+    /// <summary>One for each main feature, so the empty window shows what Carvis is for.</summary>
+    public IReadOnlyList<SuggestionViewModel> Suggestions { get; } =
+    [
+        new("DocumentSearch", "Busca en mis apuntes", "¿Qué dicen mis apuntes sobre el modelo OSI?"),
+        new("Alarm", "Ponme un recordatorio", "Recuérdame mañana a las 9 entregar la práctica"),
+        new("Screenshot", "Mira mi pantalla", "¿Qué error sale en mi pantalla?"),
+        new("Flash", "Lanza una rutina", "Activa el modo estudio"),
+    ];
+
+    public bool ShowDocumentsHint => _settings.Documents.Folders.Count == 0;
+
+    /// <summary>The window should focus the prompt (after picking a suggestion).</summary>
+    public event Action? FocusPromptRequested;
+
+    /// <summary>Opens a page of the settings by name ("Documentos", "Voz"...).</summary>
+    public event Action<string>? SettingsPageRequested;
+
+    [RelayCommand]
+    private void UseSuggestion(SuggestionViewModel suggestion)
+    {
+        Input = suggestion.Example;
+        FocusPromptRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private void OpenSettingsPage(string page) => SettingsPageRequested?.Invoke(page);
 
     /// <summary>Files to send with the next message (dropped on the window or chosen with 📎).</summary>
     public ObservableCollection<string> Attachments { get; } = [];
@@ -172,6 +207,10 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private ToolCallViewModel? _pendingConfirmation;
 
     public bool HasStatusMessage => !string.IsNullOrEmpty(StatusMessage);
+
+    partial void OnStatusMessageChanged(string? value) => OnPropertyChanged(nameof(HasAnyNotice));
+
+    partial void OnHotkeyWarningChanged(string? value) => OnPropertyChanged(nameof(HasAnyNotice));
     public bool HasStatusCommand => !string.IsNullOrEmpty(StatusCommand);
     public bool HasHotkeyWarning => !string.IsNullOrEmpty(HotkeyWarning);
 
@@ -264,7 +303,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private async Task AskAsync(string text, IReadOnlyList<string>? attachments = null, IReadOnlyList<ImageAttachmentViewModel>? images = null)
     {
-        Items.Add(new MessageViewModel(ChatRole.User, text) { Attachments = attachments ?? [], ImageCount = images?.Count ?? 0 });
+        Items.Add(new MessageViewModel(ChatRole.User, text) { Attachments = attachments ?? [], ImageCount = images?.Count ?? 0 }.Fresh<MessageViewModel>());
         var input = new ChatInput(text) { Attachments = attachments ?? [], Images = images?.Select(i => i.Png).ToList() ?? [] };
         await RunTurnAsync(token => _chat.SendAsync(input, token), expectAnswer: true);
     }
@@ -275,7 +314,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         // A scheduled routine waits for the answer in progress to finish.
         while (IsBusy)
             await Task.Delay(500);
-        Items.Add(new MessageViewModel(ChatRole.User, description));
+        Items.Add(new MessageViewModel(ChatRole.User, description).Fresh<MessageViewModel>());
         await RunTurnAsync(token => _chat.RunToolsAsync(description, calls, token), expectAnswer: false);
     }
 
@@ -318,7 +357,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
                     case ToolStarted started:
                         anyTool = true;
                         reply = CloseReply(reply);
-                        Items.Add(new ToolCallViewModel(started.Invocation, _policy.CanApproveForSession(started.Invocation.Preview), UndoAsync));
+                        Items.Add(new ToolCallViewModel(started.Invocation, _policy.CanApproveForSession(started.Invocation.Preview), UndoAsync).Fresh<ToolCallViewModel>());
                         break;
 
                     case ToolFinished finished:
@@ -526,6 +565,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task LoadModelsAsync()
     {
+        IsLoadingModels = true;
         try
         {
             var models = await _models.ListAsync();
@@ -537,7 +577,17 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         {
             AvailableModels.Clear();
         }
+        finally
+        {
+            IsLoadingModels = false;
+        }
     }
+
+    [ObservableProperty]
+    private bool _isLoadingModels;
+
+    /// <summary>Anything in the notices area (keeps its margin out when empty).</summary>
+    public bool HasAnyNotice => HasUpdate || HasCrashReport || Notices.Count > 0 || HasStatusMessage || HasHotkeyWarning;
 
     [RelayCommand]
     private async Task SelectModelAsync(string model)
@@ -557,6 +607,8 @@ public sealed partial class MainWindowViewModel : ViewModelBase
         ModelName = _settings.Ollama.ChatModel;
         _isModelLoaded = false;
         OnVoiceSettingsApplied();
+        OnPropertyChanged(nameof(Greeting));
+        OnPropertyChanged(nameof(ShowDocumentsHint));
         _ = CheckStatusAsync();
     }
 
@@ -655,7 +707,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     // Local answers to commands: shown but not sent to the model.
-    private void Say(string markdown) => Items.Add(new MessageViewModel(ChatRole.Assistant, markdown));
+    private void Say(string markdown) => Items.Add(new MessageViewModel(ChatRole.Assistant, markdown).Fresh<MessageViewModel>());
 
     private bool CanStartNewConversation() => !IsBusy;
 
@@ -694,7 +746,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     private MessageViewModel NewReply()
     {
-        var reply = new MessageViewModel(ChatRole.Assistant) { IsStreaming = true };
+        var reply = new MessageViewModel(ChatRole.Assistant) { IsStreaming = true }.Fresh<MessageViewModel>();
         foreach (var source in _carriedSources)
             reply.Sources.Add(source);
         _carriedSources = [];

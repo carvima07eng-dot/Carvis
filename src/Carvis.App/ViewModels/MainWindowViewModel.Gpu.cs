@@ -77,6 +77,7 @@ public sealed partial class MainWindowViewModel
     /// <summary>"Carvis 1.1.0 está lista" with a button, when an update has been downloaded.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasUpdate))]
+    [NotifyPropertyChangedFor(nameof(HasAnyNotice))]
     private string? _updateText;
 
     public bool HasUpdate => UpdateText is not null;
@@ -89,4 +90,38 @@ public sealed partial class MainWindowViewModel
 
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void InstallUpdate() => _installUpdate?.Invoke();
+}
+
+public sealed partial class MainWindowViewModel
+{
+    /// <summary>The report of a crash in the previous session, offered once.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCrashReport))]
+    [NotifyPropertyChangedFor(nameof(HasAnyNotice))]
+    private string? _crashReport;
+
+    public bool HasCrashReport => CrashReport is not null;
+
+    /// <summary>Copies text to the clipboard (set by the window).</summary>
+    public Func<string, Task>? CopyToClipboard { get; set; }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task CopyCrashReportAsync()
+    {
+        if (CrashReport is not null && CopyToClipboard is not null)
+            await CopyToClipboard(CrashReport);
+        AddNotice("He copiado el informe. Pégalo donde quieras o en un issue de GitHub.");
+        CrashReport = null;
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private Task ReportCrashAsync()
+    {
+        var url = Services.CrashReporter.NewIssueUrl(CrashReport);
+        CrashReport = null;
+        return _shell.OpenAsync(url);
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void DismissCrashReport() => CrashReport = null;
 }

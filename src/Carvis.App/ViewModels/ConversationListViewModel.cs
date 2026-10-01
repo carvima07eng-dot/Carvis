@@ -55,7 +55,15 @@ public sealed partial class ConversationListViewModel(IConversationStore store) 
 
     public bool IsEmpty => Items.Count == 0;
 
+    /// <summary>No conversations at all (not just none matching the search).</summary>
+    public bool HasNoConversations => IsEmpty && string.IsNullOrWhiteSpace(Search);
+
+    public bool HasNoResults => IsEmpty && !string.IsNullOrWhiteSpace(Search);
+
     partial void OnSearchChanged(string value) => Refresh();
+
+    [RelayCommand]
+    private void ClearSearch() => Search = string.Empty;
 
     partial void OnCurrentIdChanged(string? value)
     {
@@ -69,6 +77,8 @@ public sealed partial class ConversationListViewModel(IConversationStore store) 
         foreach (var info in store.List(string.IsNullOrWhiteSpace(Search) ? null : Search))
             Items.Add(new ConversationItemViewModel(info) { IsCurrent = info.Id == CurrentId });
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HasNoConversations));
+        OnPropertyChanged(nameof(HasNoResults));
     }
 
     [RelayCommand]
@@ -105,6 +115,8 @@ public sealed partial class ConversationListViewModel(IConversationStore store) 
         store.Delete(item.Id);
         Items.Remove(item);
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(HasNoConversations));
+        OnPropertyChanged(nameof(HasNoResults));
         Deleted?.Invoke(item.Id);
     }
 }

@@ -58,8 +58,8 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
     public int ImageCount { get; init; }
 
     public bool HasAttachments => Attachments.Count > 0 || ImageCount > 0;
-    public string AttachmentsText => string.Join("  ", Attachments.Select(a => "📎 " + Path.GetFileName(a))
-        .Concat(ImageCount > 0 ? [ImageCount == 1 ? "🖼 1 imagen" : $"🖼 {ImageCount} imágenes"] : []));
+    public string AttachmentsText => string.Join(" · ", Attachments.Select(Path.GetFileName)
+        .Concat(ImageCount > 0 ? [ImageCount == 1 ? "1 imagen" : $"{ImageCount} imágenes"] : []));
 
     public void Append(string text) => Content += text;
 
@@ -77,7 +77,8 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
 /// <summary>A tool call from a reopened conversation: just what was done, without buttons.</summary>
 public sealed class HistoryToolViewModel(string toolName, string result) : ChatItemViewModel
 {
-    public string Text { get; } = $"{toolName}: {FirstLine(result)}";
+    public string Text { get; } = FirstLine(result);
+    public string IconKey { get; } = ToolIcons.For(toolName);
 
     private static string FirstLine(string text)
     {

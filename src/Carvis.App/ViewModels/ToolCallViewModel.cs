@@ -30,6 +30,10 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
 
     public ToolInvocation Invocation { get; }
     public string Summary => Invocation.Preview.Summary;
+    public string IconKey => ToolIcons.For(Invocation.ToolName, Invocation.Category);
+
+    /// <summary>Carvis proposes it after reading text from outside (a web page, a document, a capture).</summary>
+    public bool AfterExternalContent => Invocation.AfterExternalContent && Invocation.Preview.Risk != ToolRisk.Read;
     public IReadOnlyList<string> Details => Invocation.Preview.Details;
     public bool HasDetails => Details.Count > 0;
     public bool IsDangerous => Invocation.Preview.Risk == ToolRisk.Dangerous;
@@ -37,11 +41,11 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
     public string ApproveLabel => IsDangerous ? "Sí, hazlo" : "Aceptar";
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPending), nameof(StateText), nameof(StateIcon), nameof(CanUndo), nameof(IsFailed), nameof(IsDone))]
+    [NotifyPropertyChangedFor(nameof(IsPending), nameof(StateText), nameof(StateIconKey), nameof(CanUndo), nameof(IsFailed), nameof(IsDone), nameof(IsRunning), nameof(ResultText), nameof(IsSettled))]
     private ToolCallState _state;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasOutput))]
+    [NotifyPropertyChangedFor(nameof(HasOutput), nameof(ResultText))]
     private string _output = string.Empty;
 
     [ObservableProperty]
@@ -56,6 +60,8 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
     private bool _showOutput;
 
     public bool IsPending => State == ToolCallState.AwaitingConfirmation;
+    public bool IsRunning => State == ToolCallState.Running;
+    public bool IsSettled => !IsPending && !IsRunning;
     public bool IsFailed => State is ToolCallState.Failed;
     public bool IsDone => State is ToolCallState.Succeeded;
     public bool HasOutput => Output.Length > 0;
@@ -63,8 +69,8 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
 
     public string StateText => State switch
     {
-        ToolCallState.AwaitingConfirmation => IsDangerous ? "Necesito tu confirmación (acción delicada)" : "¿Lo hago?",
-        ToolCallState.Running => "En curso…",
+        ToolCallState.AwaitingConfirmation => IsDangerous ? "Es una acción delicada: revísala antes de aceptar." : "¿Lo hago?",
+        ToolCallState.Running => "Haciéndolo…",
         ToolCallState.Succeeded => "Hecho",
         ToolCallState.Failed => "No se ha podido hacer",
         ToolCallState.Denied => "Cancelado",
@@ -72,14 +78,28 @@ public sealed partial class ToolCallViewModel : ChatItemViewModel
         _ => string.Empty,
     };
 
-    public string StateIcon => State switch
+    /// <summary>The result in one line ("Volumen al 40 %"), or the state while there is none.</summary>
+    public string ResultText
     {
-        ToolCallState.AwaitingConfirmation => "?",
-        ToolCallState.Running => "…",
-        ToolCallState.Succeeded => "✓",
-        ToolCallState.Failed => "✕",
-        ToolCallState.Denied => "–",
-        _ => "↶",
+        get
+        {
+            if (State is ToolCallState.AwaitingConfirmation or ToolCallState.Running or ToolCallState.Denied || Output.Length == 0)
+                return StateText;
+            var line = Output.Split('\n', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim() ?? StateText;
+            if (State == ToolCallState.Undone)
+                return "Deshecho";
+            return line.Length > 120 ? line[..120] + "…" : line;
+        }
+    }
+
+    public string StateIconKey => State switch
+    {
+        ToolCallState.Succeeded => "Success",
+        ToolCallState.Failed => "Error",
+        ToolCallState.Denied => "Dismiss",
+        ToolCallState.Undone => "Undo",
+        ToolCallState.AwaitingConfirmation when IsDangerous => "ShieldError",
+        _ => "Question",
     };
 
     /// <summary>Waits until the user presses one of the buttons (or the answer is stopped).</summary>

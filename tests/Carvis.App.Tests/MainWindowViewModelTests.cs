@@ -227,7 +227,7 @@ public sealed class MainWindowViewModelTests : IDisposable
         Assert.Null(_model.Requests[1].Model);
         Assert.All(_model.Requests[1].Messages, m => Assert.Null(m.Images));
         Assert.Empty(vm.Images);
-        Assert.Equal("🖼 1 imagen", vm.Items.OfType<MessageViewModel>().First().AttachmentsText);
+        Assert.Equal("1 imagen", vm.Items.OfType<MessageViewModel>().First().AttachmentsText);
     }
 
     [AvaloniaFact]
