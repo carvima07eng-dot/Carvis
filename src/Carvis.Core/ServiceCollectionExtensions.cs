@@ -5,6 +5,7 @@ using Carvis.Core.Indexing;
 using Carvis.Core.Indexing.Readers;
 using Carvis.Core.Ollama;
 using Carvis.Core.Platform;
+using Carvis.Core.Storage;
 using Carvis.Core.Tools;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -33,13 +34,21 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IDocumentReader, TextDocumentReader>();
         services.AddSingleton<IDocumentTextExtractor, DocumentTextExtractor>();
         services.AddSingleton<IChatContextProvider, SystemContextProvider>();
+        services.AddSingleton<IChatContextProvider, MemoryContextProvider>();
+
+        // Storage
+        services.TryAddSingleton(sp => new CarvisDatabase(sp.GetRequiredService<AppPaths>().DatabaseFile,
+            sp.GetService<Microsoft.Extensions.Logging.ILogger<CarvisDatabase>>()));
+        services.TryAddSingleton<IContentProtector>(_ => new ContentProtector(settings.Privacy.EncryptData));
+        services.TryAddSingleton<IConversationStore, SqliteConversationStore>();
+        services.TryAddSingleton<IMemoryStore, SqliteMemoryStore>();
 
         // Actions
         services.TryAddSingleton<IRecycleBin, TrashFolderRecycleBin>();
         services.TryAddSingleton<IShell, DefaultShell>();
         services.TryAddSingleton<IAppCatalog, DefaultAppCatalog>();
         services.TryAddSingleton<IWindowManager, DefaultWindowManager>();
-        services.TryAddSingleton<IJournalStore, InMemoryJournalStore>();
+        services.TryAddSingleton<IJournalStore, SqliteJournalStore>();
         services.AddSingleton<IActionJournal, ActionJournal>();
         services.AddSingleton<IPathPolicy, PathPolicy>();
         services.AddSingleton<ToolPolicy>();

@@ -12,7 +12,16 @@ internal sealed class ThinkTagFilter
     private const string CloseTag = "</think>";
 
     private readonly StringBuilder _pending = new();
+    private readonly StringBuilder _thinking = new();
     private bool _insideThink;
+
+    /// <summary>Reasoning removed since the last call to <see cref="TakeThinking"/>.</summary>
+    public string TakeThinking()
+    {
+        var text = _thinking.ToString();
+        _thinking.Clear();
+        return text;
+    }
 
     public string Process(string chunk)
     {
@@ -32,6 +41,8 @@ internal sealed class ThinkTagFilter
             {
                 if (!_insideThink)
                     output.Append(text, position, index - position);
+                else
+                    _thinking.Append(text, position, index - position);
                 position = index + tag.Length;
                 _insideThink = !_insideThink;
                 continue;
@@ -42,6 +53,8 @@ internal sealed class ThinkTagFilter
             var end = text.Length - keep;
             if (!_insideThink)
                 output.Append(text, position, end - position);
+            else
+                _thinking.Append(text, position, end - position);
             _pending.Append(text, end, keep);
             break;
         }

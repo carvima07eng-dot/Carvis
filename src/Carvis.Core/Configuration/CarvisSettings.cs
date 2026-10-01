@@ -9,6 +9,19 @@ public sealed class CarvisSettings
     public WindowSettings Window { get; set; } = new();
     public LoggingSettings Logging { get; set; } = new();
     public PermissionsSettings Permissions { get; set; } = new();
+    public PrivacySettings Privacy { get; set; } = new();
+
+    /// <summary>The first-run assistant has been completed.</summary>
+    public bool FirstRunCompleted { get; set; }
+}
+
+public sealed class PrivacySettings
+{
+    /// <summary>Encrypt conversations and memories with the Windows account (DPAPI).</summary>
+    public bool EncryptData { get; set; } = true;
+
+    /// <summary>Save conversations so they can be reopened later.</summary>
+    public bool SaveConversations { get; set; } = true;
 }
 
 public sealed class OllamaSettings

@@ -38,7 +38,7 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
         {
             // Thinking tokens arrive in Message.Thinking and are not shown.
             var message = response?.Message;
-            if (message is null)
+            if (message is null || response is null)
                 continue;
 
             var calls = message.ToolCalls?
@@ -46,8 +46,18 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
                 .Select(c => new ToolCall(c.Function!.Name!, ToJson(c.Function.Arguments), string.IsNullOrEmpty(c.Id) ? null : c.Id))
                 .ToList();
 
-            if (!string.IsNullOrEmpty(message.Content) || calls is { Count: > 0 })
-                yield return new ModelChunk(message.Content, calls is { Count: > 0 } ? calls : null);
+            var stats = response is ChatDoneResponseStream { EvalCount: > 0 } done
+                ? new GenerationStats(done.EvalCount, TimeSpan.FromTicks(done.EvalDuration / 100))
+                : null;
+
+            if (!string.IsNullOrEmpty(message.Content) || calls is { Count: > 0 } || !string.IsNullOrEmpty(message.Thinking) || stats is not null)
+            {
+                yield return new ModelChunk(message.Content, calls is { Count: > 0 } ? calls : null)
+                {
+                    Thinking = string.IsNullOrEmpty(message.Thinking) ? null : message.Thinking,
+                    Stats = stats,
+                };
+            }
         }
     }
 

@@ -38,7 +38,16 @@ public sealed class ChatService : IChatService
     private readonly ILogger _logger;
     private readonly List<List<ChatMessage>> _turns = [];
     private readonly object _lock = new();
+    private string? _summary;
     private int _isSending;
+
+    public event Action<IReadOnlyList<ChatMessage>>? TurnCommitted;
+    public event Action<string>? SummaryUpdated;
+
+    public string? Summary
+    {
+        get { lock (_lock) return _summary; }
+    }
 
     public ChatService(
         IChatModelClient client,
@@ -71,15 +80,32 @@ public sealed class ChatService : IChatService
 
     public void ClearHistory()
     {
-        lock (_lock) _turns.Clear();
+        lock (_lock)
+        {
+            _turns.Clear();
+            _summary = null;
+        }
         _policy?.ResetSession();
     }
 
-    public void LoadHistory(IEnumerable<ChatMessage> messages)
+    public string? RemoveLastTurn()
+    {
+        lock (_lock)
+        {
+            if (_turns.Count == 0)
+                return null;
+            var last = _turns[^1];
+            _turns.RemoveAt(_turns.Count - 1);
+            return last.FirstOrDefault(m => m.Role == ChatRole.User)?.Content;
+        }
+    }
+
+    public void LoadHistory(IEnumerable<ChatMessage> messages, string? summary = null)
     {
         lock (_lock)
         {
             _turns.Clear();
+            _summary = summary;
             foreach (var message in messages)
             {
                 if (message.Role == ChatRole.User || _turns.Count == 0)
@@ -110,6 +136,7 @@ public sealed class ChatService : IChatService
 
         try
         {
+            await CompressHistoryAsync(cancellationToken);
             var history = History;
             var tools = await SelectToolsAsync(user.Content, history, cancellationToken);
             var messages = await BuildRequestAsync(user, history, tools.Count > 0, cancellationToken);
@@ -145,8 +172,13 @@ public sealed class ChatService : IChatService
 
                     if (chunk.ToolCalls is { Count: > 0 })
                         calls.AddRange(chunk.ToolCalls);
+                    if (chunk.Stats is { } stats)
+                        yield return new StatsReported(stats);
 
                     var visible = TrimLeading(filter.Process(chunk.Text ?? string.Empty), text);
+                    var thinking = (chunk.Thinking ?? string.Empty) + filter.TakeThinking();
+                    if (thinking.Length > 0)
+                        yield return new ThinkingDelta(thinking);
                     if (visible.Length > 0)
                     {
                         text.Append(visible);
@@ -318,6 +350,9 @@ public sealed class ChatService : IChatService
         if (_registry is not null && _settings.EnableTools)
             Append(system, withTools ? ToolGuidance : NoToolsGuidance);
 
+        if (Summary is { Length: > 0 } summary)
+            Append(system, "Resumen de la parte anterior de esta conversación:\n" + summary);
+
         var messages = new List<ChatMessage>();
         if (system.Length > 0)
             messages.Add(new ChatMessage(ChatRole.System, system.ToString()));
@@ -343,11 +378,91 @@ public sealed class ChatService : IChatService
         lock (_lock)
         {
             _turns.Add(turn);
-            var max = Math.Max(2, _settings.MaxHistoryMessages);
-            while (_turns.Count > 1 && _turns.Sum(t => t.Count) > max)
+            // Safety net if summaries keep failing: never let the context grow without limit.
+            var hardLimit = Math.Max(2, _settings.MaxHistoryMessages) * 3;
+            while (_turns.Count > 1 && _turns.Sum(t => t.Count) > hardLimit)
                 _turns.RemoveAt(0);
         }
+        TurnCommitted?.Invoke(turn);
     }
+
+    // Old turns that no longer fit are summarized by the model instead of being forgotten.
+    private async Task CompressHistoryAsync(CancellationToken cancellationToken)
+    {
+        List<List<ChatMessage>> old;
+        lock (_lock)
+        {
+            var count = _turns.Sum(t => t.Count);
+            var budget = (_ollamaSettings?.ContextLength ?? 16384) * 0.45;
+            var tooMany = count > Math.Max(2, _settings.MaxHistoryMessages);
+            var tooLong = EstimateTokens(_turns.SelectMany(t => t)) > budget;
+            if ((!tooMany && !tooLong) || _turns.Count < 2)
+                return;
+            old = _turns.Take(Math.Max(1, _turns.Count / 2)).ToList();
+        }
+
+        string? summary = null;
+        try
+        {
+            summary = await SummarizeAsync(old, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(ex, "Could not summarize the conversation; dropping old messages");
+        }
+
+        lock (_lock)
+        {
+            foreach (var turn in old)
+                _turns.Remove(turn);
+            if (!string.IsNullOrWhiteSpace(summary))
+                _summary = summary;
+        }
+        if (!string.IsNullOrWhiteSpace(summary))
+            SummaryUpdated?.Invoke(summary);
+    }
+
+    private async Task<string> SummarizeAsync(IReadOnlyList<List<ChatMessage>> turns, CancellationToken cancellationToken)
+    {
+        var transcript = new StringBuilder();
+        if (Summary is { Length: > 0 } previous)
+            transcript.Append("Resumen anterior: ").Append(previous).Append("\n\n");
+        foreach (var message in turns.SelectMany(t => t))
+        {
+            var who = message.Role switch
+            {
+                ChatRole.User => "Usuario",
+                ChatRole.Assistant => "Carvis",
+                ChatRole.Tool => $"Resultado de {message.ToolName}",
+                _ => null,
+            };
+            if (who is null || (message.Content.Length == 0 && message.ToolCalls is null))
+                continue;
+            var content = message.Content.Length > 1500 ? message.Content[..1500] + "…" : message.Content;
+            if (message.ToolCalls is { Count: > 0 } calls)
+                content += $" [usó: {string.Join(", ", calls.Select(c => $"{c.Name} {c.Arguments.ToJsonString()}"))}]";
+            transcript.Append(who).Append(": ").Append(content).Append('\n');
+        }
+
+        var request = new ModelRequest(
+        [
+            new ChatMessage(ChatRole.System, "Resumes conversaciones de forma fiel y breve, en español."),
+            new ChatMessage(ChatRole.User,
+                "Resume esta conversación entre el usuario y su asistente Carvis en 5 a 10 frases. Conserva los datos importantes, " +
+                "las decisiones, los nombres de archivos y carpetas y lo que quedó pendiente. No añadas nada que no aparezca.\n\n" + transcript),
+        ])
+        { Temperature = 0.2 };
+
+        var filter = new ThinkTagFilter();
+        var text = new StringBuilder();
+        await foreach (var chunk in _client.StreamAsync(request, cancellationToken))
+            text.Append(filter.Process(chunk.Text ?? string.Empty));
+        text.Append(filter.Flush());
+        return text.ToString().Trim();
+    }
+
+    private static double EstimateTokens(IEnumerable<ChatMessage> messages) =>
+        messages.Sum(m => m.Content.Length / 3.5 + 8 + (m.ToolCalls?.Sum(c => c.Arguments.ToJsonString().Length / 3.5) ?? 0));
 
     // Models usually start with blank lines (e.g. after an empty think block).
     private static string TrimLeading(string text, StringBuilder answerSoFar) =>

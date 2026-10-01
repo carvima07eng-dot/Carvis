@@ -35,6 +35,9 @@ internal static class ToolKeywords
         ["ventana"] = ["ventana", "minimiza", "maximiza", "izquierda", "derecha", "al frente", "otro monitor", "otra pantalla", "restaura", "cambia a"],
         ["cerrar_programa"] = ["cierra", "cerrar", "mata", "termina el", "quita el programa", "cierrame"],
         ["abrir_web"] = ["web", "pagina", "url", "http", "www", ".com", ".es", ".org", "abre youtube", "abre google", "abre gmail"],
+        ["recordar"] = ["recuerda que", "acuerdate de que", "me llamo", "mi nombre es", "guarda que", "apuntate que", "no olvides que"],
+        ["olvidar"] = ["olvida", "borra de tu memoria", "ya no recuerdes"],
+        ["listar_recuerdos"] = ["que sabes de mi", "que recuerdas", "que tienes guardado", "tu memoria"],
         ["buscar_en_web"] = ["busca en google", "busca en internet", "busca en youtube", "googlea", "en google", "en youtube", "wikipedia", "maps", "mapa", "traduce", "como llego"],
     };
 }

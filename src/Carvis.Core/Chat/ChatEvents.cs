@@ -14,3 +14,9 @@ public sealed record ToolFinished(ToolInvocation Invocation, ToolResult Result) 
 
 /// <summary>The model finished one step and will continue after the tool results.</summary>
 public sealed record StepCompleted(int Step) : ChatEvent;
+
+/// <summary>Reasoning shown folded under the answer when thinking is on.</summary>
+public sealed record ThinkingDelta(string Text) : ChatEvent;
+
+/// <summary>Speed of the answer, for the footer.</summary>
+public sealed record StatsReported(GenerationStats Stats) : ChatEvent;

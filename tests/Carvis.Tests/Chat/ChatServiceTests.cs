@@ -100,10 +100,12 @@ public class ChatServiceTests
     }
 
     [Fact]
-    public async Task SendAsync_DropsOldestMessagesBeyondTheLimit()
+    public async Task SendAsync_SummarizesOldMessagesInsteadOfForgettingThem()
     {
         _settings.MaxHistoryMessages = 4;
         var service = CreateService();
+        string? savedSummary = null;
+        service.SummaryUpdated += s => savedSummary = s;
 
         for (var i = 1; i <= 3; i++)
         {
@@ -111,8 +113,49 @@ public class ChatServiceTests
             await service.SendAsync($"pregunta {i}").ToListAsync();
         }
 
-        Assert.Equal(4, service.History.Count);
+        _client.Reply("El usuario hizo la pregunta 1.").Reply("respuesta 4");
+        await service.SendAsync("pregunta 4").ToListAsync();
+
+        var summaryRequest = _client.Requests[3];
+        Assert.Contains("pregunta 1", summaryRequest.Messages[^1].Content);
+        Assert.Equal("El usuario hizo la pregunta 1.", savedSummary);
+        Assert.Contains("Resumen de la parte anterior", _client.Requests[4].Messages[0].Content);
         Assert.Equal("pregunta 2", service.History[0].Content);
+    }
+
+    [Fact]
+    public async Task RemoveLastTurn_TakesBackTheLastExchange()
+    {
+        _client.Reply("uno").Reply("dos");
+        var service = CreateService();
+        await service.SendAsync("primera").ToListAsync();
+        await service.SendAsync("segunda").ToListAsync();
+
+        Assert.Equal("segunda", service.RemoveLastTurn());
+        Assert.Equal(2, service.History.Count);
+    }
+
+    [Fact]
+    public async Task TurnCommitted_DeliversTheWholeExchange()
+    {
+        _client.Reply("hola");
+        var service = CreateService();
+        IReadOnlyList<ChatMessage>? turn = null;
+        service.TurnCommitted += t => turn = t;
+
+        await service.SendAsync("buenas").ToListAsync();
+
+        Assert.Equal([ChatRole.User, ChatRole.Assistant], turn!.Select(m => m.Role));
+    }
+
+    [Fact]
+    public async Task SendAsync_ReportsThinkingSeparately()
+    {
+        _client.Reply("<think>pienso</think>", "Hola");
+        var events = await CreateService().SendAsync("hola").ToListAsync();
+
+        Assert.Equal("pienso", string.Concat(events.OfType<ThinkingDelta>().Select(t => t.Text)));
+        Assert.Equal("Hola", string.Concat(events.OfType<TextDelta>().Select(t => t.Text)));
     }
 
     [Fact]

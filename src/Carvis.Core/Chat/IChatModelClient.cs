@@ -12,7 +12,19 @@ public sealed record ModelRequest(IReadOnlyList<ChatMessage> Messages)
 }
 
 /// <summary>A piece of the streamed answer: text, tool calls or both.</summary>
-public sealed record ModelChunk(string? Text, IReadOnlyList<ToolCall>? ToolCalls = null);
+public sealed record ModelChunk(string? Text, IReadOnlyList<ToolCall>? ToolCalls = null)
+{
+    /// <summary>Reasoning text (qwen3 with thinking on); never part of the answer.</summary>
+    public string? Thinking { get; init; }
+
+    /// <summary>Sent with the last chunk: generation speed.</summary>
+    public GenerationStats? Stats { get; init; }
+}
+
+public sealed record GenerationStats(int Tokens, TimeSpan Duration)
+{
+    public double TokensPerSecond => Duration.TotalSeconds > 0 ? Tokens / Duration.TotalSeconds : 0;
+}
 
 /// <summary>Low-level access to a chat LLM. Stateless: the caller sends the whole conversation.</summary>
 public interface IChatModelClient
