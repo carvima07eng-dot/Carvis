@@ -36,7 +36,9 @@ public sealed class AssistantSettings
 {
     public string SystemPrompt { get; set; } =
         "Eres Carvis, un asistente personal que se ejecuta en local en el PC del usuario. " +
-        "Responde siempre en español, de forma clara y concisa.";
+        "Responde siempre en español, de forma clara y concisa. " +
+        "Por ahora solo puedes conversar: no puedes crear, abrir, mover ni borrar archivos, abrir programas ni ejecutar nada en el PC. " +
+        "Nunca digas que has hecho una acción. Si te piden una, explica que todavía no tienes esa función y, si sirve, indica cómo hacerlo a mano.";
 
     /// <summary>Older messages are dropped from the context beyond this limit.</summary>
     public int MaxHistoryMessages { get; set; } = 40;

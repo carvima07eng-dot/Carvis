@@ -106,6 +106,9 @@ Piezas principales del Core:
 
 ## Hoja de ruta
 
+La lista completa de lo que falta hasta la versión final está en [docs/ROADMAP.md](docs/ROADMAP.md).
+
+
 - [x] **Fase 1**: ventana flotante, chat en streaming con historial, comprobación de Ollama, bandeja, configuración y tests.
 - [ ] **Fase 2**: indexar carpetas (PDF con PdfPig, DOCX con OpenXML, txt/md), trocear, embeddings con `nomic-embed-text`, guardar en SQLite + sqlite-vec y responder con RAG citando archivos. Contratos en `Carvis.Core/Indexing`.
 - [ ] **Fase 3**: acciones con tool calling (abrir programas, mover/renombrar archivos, ejecutar scripts) siempre con confirmación en la UI. Contratos en `Carvis.Core/Tools`.
