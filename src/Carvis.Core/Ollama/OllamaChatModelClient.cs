@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using Carvis.Core.Chat;
 using Carvis.Core.Configuration;
 using OllamaSharp;
+using OllamaSharp.Models;
 using OllamaSharp.Models.Chat;
 using ChatMessage = Carvis.Core.Chat.ChatMessage;
 using ChatRole = Carvis.Core.Chat.ChatRole;
@@ -22,6 +23,11 @@ public sealed class OllamaChatModelClient(IOllamaApiClient ollama, OllamaSetting
             Stream = true,
             Think = settings.EnableThinking,
             KeepAlive = settings.KeepAlive,
+            Options = new RequestOptions
+            {
+                NumCtx = settings.ContextLength,
+                Temperature = (float)settings.Temperature,
+            },
         };
 
         await foreach (var response in ollama.ChatAsync(request, cancellationToken))

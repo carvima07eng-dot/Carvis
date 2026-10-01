@@ -119,7 +119,7 @@
     </Style>
   </Window.Styles>
 
-  <Border Background="{StaticResource Background}"
+  <Border x:Name="RootBorder" Background="{StaticResource Background}"
           BorderBrush="#2A3A4F" BorderThickness="1"
           CornerRadius="18" Margin="8"
           BoxShadow="0 10 30 0 #66000000"
@@ -159,6 +159,21 @@
 
       <!-- Ollama / hotkey problems -->
       <StackPanel Grid.Row="2" Spacing="6" Margin="18,0,18,12">
+        <ItemsControl ItemsSource="{Binding Notices}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Border Background="#1E2A44" BorderBrush="#3B82F6" BorderThickness="1"
+                      CornerRadius="10" Padding="12,8" Margin="0,0,0,6">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="#BFDBFE" VerticalAlignment="Center" />
+                  <Button Grid.Column="1" Classes="caption" Content="✕" ToolTip.Tip="Cerrar aviso"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DismissNoticeCommand}"
+                          CommandParameter="{Binding}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <Border Background="#3A2A12" BorderBrush="#F59E0B" BorderThickness="1"
                 CornerRadius="10" Padding="12,10"
                 IsVisible="{Binding HasStatusMessage}">
@@ -193,7 +208,7 @@
                         Classes.error="{Binding IsError}">
                   <StackPanel Spacing="4">
                     <SelectableTextBlock Text="{Binding Content}" IsVisible="{Binding IsUser}"
-                                         TextWrapping="Wrap" FontSize="14" LineHeight="21"
+                                         TextWrapping="Wrap"
                                          Foreground="{StaticResource TextPrimary}" />
                     <controls:MarkdownView Markdown="{Binding Content}" IsVisible="{Binding !IsUser}" />
                     <TextBlock Text="Pensando…" IsVisible="{Binding IsWaiting}"

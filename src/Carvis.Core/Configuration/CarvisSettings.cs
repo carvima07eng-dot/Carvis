@@ -7,6 +7,7 @@ public sealed class CarvisSettings
     public HotkeySettings Hotkey { get; set; } = new();
     public AssistantSettings Assistant { get; set; } = new();
     public WindowSettings Window { get; set; } = new();
+    public LoggingSettings Logging { get; set; } = new();
 }
 
 public sealed class OllamaSettings
@@ -24,6 +25,15 @@ public sealed class OllamaSettings
     public string KeepAlive { get; set; } = "30m";
 
     public int RequestTimeoutSeconds { get; set; } = 300;
+
+    /// <summary>Context window in tokens (num_ctx). Ollama's default is small and silently truncates long chats.</summary>
+    public int ContextLength { get; set; } = 16384;
+
+    /// <summary>Creativity for normal conversation.</summary>
+    public double Temperature { get; set; } = 0.7;
+
+    /// <summary>Lower temperature while the model is choosing and filling in tools.</summary>
+    public double ToolTemperature { get; set; } = 0.2;
 }
 
 public sealed class HotkeySettings
@@ -36,9 +46,10 @@ public sealed class AssistantSettings
 {
     public string SystemPrompt { get; set; } =
         "Eres Carvis, un asistente personal que se ejecuta en local en el PC del usuario. " +
-        "Responde siempre en español, de forma clara y concisa. " +
-        "Por ahora solo puedes conversar: no puedes crear, abrir, mover ni borrar archivos, abrir programas ni ejecutar nada en el PC. " +
-        "Nunca digas que has hecho una acción. Si te piden una, explica que todavía no tienes esa función y, si sirve, indica cómo hacerlo a mano.";
+        "Responde siempre en español, de forma clara y concisa.";
+
+    /// <summary>How Carvis addresses the user; empty = the Windows user name.</summary>
+    public string UserName { get; set; } = string.Empty;
 
     /// <summary>Older messages are dropped from the context beyond this limit.</summary>
     public int MaxHistoryMessages { get; set; } = 40;
@@ -51,4 +62,22 @@ public sealed class WindowSettings
 
     /// <summary>Spotlight mode: always on top and hidden when it loses focus. Off = normal app window.</summary>
     public bool HideOnFocusLost { get; set; }
+
+    /// <summary>"Solid", "Acrylic" or "Mica" (the last two need Windows 11).</summary>
+    public string Backdrop { get; set; } = "Solid";
+
+    public double FontSize { get; set; } = 14;
+
+    public bool RememberPosition { get; set; } = true;
+}
+
+public sealed class LoggingSettings
+{
+    /// <summary>Trace, Debug, Information, Warning or Error.</summary>
+    public string Level { get; set; } = "Information";
+
+    /// <summary>Also write message contents to the log (only for debugging; off for privacy).</summary>
+    public bool IncludeContent { get; set; }
+
+    public int RetainDays { get; set; } = 14;
 }

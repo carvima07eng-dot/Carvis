@@ -15,7 +15,9 @@ namespace Carvis.App.Views.Controls;
 /// <summary>Turns Markdown into Avalonia controls. Covers what LLM answers usually contain.</summary>
 internal static class MarkdownRenderer
 {
-    private const double BodySize = 14;
+    [ThreadStatic] private static double _bodySize;
+
+    private static double BodySize => _bodySize > 0 ? _bodySize : 14;
 
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseEmphasisExtras()
@@ -32,8 +34,9 @@ internal static class MarkdownRenderer
     private static readonly IBrush InlineCodeBrush = Brush.Parse("#F0ABFC");
     private static readonly IBrush RuleBrush = Brush.Parse("#2A3A4F");
 
-    public static Control Render(string markdown)
+    public static Control Render(string markdown, double fontSize = 14)
     {
+        _bodySize = fontSize;
         var panel = Stack(8);
         foreach (var block in Markdig.Markdown.Parse(markdown, Pipeline))
             panel.Children.Add(RenderBlock(block));
@@ -42,7 +45,7 @@ internal static class MarkdownRenderer
 
     private static Control RenderBlock(Block block) => block switch
     {
-        HeadingBlock heading => Text(heading.Inline, heading.Level switch { 1 => 20, 2 => 17, _ => 15 }, FontWeight.Bold),
+        HeadingBlock heading => Text(heading.Inline, BodySize + heading.Level switch { 1 => 6, 2 => 3, _ => 1 }, FontWeight.Bold),
         ParagraphBlock paragraph => Text(paragraph.Inline),
         CodeBlock code => CodeBox(code),
         ListBlock list => List(list),
@@ -54,8 +57,10 @@ internal static class MarkdownRenderer
         _ => new Panel(),
     };
 
-    private static SelectableTextBlock Text(ContainerInline? inline, double size = BodySize, FontWeight? weight = null)
+    private static SelectableTextBlock Text(ContainerInline? inline, double size = 0, FontWeight? weight = null)
     {
+        if (size <= 0)
+            size = BodySize;
         var text = new SelectableTextBlock
         {
             TextWrapping = TextWrapping.Wrap,
@@ -174,7 +179,7 @@ internal static class MarkdownRenderer
         {
             HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto,
             VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
-            Content = new SelectableTextBlock { Text = code, FontFamily = Mono, FontSize = 13, Foreground = TextBrush },
+            Content = new SelectableTextBlock { Text = code, FontFamily = Mono, FontSize = BodySize - 1, Foreground = TextBrush },
         };
 
         var content = Stack(4);

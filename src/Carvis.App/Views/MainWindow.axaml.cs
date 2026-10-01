@@ -2,9 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Carvis.App.Platform;
+using Carvis.App.Services;
 using Carvis.App.ViewModels;
+using Carvis.Core.Configuration;
 
 namespace Carvis.App.Views;
 
@@ -12,14 +16,28 @@ public partial class MainWindow : Window
 {
     private const double AutoScrollTolerance = 40;
 
+    private readonly WindowStateStore? _stateStore;
+    private readonly WindowSettings _settings;
+    private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _hasBeenPositioned;
-    private bool _hideOnFocusLost;
 
-    public MainWindow()
+    // Used by the XAML designer.
+    public MainWindow() : this(null, new WindowSettings())
     {
+    }
+
+    public MainWindow(WindowStateStore? stateStore, WindowSettings settings)
+    {
+        _stateStore = stateStore;
+        _settings = settings;
+
         // Must be registered before XAML sets the decorations, which is when the styles are applied.
         WindowsNative.KeepTaskbarBehaviour(this);
         InitializeComponent();
+
+        HideOnFocusLost = settings.HideOnFocusLost;
+        FontSize = settings.FontSize;
+        ApplyBackdrop(settings.Backdrop);
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
         PromptBox.AddHandler(KeyDownEvent, OnPromptKeyDown, RoutingStrategies.Tunnel);
@@ -30,6 +48,13 @@ public partial class MainWindow : Window
             if (HideOnFocusLost)
                 Hide();
         };
+
+        _saveTimer.Tick += (_, _) => SavePlacement();
+        PositionChanged += (_, _) =>
+        {
+            if (_hasBeenPositioned)
+                _saveTimer.Start();
+        };
     }
 
     /// <summary>
@@ -38,12 +63,8 @@ public partial class MainWindow : Window
     /// </summary>
     public bool HideOnFocusLost
     {
-        get => _hideOnFocusLost;
-        set
-        {
-            _hideOnFocusLost = value;
-            Topmost = value;
-        }
+        get => Topmost;
+        set => Topmost = value;
     }
 
     /// <summary>Set before shutting down; otherwise closing the window only hides it.</summary>
@@ -55,11 +76,8 @@ public partial class MainWindow : Window
 
     public void ShowAndFocus()
     {
-        if (!_hasBeenPositioned)
-        {
-            CenterOnScreen();
-            _hasBeenPositioned = true;
-        }
+        if (!IsVisible || !_hasBeenPositioned)
+            PlaceOnMouseScreen();
 
         // Win+D or "show desktop" may have minimized it while it was hidden.
         if (WindowState == WindowState.Minimized)
@@ -80,6 +98,26 @@ public partial class MainWindow : Window
             WindowState = WindowState.Minimized;
     }
 
+    public void SavePlacement()
+    {
+        _saveTimer.Stop();
+        if (_settings.RememberPosition && _hasBeenPositioned && WindowState == WindowState.Normal)
+            _stateStore?.Save(new WindowPlacement(Position.X, Position.Y, Finite(Width), Finite(Height)));
+    }
+
+    // Width/Height are NaN while the window sizes itself to its content.
+    private static double Finite(double value) => double.IsFinite(value) ? value : 0;
+
+    public void ApplyBackdrop(string backdrop)
+    {
+        (TransparencyLevelHint, RootBorder.Background) = backdrop switch
+        {
+            "Acrylic" => ([WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], Brush.Parse("#CC0B1220")),
+            "Mica" => ([WindowTransparencyLevel.Mica, WindowTransparencyLevel.AcrylicBlur, WindowTransparencyLevel.Transparent], Brush.Parse("#B30B1220")),
+            _ => ((IReadOnlyList<WindowTransparencyLevel>)[WindowTransparencyLevel.Transparent], Brush.Parse("#0B1220")),
+        };
+    }
+
     protected override void OnClosing(WindowClosingEventArgs e)
     {
         if (!AllowClose)
@@ -88,6 +126,47 @@ public partial class MainWindow : Window
             Hide();
         }
         base.OnClosing(e);
+    }
+
+    // First show: the saved place if it is still on a screen. Later: follow the mouse to its monitor.
+    private void PlaceOnMouseScreen()
+    {
+        var mouse = WindowsNative.GetCursorPosition();
+        var target = (mouse is { } point ? Screens.ScreenFromPoint(point) : null)
+                     ?? Screens.ScreenFromWindow(this)
+                     ?? Screens.Primary;
+        if (target is null)
+            return;
+
+        if (!_hasBeenPositioned)
+        {
+            _hasBeenPositioned = true;
+            var saved = _settings.RememberPosition ? _stateStore?.Load() : null;
+            if (saved is not null && Screens.ScreenFromPoint(new PixelPoint(saved.X + 40, saved.Y + 20)) is { } savedScreen
+                && (mouse is null || savedScreen.Equals(target)))
+            {
+                Position = new PixelPoint(saved.X, saved.Y);
+                return;
+            }
+        }
+        else if (Screens.ScreenFromWindow(this) is { } current && current.Equals(target))
+        {
+            return; // same monitor: keep where the user left it
+        }
+
+        CenterOn(target);
+    }
+
+    // The window grows downwards, so it is centred as if it had its maximum height.
+    private void CenterOn(Screen screen)
+    {
+        var area = screen.WorkingArea;
+        var scale = screen.Scaling;
+        var width = (int)(Width * scale);
+        var height = (int)(MaxHeight * scale);
+        Position = new PixelPoint(
+            area.X + (area.Width - width) / 2,
+            area.Y + Math.Max(0, (area.Height - height) / 2));
     }
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs e)
@@ -136,22 +215,6 @@ public partial class MainWindow : Window
     private void OnMinimizeClick(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
 
     private void OnHideClick(object? sender, RoutedEventArgs e) => Hide();
-
-    // The window grows downwards, so it is centred as if it had its maximum height.
-    private void CenterOnScreen()
-    {
-        var screen = Screens.ScreenFromWindow(this) ?? Screens.Primary;
-        if (screen is null)
-            return;
-
-        var area = screen.WorkingArea;
-        var scale = screen.Scaling;
-        var width = (int)(Width * scale);
-        var height = (int)(MaxHeight * scale);
-        Position = new PixelPoint(
-            area.X + (area.Width - width) / 2,
-            area.Y + Math.Max(0, (area.Height - height) / 2));
-    }
 
     // Keep following the answer while it streams, unless the user scrolled up to read.
     private void OnMessagesScrollPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)

@@ -4,7 +4,6 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Threading;
-using Carvis.App.Configuration;
 using Carvis.App.Platform;
 using Carvis.App.Services;
 using Carvis.App.ViewModels;
@@ -27,6 +26,10 @@ public partial class App : Application
     private MainWindowViewModel? _viewModel;
     private GlobalHotkeyService? _hotkey;
     private TrayIcon? _trayIcon;
+    private ILogger? _logger;
+
+    /// <summary>Set by Program before Avalonia starts; the designer runs without it.</summary>
+    public static Bootstrap? Bootstrap { get; set; }
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
@@ -38,13 +41,19 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             desktop.Exit += (_, _) => Cleanup();
 
-            var settings = SettingsLoader.Load();
-            _services = BuildServices(settings);
+            var bootstrap = Bootstrap ??= Bootstrap.Create();
+            var settings = bootstrap.Settings;
+            _services = BuildServices(bootstrap);
+            _logger = _services.GetRequiredService<ILogger<App>>();
+            Dispatcher.UIThread.UnhandledException += OnUiException;
+
             _viewModel = _services.GetRequiredService<MainWindowViewModel>();
-            _window = new MainWindow
+            foreach (var warning in bootstrap.Warnings)
+                _viewModel.AddNotice(warning);
+
+            _window = new MainWindow(_services.GetRequiredService<WindowStateStore>(), settings.Window)
             {
                 DataContext = _viewModel,
-                HideOnFocusLost = settings.Window.HideOnFocusLost,
             };
 
             StartHotkey(settings);
@@ -85,10 +94,21 @@ public partial class App : Application
     public void Exit()
     {
         if (_window is not null)
+        {
+            _window.SavePlacement();
             _window.AllowClose = true;
+        }
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             desktop.Shutdown();
+    }
+
+    // A bug in one handler shouldn't take the whole assistant down.
+    private void OnUiException(object? sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        _logger?.LogError(e.Exception, "Unhandled exception on the UI thread");
+        _viewModel?.AddNotice($"Ha ocurrido un error inesperado: {e.Exception.Message}. Los detalles están en el log.");
+        e.Handled = true;
     }
 
     private void CreateTrayIcon(string hotkeyText)
@@ -158,26 +178,27 @@ public partial class App : Application
         if (_viewModel is null || _services is null)
             return;
 
-        var warnings = new List<string>();
-        if (!HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture))
-            warnings.Add($"El atajo «{settings.Hotkey.ToggleWindow}» no es válido; uso {gesture}.");
+        HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture);
 
         _hotkey = _services.GetRequiredService<GlobalHotkeyService>();
         _hotkey.Pressed += (_, _) => Dispatcher.UIThread.Post(ToggleWindow);
         _hotkey.Failed += (_, message) => Dispatcher.UIThread.Post(() => _viewModel.HotkeyWarning = message);
 
         if (!_hotkey.TryStart(gesture, out var error))
-            warnings.Add(error!);
-
-        if (warnings.Count > 0)
-            _viewModel.HotkeyWarning = string.Join(" ", warnings);
+            _viewModel.HotkeyWarning = error;
     }
 
-    private static ServiceProvider BuildServices(CarvisSettings settings)
+    private static ServiceProvider BuildServices(Bootstrap bootstrap)
     {
         var services = new ServiceCollection();
-        services.AddLogging(builder => builder.AddDebug().SetMinimumLevel(LogLevel.Information));
-        services.AddCarvisCore(settings);
+        services.AddLogging(builder => builder
+            .AddProvider(bootstrap.Log)
+            .AddDebug()
+            .SetMinimumLevel(LogLevel.Trace));
+        services.AddSingleton(bootstrap.Paths);
+        services.AddSingleton(bootstrap.SettingsStore);
+        services.AddCarvisCore(bootstrap.Settings);
+        services.AddSingleton(new WindowStateStore(bootstrap.Paths.WindowStateFile));
         services.AddSingleton<GlobalHotkeyService>();
         services.AddSingleton<MainWindowViewModel>();
         return services.BuildServiceProvider();

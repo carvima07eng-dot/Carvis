@@ -54,7 +54,7 @@ public sealed class MarkdownView : ContentControl
 
         try
         {
-            Content = MarkdownRenderer.Render(markdown);
+            Content = MarkdownRenderer.Render(markdown, FontSize);
         }
         catch (Exception)
         {

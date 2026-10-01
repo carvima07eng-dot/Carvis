@@ -30,6 +30,18 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     }
 
     public ObservableCollection<MessageViewModel> Messages { get; } = [];
+
+    /// <summary>Informational messages (bad settings, unexpected errors) the user can dismiss.</summary>
+    public ObservableCollection<string> Notices { get; } = [];
+
+    public void AddNotice(string notice)
+    {
+        if (!Notices.Contains(notice))
+            Notices.Add(notice);
+    }
+
+    [RelayCommand]
+    private void DismissNotice(string notice) => Notices.Remove(notice);
     public bool HasMessages => Messages.Count > 0;
 
     public string ModelName { get; }

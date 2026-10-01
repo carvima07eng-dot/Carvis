@@ -123,7 +123,10 @@ public class ChatServiceTests
 
         await CreateService(new FixedContextProvider(context)).SendAsync("¿qué dicen mis notas?").ToListAsync();
 
-        Assert.Equal(context, _client.Requests.Single()[1]);
+        // System text from providers is merged into the single system message.
+        var request = _client.Requests.Single();
+        Assert.Equal(new ChatMessage(ChatRole.System, "Eres Carvis.\n\nFragmento de notas.txt"), request[0]);
+        Assert.Equal(2, request.Count);
     }
 
     [Theory]

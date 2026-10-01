@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Threading;
+using Microsoft.Extensions.Logging;
 
 namespace Carvis.App;
 
@@ -19,8 +20,30 @@ internal static class Program
             return 0;
         }
 
+        var bootstrap = Bootstrap.Create();
+        var log = bootstrap.Log.CreateLogger("Program");
+        log.LogInformation("Carvis {Version} starting", typeof(Program).Assembly.GetName().Version);
+
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            log.LogCritical(e.ExceptionObject as Exception, "Unhandled exception, the app will close");
+        TaskScheduler.UnobservedTaskException += (_, e) =>
+        {
+            log.LogError(e.Exception, "Unobserved task exception");
+            e.SetObserved();
+        };
+
+        App.Bootstrap = bootstrap;
         ListenForOtherInstances();
-        return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+
+        try
+        {
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            log.LogInformation("Carvis stopped");
+            bootstrap.Log.Dispose();
+        }
     }
 
     // Also used by the Avalonia designer.

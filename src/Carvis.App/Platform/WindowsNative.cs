@@ -12,6 +12,25 @@ internal static class WindowsNative
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetCursorPos(out Point point);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Point
+    {
+        public int X;
+        public int Y;
+    }
+
+    /// <summary>Mouse position in screen pixels, or null where it can't be read.</summary>
+    public static Avalonia.PixelPoint? GetCursorPosition()
+    {
+        if (OperatingSystem.IsWindows() && GetCursorPos(out var point))
+            return new Avalonia.PixelPoint(point.X, point.Y);
+        return null;
+    }
+
     /// <summary>Activate() alone can leave the window behind others when the app is in the background.</summary>
     public static void BringToFront(Window window)
     {

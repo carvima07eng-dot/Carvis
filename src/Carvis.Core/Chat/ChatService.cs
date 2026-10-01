@@ -97,13 +97,25 @@ public sealed class ChatService : IChatService
 
     private async Task<List<ChatMessage>> BuildRequestAsync(ChatMessage user, CancellationToken cancellationToken)
     {
-        var messages = new List<ChatMessage>();
-
-        if (!string.IsNullOrWhiteSpace(_settings.SystemPrompt))
-            messages.Add(new ChatMessage(ChatRole.System, _settings.SystemPrompt));
+        // All system text goes into one message: chat templates handle that best.
+        var system = new StringBuilder(_settings.SystemPrompt.Trim());
+        var extra = new List<ChatMessage>();
 
         foreach (var provider in _contextProviders)
-            messages.AddRange(await provider.GetContextAsync(user.Content, cancellationToken));
+        {
+            foreach (var message in await provider.GetContextAsync(user.Content, cancellationToken))
+            {
+                if (message.Role == ChatRole.System)
+                    system.Append(system.Length > 0 ? "\n\n" : string.Empty).Append(message.Content.Trim());
+                else
+                    extra.Add(message);
+            }
+        }
+
+        var messages = new List<ChatMessage>();
+        if (system.Length > 0)
+            messages.Add(new ChatMessage(ChatRole.System, system.ToString()));
+        messages.AddRange(extra);
 
         lock (_lock) messages.AddRange(_history);
         messages.Add(user);
