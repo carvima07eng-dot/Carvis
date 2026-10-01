@@ -1,6 +1,12 @@
 # Software de terceros
 
-Carvis incluye o descarga los siguientes componentes. Cada uno conserva su licencia; los textos completos están en sus repositorios.
+Carvis se distribuye con licencia MIT (ver [LICENSE](LICENSE)). Incluye o descarga los siguientes componentes; cada uno conserva su licencia y los textos completos están en sus repositorios.
+
+## Compatibilidad
+
+- Todo lo que va **dentro del instalador** es MIT, BSD, Apache-2.0, OFL o dominio público, salvo **libuiohook** (dentro de SharpHook), que es **LGPL-3.0**. Es compatible: se distribuye como una DLL aparte (`uiohook.dll`) que se puede sustituir, y el código de Carvis es público.
+- **Piper, espeak-ng y las voces no se distribuyen**: los descarga el usuario desde Ajustes y Piper se ejecuta como un programa aparte. Por eso su licencia (Piper ahora es GPL-3.0 en su nuevo repositorio; espeak-ng es GPL-3.0) no afecta a la de Carvis.
+- **Voces**: `es_ES-davefx-medium` (CC0) y `es_ES-sharvard-medium` (CC BY 3.0, pide atribución) están afinadas a partir de la voz inglesa *lessac*, cuyo conjunto de datos (Blizzard 2013) solo permite investigación y uso no comercial. Para uso personal no hay problema; **para un uso comercial no se deberían usar**. `es_MX-claude-high` declara Apache-2.0.
 
 ## Incluidos en el instalador
 
@@ -23,8 +29,12 @@ Carvis incluye o descarga los siguientes componentes. Cada uno conserva su licen
 | [Whisper.net](https://github.com/sandrohanea/whisper.net) (+ runtimes CPU y Vulkan, basados en whisper.cpp/ggml) | 1.9.1 | MIT |
 | [NAudio](https://github.com/naudio/NAudio) (Core y WinMM) | 2.2.1 | MIT |
 | [Velopack](https://github.com/velopack/velopack) | 1.2.161 | MIT |
+| [FluentAvaloniaUI](https://github.com/amwx/FluentAvalonia) | 2.x | MIT |
+| [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) (iconos) | — | MIT |
+| [Serilog](https://github.com/serilog/serilog) (+ Extensions.Logging, Sinks.File) | 4.x | Apache-2.0 |
+| [ModelContextProtocol C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) | — | MIT |
 
-\* SharpHook distribuye libuiohook; consulta su licencia en el repositorio de SharpHook.
+\* SharpHook es MIT y distribuye libuiohook 1.3, que es LGPL-3.0.
 
 ## Descargados aparte (solo si lo pides)
 
@@ -36,7 +46,7 @@ Carvis incluye o descarga los siguientes componentes. Cada uno conserva su licen
 | Modelo `nomic-embed-text` (Nomic AI) | Apache-2.0 |
 | Modelos de [Whisper](https://github.com/openai/whisper) en formato ggml ([whisper.cpp](https://github.com/ggerganov/whisper.cpp)) | MIT |
 | [Piper](https://github.com/rhasspy/piper) (ejecutable, espeak-ng y onnxruntime incluidos) | MIT (espeak-ng: GPL-3.0; onnxruntime: MIT) |
-| Voces de [piper-voices](https://huggingface.co/rhasspy/piper-voices) | La de cada voz, indicada en su `MODEL_CARD` |
+| Voces de [piper-voices](https://huggingface.co/rhasspy/piper-voices) | La de cada voz (`MODEL_CARD`); ver la nota de compatibilidad sobre *lessac* |
 
 ## Solo para desarrollo (no se distribuyen)
 
