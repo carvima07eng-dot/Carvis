@@ -1,0 +1,693 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Carvis.App.ViewModels"
+        xmlns:controls="using:Carvis.App.Views.Controls"
+        xmlns:chat="using:Carvis.Core.Chat"
+        xmlns:tools="using:Carvis.Core.Tools"
+        DragDrop.AllowDrop="True"
+        mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="420"
+        x:Class="Carvis.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Carvis"
+        Icon="/Assets/carvis.ico"
+        Width="760" MinWidth="520" MinHeight="160"
+        SizeToContent="Height"
+        CanResize="True"
+        CanMaximize="False"
+        ShowInTaskbar="True"
+        Background="Transparent">
+
+  <Window.Styles>
+    <!-- The prompt: no chrome, larger text -->
+    <Style Selector="TextBox.prompt">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FontSize" Value="{StaticResource Type.BodyLarge}" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="{StaticResource Inset.H8V4}" />
+      <Setter Property="MinHeight" Value="{StaticResource Control.HeightLarge}" />
+    </Style>
+    <Style Selector="TextBox.prompt:pointerover /template/ Border#PART_BorderElement, TextBox.prompt:focus /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="TextBox.prompt /template/ TextBlock#PART_Watermark">
+      <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+    </Style>
+    <Style Selector="Border.prompt">
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+      <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+      <Setter Property="Padding" Value="{StaticResource Inset.8}" />
+    </Style>
+    <Style Selector="Border.prompt:focus-within">
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrong}" />
+    </Style>
+
+    <!-- Messages -->
+    <Style Selector="Border.message">
+      <Setter Property="MaxWidth" Value="{StaticResource Content.MaxWidth}" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="Margin" Value="{StaticResource Inset.H0V4}" />
+    </Style>
+    <Style Selector="Border.message.user">
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+      <Setter Property="Padding" Value="{StaticResource Inset.H12V8}" />
+    </Style>
+    <Style Selector="Border.message.error">
+      <Setter Property="Background" Value="{DynamicResource DangerSubtle}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+      <Setter Property="Padding" Value="{StaticResource Inset.H12V8}" />
+    </Style>
+    <Style Selector="StackPanel.messageActions">
+      <Setter Property="Opacity" Value="0.7" />
+    </Style>
+    <Style Selector="Border.message:pointerover StackPanel.messageActions">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <!-- Action cards -->
+    <Style Selector="Border.tool">
+      <Setter Property="Background" Value="{DynamicResource Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Stroke}" />
+      <Setter Property="BorderThickness" Value="{StaticResource Border.1}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+      <Setter Property="Padding" Value="{StaticResource Inset.12}" />
+      <Setter Property="Margin" Value="{StaticResource Inset.H0V4}" />
+      <Setter Property="MaxWidth" Value="{StaticResource Content.MaxWidth}" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Border.tool.pending">
+      <Setter Property="BorderBrush" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="Border.tool.pending.dangerous">
+      <Setter Property="BorderBrush" Value="{DynamicResource Danger}" />
+    </Style>
+    <Style Selector="Border.tool Border.iconTile">
+      <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+    </Style>
+    <Style Selector="Border.tool Border.iconTile controls|FluentIcon">
+      <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+    <Style Selector="Border.tool.dangerous Border.iconTile">
+      <Setter Property="Background" Value="{DynamicResource DangerSubtle}" />
+    </Style>
+    <Style Selector="Border.tool.dangerous Border.iconTile controls|FluentIcon">
+      <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+    </Style>
+    <Style Selector="controls|FluentIcon.state">
+      <Setter Property="Foreground" Value="{DynamicResource TextTertiary}" />
+    </Style>
+    <Style Selector="Border.tool.done controls|FluentIcon.state">
+      <Setter Property="Foreground" Value="{DynamicResource Success}" />
+    </Style>
+    <Style Selector="Border.tool.failed controls|FluentIcon.state">
+      <Setter Property="Foreground" Value="{DynamicResource Danger}" />
+    </Style>
+
+    <Style Selector="Button.source">
+      <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondary}" />
+      <Setter Property="FontSize" Value="{StaticResource Type.Caption}" />
+      <Setter Property="Padding" Value="{StaticResource Inset.H8V4}" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Margin" Value="{StaticResource Gap.R4}" />
+    </Style>
+
+    <!-- History -->
+    <Style Selector="Border.conversation">
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.4}" />
+    </Style>
+    <Style Selector="Border.conversation:pointerover">
+      <Setter Property="Background" Value="{DynamicResource SubtleHover}" />
+    </Style>
+    <Style Selector="Border.conversation.current">
+      <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+    </Style>
+    <Style Selector="Button.conversationOpen">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="{StaticResource Inset.H8V4}" />
+    </Style>
+    <Style Selector="Button.conversationOpen:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.icon.listening controls|FluentIcon">
+      <Setter Property="Foreground" Value="{DynamicResource Accent}" />
+    </Style>
+  </Window.Styles>
+
+  <Panel>
+  <Border x:Name="RootBorder" ClipToBounds="True">
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+
+      <!-- Title bar: drag to move -->
+      <Grid x:Name="TitleBar" Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto"
+            Background="Transparent" Margin="{StaticResource Gap.TitleBar}" MinHeight="{StaticResource Control.HeightLarge}">
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" VerticalAlignment="Center">
+          <Image Source="/Assets/carvis.png" Width="{StaticResource Icon.Small}" Height="{StaticResource Icon.Small}" />
+          <TextBlock Classes="caption" Text="Carvis" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="2" Classes="icon" ToolTip.Tip="Nueva conversación (Ctrl+N)" AutomationProperties.Name="Nueva conversación"
+                Command="{Binding NewConversationCommand}">
+          <controls:FluentIcon Data="{StaticResource Icon.Compose}" />
+        </Button>
+        <Button Grid.Column="3" Classes="icon" ToolTip.Tip="Conversaciones (Ctrl+H)" AutomationProperties.Name="Conversaciones guardadas"
+                Command="{Binding ToggleHistoryCommand}">
+          <controls:FluentIcon Data="{StaticResource Icon.History}" />
+        </Button>
+        <Button Grid.Column="4" Classes="icon" ToolTip.Tip="Ajustes (Ctrl+,)" AutomationProperties.Name="Ajustes"
+                Command="{Binding OpenSettingsCommand}">
+          <controls:FluentIcon Data="{StaticResource Icon.Settings}" />
+        </Button>
+        <Button Grid.Column="5" Classes="icon" ToolTip.Tip="Minimizar" AutomationProperties.Name="Minimizar" Click="OnMinimizeClick">
+          <controls:FluentIcon Data="{StaticResource Icon.Minimize}" />
+        </Button>
+        <Button Grid.Column="6" Classes="icon" ToolTip.Tip="Ocultar (sigue en la bandeja)" AutomationProperties.Name="Ocultar en la bandeja"
+                Click="OnHideClick">
+          <controls:FluentIcon Data="{StaticResource Icon.Dismiss}" />
+        </Button>
+      </Grid>
+
+      <!-- Prompt -->
+      <Border Grid.Row="1" Classes="prompt" Margin="{StaticResource Gap.Prompt}">
+        <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+          <StackPanel Grid.ColumnSpan="3" Spacing="{StaticResource Space.8}">
+            <!-- Voice: listening / understanding / speaking -->
+            <Border Classes="chip enter" IsVisible="{Binding ShowVoiceIndicator}" HorizontalAlignment="Left" Margin="{StaticResource Gap.B4}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                <controls:VoiceOrb State="{Binding VoiceState}" Level="{Binding MicLevel}" Accent="{DynamicResource Accent}"
+                                   Width="{StaticResource Icon.Medium}" Height="{StaticResource Icon.Medium}" />
+                <TextBlock Text="{Binding VoiceText}" VerticalAlignment="Center" />
+                <Button Classes="subtle compact" Content="Parar" IsVisible="{Binding IsSpeaking}"
+                        Command="{Binding StopSpeakingCommand}" AutomationProperties.Name="Dejar de hablar" />
+              </StackPanel>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Images}" IsVisible="{Binding !!Images.Count}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ImageAttachmentViewModel">
+                  <Border Classes="chip enter" Margin="{StaticResource Gap.R8}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                      <Image Source="{Binding Preview}" MaxHeight="{StaticResource Space.32}" MaxWidth="{StaticResource Control.HeightLarge}" />
+                      <TextBlock Classes="caption" Text="{Binding Label}" VerticalAlignment="Center" />
+                      <Button Classes="icon" AutomationProperties.Name="Quitar imagen" ToolTip.Tip="Quitar"
+                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveImageCommand}"
+                              CommandParameter="{Binding}">
+                        <controls:FluentIcon Data="{StaticResource Icon.Dismiss}" />
+                      </Button>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <ItemsControl ItemsSource="{Binding Attachments}" IsVisible="{Binding !!Attachments.Count}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Border Classes="chip enter" Margin="{StaticResource Gap.R8}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                      <controls:FluentIcon Data="{StaticResource Icon.Document}" />
+                      <TextBlock Classes="caption" Text="{Binding}" VerticalAlignment="Center" MaxWidth="{StaticResource Content.MaxWidth}"
+                                 TextTrimming="CharacterEllipsis" />
+                      <Button Classes="icon" AutomationProperties.Name="Quitar adjunto" ToolTip.Tip="Quitar"
+                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveAttachmentCommand}"
+                              CommandParameter="{Binding}">
+                        <controls:FluentIcon Data="{StaticResource Icon.Dismiss}" />
+                      </Button>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <controls:FluentIcon Grid.Row="1" Data="{StaticResource Icon.Sparkle}" Classes="medium accent" Margin="{StaticResource Inset.H8V0}" />
+          <TextBox x:Name="PromptBox" Grid.Row="1" Grid.Column="1" Classes="prompt"
+                   AutomationProperties.Name="Mensaje para Carvis"
+                   Watermark="Pregúntame o pídeme algo…"
+                   Text="{Binding Input}"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap" MaxHeight="{StaticResource Prompt.MaxHeight}" />
+          <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="{StaticResource Space.4}">
+            <Button Classes="icon" ToolTip.Tip="Adjuntar archivos o imágenes" AutomationProperties.Name="Adjuntar archivos" Click="OnAttachClick">
+              <controls:FluentIcon Data="{StaticResource Icon.Attach}" />
+            </Button>
+            <Button Classes="icon" ToolTip.Tip="Capturar la pantalla (Ctrl+Alt+S)" AutomationProperties.Name="Capturar la pantalla">
+              <controls:FluentIcon Data="{StaticResource Icon.Screenshot}" />
+              <Button.Flyout>
+                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                  <MenuItem Header="Elegir una zona" Click="OnCaptureRegionClick">
+                    <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Screenshot}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="Pantalla completa" Click="OnCaptureScreenClick">
+                    <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Desktop}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <MenuItem Header="Ventana activa" Click="OnCaptureWindowClick">
+                    <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Window}" /></MenuItem.Icon>
+                  </MenuItem>
+                  <Separator />
+                  <MenuItem Header="Copiar el texto de una zona" Click="OnCopyTextClick">
+                    <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Ocr}" /></MenuItem.Icon>
+                  </MenuItem>
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+            <Button Classes="icon" Classes.listening="{Binding IsListening}" Command="{Binding ToggleVoiceCommand}"
+                    ToolTip.Tip="Hablar (Ctrl+M)" AutomationProperties.Name="Hablar" IsVisible="{Binding IsVoiceEnabled}">
+              <controls:FluentIcon Data="{StaticResource Icon.Mic}" />
+            </Button>
+            <Button Classes="primary icon" ToolTip.Tip="Enviar (Intro)" AutomationProperties.Name="Enviar"
+                    Command="{Binding SendCommand}" IsVisible="{Binding !IsBusy}">
+              <controls:FluentIcon Data="{StaticResource Icon.Send}" Foreground="{DynamicResource OnAccent}" />
+            </Button>
+            <Button Classes="icon" ToolTip.Tip="Detener" AutomationProperties.Name="Detener la respuesta"
+                    Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}">
+              <controls:FluentIcon Data="{StaticResource Icon.Stop}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Notices -->
+      <StackPanel Grid.Row="2" Spacing="{StaticResource Space.8}" Margin="{StaticResource Gap.Prompt}"
+                  IsVisible="{Binding HasAnyNotice}">
+        <Border Classes="infobar error enter" IsVisible="{Binding HasCrashReport}">
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+            <controls:FluentIcon Data="{StaticResource Icon.Bug}" Classes="danger" Margin="{StaticResource Gap.R8}" VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Spacing="{StaticResource Space.4}">
+              <TextBlock Classes="bodyStrong" Text="La última vez me cerré por un error" />
+              <TextBlock Classes="caption wrap" Text="Si me envías el informe, me ayudas a arreglarlo. No lleva tu nombre ni tus rutas." />
+            </StackPanel>
+            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="{StaticResource Space.8}" Margin="{StaticResource Gap.T8}">
+              <Button Content="Avisar en GitHub" Command="{Binding ReportCrashCommand}" />
+              <Button Classes="subtle" Content="Copiar el informe" Command="{Binding CopyCrashReportCommand}" />
+              <Button Classes="subtle" Content="Ahora no" Command="{Binding DismissCrashReportCommand}" />
+            </StackPanel>
+          </Grid>
+        </Border>
+        <Border Classes="infobar enter" IsVisible="{Binding HasUpdate}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <controls:FluentIcon Data="{StaticResource Icon.Download}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+            <TextBlock Grid.Column="1" Classes="wrap" Text="{Binding UpdateText}" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Classes="subtle" Content="Reiniciar ahora" Command="{Binding InstallUpdateCommand}" />
+          </Grid>
+        </Border>
+        <ItemsControl ItemsSource="{Binding Notices}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Border Classes="infobar enter" Margin="{StaticResource Gap.B4}">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <controls:FluentIcon Data="{StaticResource Icon.Info}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+                  <TextBlock Grid.Column="1" Classes="wrap" Text="{Binding}" VerticalAlignment="Center" />
+                  <Button Grid.Column="2" Classes="icon" ToolTip.Tip="Cerrar" AutomationProperties.Name="Cerrar aviso"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DismissNoticeCommand}"
+                          CommandParameter="{Binding}">
+                    <controls:FluentIcon Data="{StaticResource Icon.Dismiss}" />
+                  </Button>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Border Classes="infobar warning enter" IsVisible="{Binding HasStatusMessage}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <controls:FluentIcon Data="{StaticResource Icon.Warning}" Classes="warning" Margin="{StaticResource Gap.R8}" VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Spacing="{StaticResource Space.4}">
+              <TextBlock Classes="wrap" Text="{Binding StatusMessage}" />
+              <SelectableTextBlock Classes="mono" Text="{Binding StatusCommand}" IsVisible="{Binding HasStatusCommand}" />
+            </StackPanel>
+            <Button Grid.Column="2" Classes="subtle" Content="Reintentar" VerticalAlignment="Center" Command="{Binding CheckStatusCommand}" />
+          </Grid>
+        </Border>
+        <Border Classes="infobar error enter" IsVisible="{Binding HasHotkeyWarning}">
+          <Grid ColumnDefinitions="Auto,*">
+            <controls:FluentIcon Data="{StaticResource Icon.Keyboard}" Classes="danger" Margin="{StaticResource Gap.R8}" />
+            <TextBlock Grid.Column="1" Classes="wrap" Text="{Binding HotkeyWarning}" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+      </StackPanel>
+
+      <!-- Content: home, history or conversation -->
+      <Panel Grid.Row="3">
+        <!-- Home: nothing said yet -->
+        <StackPanel x:Name="HomePanel" IsVisible="{Binding ShowHome}" Margin="{StaticResource Gap.Content}" Spacing="{StaticResource Space.12}">
+          <StackPanel Spacing="{StaticResource Space.4}">
+            <TextBlock Classes="subtitle" Text="{Binding Greeting}" />
+            <TextBlock Classes="secondary" Text="Escribe, habla o elige una idea para empezar." />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding Suggestions}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <UniformGrid Columns="2" ColumnSpacing="{StaticResource Space.8}" RowSpacing="{StaticResource Space.8}" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SuggestionViewModel">
+                <Button Classes="card enter" VerticalAlignment="Stretch"
+                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).UseSuggestionCommand}" CommandParameter="{Binding}">
+                  <Grid ColumnDefinitions="Auto,*">
+                    <Border Classes="iconTile">
+                      <controls:FluentIcon Data="{Binding IconKey, Converter={x:Static vm:ToolIcons.ToGeometry}}" Classes="medium accent" HorizontalAlignment="Center" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Margin="{StaticResource Gap.L12}" Spacing="{StaticResource Space.4}">
+                      <TextBlock Classes="bodyStrong" Text="{Binding Title}" />
+                      <TextBlock Classes="caption wrap" Text="{Binding Example}" />
+                    </StackPanel>
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Border Classes="infobar" IsVisible="{Binding ShowDocumentsHint}">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <controls:FluentIcon Data="{StaticResource Icon.DocumentSearch}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+              <TextBlock Grid.Column="1" Classes="wrap" VerticalAlignment="Center"
+                         Text="Aún no he leído ningún documento tuyo. Elige tus carpetas de apuntes y podré contestarte con ellos." />
+              <Button Grid.Column="2" Classes="subtle" Content="Elegir carpetas" Command="{Binding OpenSettingsPageCommand}" CommandParameter="Documentos" />
+            </Grid>
+          </Border>
+        </StackPanel>
+
+        <!-- Saved conversations -->
+        <Grid x:Name="HistoryPanel" RowDefinitions="Auto,*" IsVisible="{Binding IsHistoryOpen}" Margin="{StaticResource Gap.Content}">
+          <TextBox Watermark="Buscar en las conversaciones" Text="{Binding History.Search}" Margin="{StaticResource Gap.B8}">
+            <TextBox.InnerLeftContent>
+              <controls:FluentIcon Data="{StaticResource Icon.Search}" Classes="tertiary" Margin="{StaticResource Gap.L8}" />
+            </TextBox.InnerLeftContent>
+          </TextBox>
+          <Panel Grid.Row="1">
+            <StackPanel IsVisible="{Binding History.HasNoConversations}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="{StaticResource Space.8}" Margin="{StaticResource Inset.24}">
+              <controls:FluentIcon Data="{StaticResource Icon.Chat}" Classes="large tertiary" HorizontalAlignment="Center" />
+              <TextBlock Classes="secondary" Text="Aún no hay conversaciones guardadas." HorizontalAlignment="Center" />
+              <Button Classes="subtle" Content="Empezar una" HorizontalAlignment="Center" Command="{Binding NewConversationCommand}" />
+            </StackPanel>
+            <StackPanel IsVisible="{Binding History.HasNoResults}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="{StaticResource Space.8}" Margin="{StaticResource Inset.24}">
+              <controls:FluentIcon Data="{StaticResource Icon.Search}" Classes="large tertiary" HorizontalAlignment="Center" />
+              <TextBlock Classes="secondary" Text="Ninguna conversación habla de eso." HorizontalAlignment="Center" />
+              <Button Classes="subtle" Content="Borrar la búsqueda" HorizontalAlignment="Center" Command="{Binding History.ClearSearchCommand}" />
+            </StackPanel>
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+              <ItemsControl ItemsSource="{Binding History.Items}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:ConversationItemViewModel">
+                    <Border Classes="conversation" Classes.current="{Binding IsCurrent}">
+                      <Grid ColumnDefinitions="*,Auto,Auto">
+                        <Button Classes="conversationOpen"
+                                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.OpenCommand}"
+                                CommandParameter="{Binding}" IsVisible="{Binding !IsRenaming}">
+                          <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                            <controls:FluentIcon Data="{StaticResource Icon.Pin}" Classes="accent" IsVisible="{Binding Pinned}" />
+                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                          </StackPanel>
+                        </Button>
+                        <TextBox Text="{Binding Title}" IsVisible="{Binding IsRenaming}">
+                          <TextBox.KeyBindings>
+                            <KeyBinding Gesture="Enter"
+                                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.FinishRenameCommand}"
+                                        CommandParameter="{Binding}" />
+                          </TextBox.KeyBindings>
+                        </TextBox>
+                        <TextBlock Grid.Column="1" Classes="caption" Text="{Binding When}" Margin="{StaticResource Inset.H8V0}" VerticalAlignment="Center" />
+                        <Button Grid.Column="2" Classes="icon" AutomationProperties.Name="Opciones" ToolTip.Tip="Opciones">
+                          <controls:FluentIcon Data="{StaticResource Icon.More}" />
+                          <Button.Flyout>
+                            <MenuFlyout>
+                              <MenuItem Header="Fijar o soltar" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.TogglePinCommand}" CommandParameter="{Binding}">
+                                <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Pin}" /></MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Cambiar el nombre" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.StartRenameCommand}" CommandParameter="{Binding}">
+                                <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Edit}" /></MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Guardar como archivo" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.ExportCommand}" CommandParameter="{Binding}">
+                                <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Export}" /></MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Borrar" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).History.DeleteCommand}" CommandParameter="{Binding}">
+                                <MenuItem.Icon><controls:FluentIcon Data="{StaticResource Icon.Delete}" /></MenuItem.Icon>
+                              </MenuItem>
+                            </MenuFlyout>
+                          </Button.Flyout>
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Panel>
+        </Grid>
+
+        <!-- Conversation -->
+        <ScrollViewer x:Name="MessagesScroll" IsVisible="{Binding ShowConversation}" HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding Items}" Margin="{StaticResource Gap.Content}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.DataTemplates>
+              <DataTemplate DataType="vm:MessageViewModel">
+                <Border Classes="message" Classes.user="{Binding IsUser}" Classes.error="{Binding IsError}" Classes.enter="{Binding IsFresh}">
+                  <StackPanel Spacing="{StaticResource Space.4}">
+                    <Button Classes="subtle compact" IsVisible="{Binding HasThinking}" Command="{Binding ToggleThinkingCommand}" HorizontalAlignment="Left">
+                      <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.4}">
+                        <controls:FluentIcon Data="{StaticResource Icon.Lightbulb}" />
+                        <TextBlock Text="Cómo lo he pensado" />
+                      </StackPanel>
+                    </Button>
+                    <TextBlock Classes="caption wrap" Text="{Binding Thinking}" IsVisible="{Binding ShowThinking}" FontStyle="Italic" />
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" IsVisible="{Binding IsError}">
+                      <controls:FluentIcon Data="{StaticResource Icon.Error}" Classes="danger" />
+                      <TextBlock Classes="bodyStrong" Text="Algo ha fallado" />
+                    </StackPanel>
+                    <SelectableTextBlock Text="{Binding Content}" IsVisible="{Binding IsUser}" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.4}" IsVisible="{Binding HasAttachments}">
+                      <controls:FluentIcon Data="{StaticResource Icon.Attach}" Classes="tertiary" />
+                      <TextBlock Classes="caption wrap" Text="{Binding AttachmentsText}" />
+                    </StackPanel>
+                    <controls:MarkdownView Markdown="{Binding Content}" IsVisible="{Binding !IsUser}" />
+                    <!-- Waiting for the first words -->
+                    <StackPanel Spacing="{StaticResource Space.8}" IsVisible="{Binding IsWaiting}" Width="{StaticResource Skeleton.Width}"
+                                AutomationProperties.Name="Carvis está pensando">
+                      <Border Classes="skeleton" HorizontalAlignment="Stretch" />
+                      <Border Classes="skeleton" HorizontalAlignment="Stretch" Margin="{StaticResource Gap.R8}" />
+                      <Border Classes="skeleton" HorizontalAlignment="Left" Width="{StaticResource Field.Width}" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding Sources}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="chat:SourceReference">
+                          <Button Classes="source" ToolTip.Tip="{Binding Path}"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).OpenSourceCommand}" CommandParameter="{Binding}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.4}">
+                              <controls:FluentIcon Data="{StaticResource Icon.Document}" />
+                              <TextBlock>
+                                <Run Text="{Binding Number, StringFormat='{}{0} · '}" FontWeight="SemiBold" />
+                                <Run Text="{Binding Label}" />
+                              </TextBlock>
+                            </StackPanel>
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <!-- Written from outside text: always said, and commands get a warning -->
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.4}" IsVisible="{Binding ShowExternalNote}"
+                                ToolTip.Tip="Carvis ha leído una web, un documento o el resultado de una acción para responder. Ese texto no puede darle órdenes.">
+                      <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="tertiary" />
+                      <TextBlock Classes="caption tertiary" Text="Origen externo" />
+                    </StackPanel>
+                    <Border Classes="infobar warning" Classes.error="{Binding IsCommandDangerous}" IsVisible="{Binding HasCommandWarning}">
+                      <Grid ColumnDefinitions="Auto,*">
+                        <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+                          <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="warning" IsVisible="{Binding !IsCommandDangerous}" />
+                          <controls:FluentIcon Data="{StaticResource Icon.ShieldError}" Classes="danger" IsVisible="{Binding IsCommandDangerous}" />
+                        </Panel>
+                        <TextBlock Grid.Column="1" Classes="caption wrap" Text="{Binding CommandWarning}" />
+                      </Grid>
+                    </Border>
+                    <StackPanel Classes="messageActions" Orientation="Horizontal" Spacing="{StaticResource Space.4}">
+                      <Button Classes="icon" IsVisible="{Binding CanCopy}" Click="OnCopyMessageClick" ToolTip.Tip="{Binding CopyLabel}" AutomationProperties.Name="Copiar">
+                        <controls:FluentIcon Data="{StaticResource Icon.Copy}" />
+                      </Button>
+                      <Button Classes="icon" IsVisible="{Binding CanRegenerate}" ToolTip.Tip="Otra respuesta" AutomationProperties.Name="Otra respuesta"
+                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RegenerateCommand}">
+                        <controls:FluentIcon Data="{StaticResource Icon.Regenerate}" />
+                      </Button>
+                      <Button Classes="icon" IsVisible="{Binding CanEdit}" ToolTip.Tip="Editar" AutomationProperties.Name="Editar"
+                              Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).EditLastCommand}">
+                        <controls:FluentIcon Data="{StaticResource Icon.Edit}" />
+                      </Button>
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+
+              <DataTemplate DataType="vm:ToolCallViewModel">
+                <Border Classes="tool"
+                        Classes.pending="{Binding IsPending}"
+                        Classes.dangerous="{Binding IsDangerous}"
+                        Classes.done="{Binding IsDone}"
+                        Classes.failed="{Binding IsFailed}"
+                        Classes.enter="{Binding IsFresh}">
+                  <StackPanel Spacing="{StaticResource Space.8}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Classes="iconTile">
+                        <controls:FluentIcon Data="{Binding IconKey, Converter={x:Static vm:ToolIcons.ToGeometry}}" Classes="medium" HorizontalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="{StaticResource Gap.L12}" Spacing="{StaticResource Space.4}" VerticalAlignment="Center">
+                        <TextBlock Classes="bodyStrong wrap" Text="{Binding Summary}" />
+                        <TextBlock Classes="caption wrap" Text="{Binding ResultText}" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{StaticResource Space.4}" VerticalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsRunning}" Width="{StaticResource Space.32}" />
+                        <Button Classes="icon" IsVisible="{Binding CanUndo}" Command="{Binding UndoCommand}" ToolTip.Tip="Deshacer" AutomationProperties.Name="Deshacer">
+                          <controls:FluentIcon Data="{StaticResource Icon.Undo}" />
+                        </Button>
+                        <Button Classes="icon" IsVisible="{Binding HasOutput}" Command="{Binding ToggleOutputCommand}" ToolTip.Tip="Ver el resultado completo" AutomationProperties.Name="Detalles">
+                          <controls:FluentIcon Data="{StaticResource Icon.ChevronDown}" />
+                        </Button>
+                        <controls:FluentIcon Classes="state" IsVisible="{Binding IsSettled}"
+                                             Data="{Binding StateIconKey, Converter={x:Static vm:ToolIcons.ToGeometry}}" />
+                      </StackPanel>
+                    </Grid>
+
+                    <Border Classes="infobar warning" IsVisible="{Binding AfterExternalContent}" Margin="{StaticResource Gap.UnderIcon}">
+                      <Grid ColumnDefinitions="Auto,*">
+                        <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+                          <controls:FluentIcon Data="{StaticResource Icon.Shield}" Classes="warning" />
+                        </Panel>
+                        <TextBlock Grid.Column="1" Classes="caption wrap" Text="Origen externo: lo propongo después de leer una web, un documento o una captura. Revísalo bien." />
+                      </Grid>
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Warnings}" IsVisible="{Binding HasWarnings}" Margin="{StaticResource Gap.UnderIcon}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="tools:ToolWarning">
+                          <Border Classes="infobar error" Margin="{StaticResource Gap.B4}">
+                            <Grid ColumnDefinitions="Auto,*">
+                              <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+                                <controls:FluentIcon Data="{StaticResource Icon.ShieldError}" Classes="danger" />
+                              </Panel>
+                              <TextBlock Grid.Column="1" Classes="caption wrap" Text="{Binding Text}" />
+                            </Grid>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <ItemsControl ItemsSource="{Binding Details}" IsVisible="{Binding HasDetails}" Margin="{StaticResource Gap.UnderIcon}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <TextBlock Classes="mono secondary wrap" Text="{Binding}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border IsVisible="{Binding ShowOutput}" Background="{DynamicResource CodeBackground}" CornerRadius="{StaticResource Radius.4}"
+                            Padding="{StaticResource Inset.H12V8}" Margin="{StaticResource Gap.UnderIcon}">
+                      <SelectableTextBlock Classes="mono secondary wrap" Text="{Binding Output}" />
+                    </Border>
+
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" Margin="{StaticResource Gap.UnderIcon}" IsVisible="{Binding IsPending}">
+                      <Button Classes="primary" Classes.danger="{Binding IsDangerous}" Content="{Binding ApproveLabel}" Command="{Binding ApproveCommand}" />
+                      <Button Classes="subtle" Content="Permitir siempre en esta sesión" Command="{Binding ApproveForSessionCommand}"
+                              IsVisible="{Binding CanApproveForSession}" />
+                      <Button Classes="subtle" Content="Cancelar" Command="{Binding DenyCommand}" />
+                      <TextBlock Classes="caption tertiary" Text="Intro acepta · Esc cancela" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+
+              <DataTemplate DataType="vm:HistoryToolViewModel">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" Margin="{StaticResource Inset.H0V4}">
+                  <controls:FluentIcon Data="{Binding IconKey, Converter={x:Static vm:ToolIcons.ToGeometry}}" Classes="tertiary" />
+                  <TextBlock Classes="caption wrap" Text="{Binding Text}" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.DataTemplates>
+          </ItemsControl>
+        </ScrollViewer>
+      </Panel>
+
+      <!-- Footer -->
+      <Border Grid.Row="4" BorderBrush="{DynamicResource Stroke}" BorderThickness="{StaticResource Border.Top1}" Padding="{StaticResource Gap.Footer}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" VerticalAlignment="Center">
+            <Ellipse Classes="statusDot" Classes.ready="{Binding IsOllamaReady}" Classes.checking="{Binding IsCheckingStatus}" />
+            <Button Classes="subtle compact" ToolTip.Tip="Cambiar de modelo" AutomationProperties.Name="Cambiar de modelo">
+              <TextBlock Classes="caption">
+                <Run Text="{Binding ModelName}" />
+                <Run Text=" · " />
+                <Run Text="{Binding ConnectionText}" />
+              </TextBlock>
+              <Button.Flyout>
+                <Flyout Placement="TopEdgeAlignedLeft" Opening="OnModelFlyoutOpening">
+                  <StackPanel Spacing="{StaticResource Space.4}">
+                    <TextBlock Classes="bodyStrong" Text="Modelos instalados" Margin="{StaticResource Gap.B4}" />
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsLoadingModels}" />
+                    <ItemsControl ItemsSource="{Binding AvailableModels}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <Button Classes="subtle" Content="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectModelCommand}" CommandParameter="{Binding}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <TextBlock Classes="caption tertiary" Text="{Binding LastSpeed}" VerticalAlignment="Center" />
+            <TextBlock Classes="caption tertiary" Text="{Binding GpuText}" VerticalAlignment="Center"
+                       ToolTip.Tip="Memoria de la tarjeta gráfica que usan los modelos (escribe /gpu para más)" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.4}" IsVisible="{Binding IndexStatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <controls:FluentIcon Data="{StaticResource Icon.Sync}" Classes="accent" />
+              <TextBlock Classes="caption" Text="{Binding IndexStatusText}" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+          <TextBlock Grid.Column="2" Classes="caption tertiary" VerticalAlignment="Center">
+            <Run Text="Intro enviar · " />
+            <Run Text="{Binding DismissHint}" />
+            <Run Text=" · " />
+            <Run Text="{Binding HotkeyText}" />
+          </TextBlock>
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+
+  <!-- Resize handles (only where Windows doesn't draw its own border) -->
+  <Grid x:Name="ResizeHandles" RowDefinitions="8,*,8" ColumnDefinitions="8,*,8">
+    <Border Grid.Row="0" Grid.Column="0" Tag="NorthWest" Cursor="TopLeftCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="0" Grid.Column="1" Tag="North" Cursor="TopSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="0" Grid.Column="2" Tag="NorthEast" Cursor="TopRightCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="1" Grid.Column="0" Tag="West" Cursor="LeftSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="1" Grid.Column="2" Tag="East" Cursor="RightSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="2" Grid.Column="0" Tag="SouthWest" Cursor="BottomLeftCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="2" Grid.Column="1" Tag="South" Cursor="BottomSide" Background="Transparent" PointerPressed="OnResizePressed" />
+    <Border Grid.Row="2" Grid.Column="2" Tag="SouthEast" Cursor="BottomRightCorner" Background="Transparent" PointerPressed="OnResizePressed" />
+  </Grid>
+  </Panel>
+</Window>

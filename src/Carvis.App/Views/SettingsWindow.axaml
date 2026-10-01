@@ -1,0 +1,505 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Carvis.App.ViewModels"
+        xmlns:c="using:Carvis.App.Views.Controls"
+        xmlns:storage="using:Carvis.Core.Storage"
+        xmlns:config="using:Carvis.Core.Configuration"
+        x:Class="Carvis.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="Ajustes de Carvis"
+        Icon="/Assets/carvis.ico"
+        Width="920" Height="680" MinWidth="680" MinHeight="460"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.group">
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Margin" Value="{StaticResource Gap.T16}" />
+    </Style>
+    <Style Selector="StackPanel.page">
+      <Setter Property="Spacing" Value="{StaticResource Space.4}" />
+      <Setter Property="MaxWidth" Value="{StaticResource Settings.MaxWidth}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="c|SettingsCard ComboBox.narrow, c|SettingsCard TextBox.narrow, c|SettingsCard AutoCompleteBox, c|SettingsCard Slider">
+      <Setter Property="Width" Value="{StaticResource Field.Width}" />
+    </Style>
+  </Window.Styles>
+
+  <Grid x:Name="Root" ColumnDefinitions="Auto,*">
+    <!-- Navigation -->
+    <DockPanel Width="{StaticResource Nav.Width}" Margin="{StaticResource Inset.H8V0}">
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="{StaticResource Space.12}" Margin="{StaticResource Inset.16}">
+        <Image Source="/Assets/carvis.png" Width="{StaticResource Icon.Medium}" Height="{StaticResource Icon.Medium}" />
+        <TextBlock Classes="bodyStrong" Text="Ajustes" VerticalAlignment="Center" />
+      </StackPanel>
+      <ListBox Classes="nav" ItemsSource="{Binding Pages}" SelectedItem="{Binding SelectedPage}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:SettingsPage">
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.12}">
+              <c:FluentIcon Data="{Binding IconKey, Converter={x:Static vm:ToolIcons.ToGeometry}}" />
+              <TextBlock Text="{Binding Title}" VerticalAlignment="Center" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- Page -->
+    <DockPanel Grid.Column="1">
+      <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Stroke}" BorderThickness="{StaticResource Border.Top1}" Padding="{StaticResource Inset.H24V16}">
+        <Grid ColumnDefinitions="*,Auto,Auto">
+          <TextBlock Classes="secondary wrap" Text="{Binding Message}" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Content="Cerrar" Margin="{StaticResource Inset.H8V0}" Click="OnCloseClick" />
+          <Button Grid.Column="2" Classes="primary" Content="Guardar" Command="{Binding SaveCommand}" />
+        </Grid>
+      </Border>
+      <TextBlock DockPanel.Dock="Top" Classes="title" Text="{Binding SelectedPage.Title}" Margin="{StaticResource Inset.H24V16}" />
+
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <Panel Margin="{StaticResource Inset.H24V16}">
+
+          <!-- General -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=General}">
+            <c:SettingsCard Icon="{StaticResource Icon.Person}" Header="Cómo quieres que te llame" Description="Si lo dejas vacío uso tu nombre de Windows.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Assistant.UserName}" Watermark="Tu nombre" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Abrir Carvis" />
+            <c:SettingsCard Icon="{StaticResource Icon.Keyboard}" Header="Atajo para mostrar u ocultar"
+                            Description="Ctrl, Alt, Mayús o Win y una tecla, por ejemplo Alt+Space o Ctrl+Shift+J. Si no responde, otro programa lo está usando.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Hotkey.ToggleWindow}" Watermark="Alt+Space" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Window}" Header="Tipo de ventana" Description="La rápida es como la búsqueda de Windows.">
+              <ComboBox Classes="narrow" ItemsSource="{Binding WindowModes}" SelectedIndex="{Binding WindowMode}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Power}" Header="Iniciar con Windows" Description="Se queda esperando en la bandeja del sistema." IsVisible="{Binding IsWindows}">
+              <ToggleSwitch IsChecked="{Binding StartWithWindows}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Eye}" Header="Arrancar oculto" Description="No abre la ventana al iniciar; aparece con el atajo.">
+              <ToggleSwitch IsChecked="{Binding Draft.Window.StartHidden}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Desktop}" Header="Recordar dónde estaba la ventana">
+              <ToggleSwitch IsChecked="{Binding Draft.Window.RememberPosition}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Appearance -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Apariencia}">
+            <c:SettingsCard Icon="{StaticResource Icon.DarkTheme}" Header="Tema" Description="«Como Windows» sigue el modo claro u oscuro, y el contraste alto, de tu PC.">
+              <ComboBox Classes="narrow" ItemsSource="{Binding Themes}" SelectedIndex="{Binding ThemeIndex}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Personalize}" Header="Color de acento" Description="{Binding AccentText}">
+              <c:SettingsCard.Footer>
+                <ItemsControl ItemsSource="{Binding AccentColors}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <WrapPanel />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Button Classes="icon" Margin="{StaticResource Gap.R4}"
+                              Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).SetAccentCommand}" CommandParameter="{Binding}"
+                              AutomationProperties.Name="{Binding, StringFormat='Color de acento {0}'}" ToolTip.Tip="{Binding, TargetNullValue='Como Windows'}">
+                        <Border Width="{StaticResource Icon.Medium}" Height="{StaticResource Icon.Medium}" CornerRadius="{StaticResource Radius.12}"
+                                BorderThickness="{StaticResource Border.1}" BorderBrush="{DynamicResource StrokeStrong}"
+                                Background="{Binding, Converter={x:Static vm:SettingsViewModel.AccentToBrush}}" />
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Window}" Header="Fondo de la ventana" Description="Mica deja ver un poco el color del escritorio (Windows 11). En Windows 10 se usa un fondo sólido.">
+              <ComboBox Classes="narrow" ItemsSource="{Binding Backdrops}" SelectedIndex="{Binding BackdropIndex}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Edit}" Header="Tamaño del texto de los mensajes">
+              <NumericUpDown Value="{Binding Draft.Window.FontSize}" Minimum="10" Maximum="28" Increment="1" FormatString="0" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Sparkle}" Header="Animaciones" Description="También se apagan si las desactivas en Windows (Accesibilidad → Efectos visuales).">
+              <ToggleSwitch IsChecked="{Binding Draft.Window.Animations}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Model -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Modelo}">
+            <c:SettingsCard Icon="{StaticResource Icon.Model}" Header="Modelo para conversar" Description="El que responde y usa las herramientas. Recomendado: qwen3:8b.">
+              <AutoCompleteBox Text="{Binding Draft.Ollama.ChatModel}" ItemsSource="{Binding InstalledModels}" FilterMode="Contains" MinimumPrefixLength="0" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.DocumentSearch}" Header="Modelo para leer documentos" Description="Convierte tus apuntes en algo que Carvis puede buscar. Recomendado: nomic-embed-text.">
+              <AutoCompleteBox Text="{Binding Draft.Ollama.EmbeddingModel}" ItemsSource="{Binding InstalledModels}" FilterMode="Contains" MinimumPrefixLength="0" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Download}" Header="Descargar modelos" Description="{Binding DownloadStatus, TargetNullValue='Si te falta alguno, descárgalo desde aquí.'}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                <Button Content="Conversar" Command="{Binding DownloadModelCommand}" CommandParameter="{Binding Draft.Ollama.ChatModel}" />
+                <Button Content="Documentos" Command="{Binding DownloadModelCommand}" CommandParameter="{Binding Draft.Ollama.EmbeddingModel}" />
+              </StackPanel>
+              <c:SettingsCard.Footer>
+                <ProgressBar Value="{Binding DownloadProgress}" IsVisible="{Binding IsDownloading}" />
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Cómo responde" />
+            <c:SettingsCard Icon="{StaticResource Icon.Lightbulb}" Header="Creatividad" Description="Más baja: respuestas más previsibles. Más alta: más variadas.">
+              <Slider Value="{Binding Draft.Ollama.Temperature}" Minimum="0" Maximum="1.5" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Memory}" Header="Memoria de la conversación (tokens)" Description="Cuánto texto recuerda a la vez. 16384 va bien con 12 GB de gráfica.">
+              <NumericUpDown Value="{Binding Draft.Ollama.ContextLength}" Minimum="2048" Maximum="131072" Increment="2048" FormatString="0" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Timer}" Header="Mantener el modelo cargado" Description="Mientras está cargado responde al momento. Ejemplos: 30m, 2h, -1 (siempre).">
+              <TextBox Classes="narrow" Text="{Binding Draft.Ollama.KeepAlive}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Flash}" Header="Ahorrar memoria de la gráfica" Description="{Binding OllamaTuningStatus}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                <Button Content="Activar" Command="{Binding OptimizeOllamaCommand}" />
+                <Button Classes="subtle" Content="Quitar" Command="{Binding ResetOllamaTuningCommand}" />
+              </StackPanel>
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Avanzado" />
+            <c:SettingsCard Icon="{StaticResource Icon.Globe}" Header="Dirección de Ollama" Description="Cámbiala solo si Ollama está en otro equipo.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Ollama.BaseUrl}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Wrench}" Header="Precisión al usar herramientas" Description="Más baja hace que rellene las acciones con más cuidado.">
+              <Slider Value="{Binding Draft.Ollama.ToolTemperature}" Minimum="0" Maximum="1" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Chat}" Header="Instrucciones de Carvis" Description="Cómo debe comportarse. Cámbialo con cuidado.">
+              <c:SettingsCard.Footer>
+                <TextBox Text="{Binding Draft.Assistant.SystemPrompt}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="{StaticResource Field.MultilineHeight}" />
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Documents -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Documentos}">
+            <c:SettingsCard Icon="{StaticResource Icon.Folder}" Header="Carpetas que leo" Description="Puedo contestar con lo que haya en ellas y te digo de qué archivo sale cada cosa.">
+              <Button Content="Añadir carpeta" Click="OnAddDocumentFolderClick" />
+              <c:SettingsCard.Footer>
+                <Panel>
+                  <StackPanel IsVisible="{Binding HasNoDocumentFolders}" Spacing="{StaticResource Space.8}" Margin="{StaticResource Inset.16}" HorizontalAlignment="Center">
+                    <c:FluentIcon Data="{StaticResource Icon.FolderOpen}" Classes="large tertiary" HorizontalAlignment="Center" />
+                    <TextBlock Classes="secondary" Text="Aún no has elegido ninguna carpeta." HorizontalAlignment="Center" />
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{Binding DocumentFolders}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <Grid ColumnDefinitions="Auto,*,Auto" Margin="{StaticResource Inset.H0V4}">
+                          <c:FluentIcon Data="{StaticResource Icon.Folder}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+                          <TextBlock Grid.Column="1" Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                          <Button Grid.Column="2" Classes="icon" ToolTip.Tip="Quitar" AutomationProperties.Name="Quitar carpeta"
+                                  Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveDocumentFolderCommand}" CommandParameter="{Binding}">
+                            <c:FluentIcon Data="{StaticResource Icon.Delete}" />
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Panel>
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Sync}" Header="Estado" Description="{Binding IndexStatus}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                <Button Content="Leer ahora" Command="{Binding IndexNowCommand}" />
+                <Button Classes="subtle" Content="Pausar" Command="{Binding PauseIndexCommand}" />
+                <Button Classes="subtle" Content="Empezar de cero" Command="{Binding ClearIndexCommand}" />
+              </StackPanel>
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Search}" Header="Fijarme en los cambios" Description="Si añades o cambias un archivo, lo vuelvo a leer solo.">
+              <ToggleSwitch IsChecked="{Binding Draft.Documents.WatchChanges}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Document}" Header="Tamaño máximo por archivo (MB)">
+              <NumericUpDown Value="{Binding Draft.Documents.MaxFileSizeMb}" Minimum="1" Maximum="500" Increment="5" FormatString="0" />
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Reminders and routines -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Recordatorios}">
+            <TextBlock Classes="secondary wrap" Text="Pídeselos a Carvis: «recuérdame mañana a las 9…», «crea una rutina modo estudio que…». Aquí ves los que tienes." />
+            <TextBlock Classes="group" Text="Recordatorios pendientes" />
+            <Border Classes="card" IsVisible="{Binding HasNoReminders}">
+              <StackPanel Spacing="{StaticResource Space.8}" HorizontalAlignment="Center">
+                <c:FluentIcon Data="{StaticResource Icon.Alarm}" Classes="large tertiary" HorizontalAlignment="Center" />
+                <TextBlock Classes="secondary" Text="No tienes recordatorios pendientes." HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Reminders}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ReminderRow">
+                  <c:SettingsCard Icon="{StaticResource Icon.Alarm}" Header="{Binding Text}" Description="{Binding When}" Margin="{StaticResource Gap.B4}">
+                    <Button Classes="icon" ToolTip.Tip="Cancelar el recordatorio" AutomationProperties.Name="Cancelar el recordatorio"
+                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).DeleteReminderCommand}" CommandParameter="{Binding}">
+                      <c:FluentIcon Data="{StaticResource Icon.Delete}" />
+                    </Button>
+                  </c:SettingsCard>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="group" Text="Rutinas" />
+            <Border Classes="card" IsVisible="{Binding HasNoRoutines}">
+              <StackPanel Spacing="{StaticResource Space.8}" HorizontalAlignment="Center">
+                <c:FluentIcon Data="{StaticResource Icon.Flash}" Classes="large tertiary" HorizontalAlignment="Center" />
+                <TextBlock Classes="secondary" Text="Aún no has creado ninguna rutina." HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Routines}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="storage:Routine">
+                  <c:SettingsCard Icon="{StaticResource Icon.Flash}" Header="{Binding Name}" Description="{Binding Description}" Margin="{StaticResource Gap.B4}">
+                    <Button Classes="icon" ToolTip.Tip="Borrar la rutina" AutomationProperties.Name="Borrar la rutina"
+                            Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).DeleteRoutineCommand}" CommandParameter="{Binding}">
+                      <c:FluentIcon Data="{StaticResource Icon.Delete}" />
+                    </Button>
+                  </c:SettingsCard>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- Voice -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Voz}">
+            <c:SettingsCard Icon="{StaticResource Icon.Mic}" Header="Hablar con Carvis" Description="Todo se procesa en tu PC. Solo uso Internet para descargar los modelos cuando tú lo pidas.">
+              <ToggleSwitch IsChecked="{Binding Draft.Voice.Enabled}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Download}" Header="Modelos de voz" Description="{Binding VoiceStatus}">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}">
+                <Button Content="Descargar" Command="{Binding DownloadVoiceModelsCommand}" />
+                <Button Classes="subtle" Content="Cancelar" Command="{Binding CancelVoiceDownloadCommand}" IsVisible="{Binding IsDownloadingVoice}" />
+              </StackPanel>
+              <c:SettingsCard.Footer>
+                <ProgressBar Value="{Binding VoiceDownloadProgress}" Maximum="100" IsVisible="{Binding IsDownloadingVoice}" />
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Keyboard}" Header="Atajo para hablar" Description="Púlsalo, habla y calla: sé que has terminado por la pausa. Púlsalo otra vez para cortarme.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Voice.PushToTalkHotkey}" Watermark="Ctrl+Alt+Space" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Entender" />
+            <c:SettingsCard Icon="{StaticResource Icon.Sparkle}" Header="Precisión" Description="tiny y base son rápidos pero fallan más; small va bien en español; medium es el más preciso (1,5 GB).">
+              <ComboBox Classes="narrow" ItemsSource="{Binding WhisperSizes}" SelectedItem="{Binding Draft.Voice.WhisperModel}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Flash}" Header="Usar la tarjeta gráfica" Description="Mucho más rápido. Si da problemas, desactívalo.">
+              <ToggleSwitch IsChecked="{Binding Draft.Voice.UseGpu}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Mic}" Header="Micrófono">
+              <ComboBox Classes="narrow" ItemsSource="{Binding Microphones}" SelectedItem="{Binding SelectedMicrophone}" />
+              <c:SettingsCard.Footer>
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.12}">
+                  <Button Content="Probar" Command="{Binding TestMicrophoneCommand}" />
+                  <ProgressBar Value="{Binding MicrophoneLevel}" Maximum="100" Width="{StaticResource Field.Width}" VerticalAlignment="Center" />
+                </StackPanel>
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Timer}" Header="Pausa que indica que has terminado (ms)" Description="Súbela si te corto antes de tiempo.">
+              <NumericUpDown Value="{Binding Draft.Voice.SilenceMilliseconds}" Minimum="300" Maximum="3000" Increment="100" FormatString="0" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Hablar" />
+            <c:SettingsCard Icon="{StaticResource Icon.Speaker}" Header="Leer en voz alta las respuestas" Description="Solo cuando me preguntas hablando.">
+              <ToggleSwitch IsChecked="{Binding Draft.Voice.SpeakAnswers}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Speaker}" Header="Altavoces">
+              <ComboBox Classes="narrow" ItemsSource="{Binding Speakers}" SelectedItem="{Binding SelectedSpeaker}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Person}" Header="Voz" Description="Otras en español: es_ES-sharvard-medium, es_MX-claude-high. Al cambiarla, descárgala otra vez.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Voice.PiperVoice}" Watermark="es_ES-davefx-medium" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Media}" Header="Velocidad">
+              <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.12}">
+                <Slider Minimum="0.6" Maximum="1.6" Value="{Binding Draft.Voice.SpeechRate}" TickFrequency="0.1" IsSnapToTickEnabled="True" />
+                <Button Content="Escuchar" Command="{Binding TestSpeakerCommand}" />
+              </StackPanel>
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Captures -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Capturas}">
+            <c:SettingsCard Icon="{StaticResource Icon.Keyboard}" Header="Atajo para capturar una zona" Description="Eliges la zona con el ratón y me preguntas sobre ella.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Vision.CaptureHotkey}" Watermark="Ctrl+Alt+S" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Eye}" Header="Modelo que mira las imágenes" Description="Hace falta descargarlo: ollama pull qwen2.5vl:7b. Se carga solo al usarlo y se descarga al terminar.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Ollama.VisionModel}" Watermark="qwen2.5vl:7b" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Image}" Header="Guardar las capturas" Description="En Imágenes\Carvis. Si no, solo existen mientras las usas.">
+              <ToggleSwitch IsChecked="{Binding Draft.Vision.SaveCaptures}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Permissions -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Permisos}">
+            <c:SettingsCard Icon="{StaticResource Icon.Wrench}" Header="Dejar que Carvis haga cosas en el PC" Description="Crear carpetas, abrir programas, poner recordatorios… Sin esto solo conversa.">
+              <ToggleSwitch IsChecked="{Binding Draft.Assistant.EnableTools}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Question}" Header="Preguntarme antes de cambiar archivos" Description="Crear, mover o cambiar el nombre. Borrar, sobrescribir y apagar el PC siempre se preguntan.">
+              <ToggleSwitch IsChecked="{Binding Draft.Permissions.ConfirmChanges}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Question}" Header="Preguntarme también antes de abrir algo" Description="Programas, webs y ajustes de Windows.">
+              <ToggleSwitch IsChecked="{Binding Draft.Permissions.ConfirmLowRisk}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Folder}" Header="Carpetas en las que puede trabajar" Description="Si no eliges ninguna, puede trabajar en tu carpeta personal. Nunca toca Windows, Archivos de programa ni AppData.">
+              <Button Content="Añadir carpeta" Click="OnAddAllowedFolderClick" />
+              <c:SettingsCard.Footer>
+                <ItemsControl ItemsSource="{Binding AllowedFolders}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Grid ColumnDefinitions="Auto,*,Auto" Margin="{StaticResource Inset.H0V4}">
+                        <c:FluentIcon Data="{StaticResource Icon.Folder}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+                        <TextBlock Grid.Column="1" Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        <Button Grid.Column="2" Classes="icon" ToolTip.Tip="Quitar" AutomationProperties.Name="Quitar carpeta"
+                                Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveAllowedFolderCommand}" CommandParameter="{Binding}">
+                          <c:FluentIcon Data="{StaticResource Icon.Delete}" />
+                        </Button>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Privacy -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Privacidad}">
+            <c:SettingsCard Icon="{StaticResource Icon.Privacy}" Header="Cifrar mis datos" Description="Conversaciones, recuerdos y notas solo se pueden leer con tu usuario de Windows.">
+              <ToggleSwitch IsChecked="{Binding Draft.Privacy.EncryptData}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.History}" Header="Guardar las conversaciones" Description="Para poder volver a ellas desde el historial.">
+              <ToggleSwitch IsChecked="{Binding Draft.Privacy.SaveConversations}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Download}" Header="Buscar actualizaciones" Description="Una vez al día en GitHub. Solo se descarga la lista de versiones; no se envía nada tuyo.">
+              <ToggleSwitch IsChecked="{Binding Draft.Privacy.CheckForUpdates}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Registro de errores" />
+            <c:SettingsCard Icon="{StaticResource Icon.Bug}" Header="Carpeta de registros" Description="Si algo falla, ahí está lo que pasó. No guarda lo que escribes.">
+              <Button Content="Abrir" Command="{Binding OpenLogsCommand}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Bug}" Header="Incluir el texto de los mensajes" Description="Solo para buscar un fallo. Desactívalo después.">
+              <ToggleSwitch IsChecked="{Binding Draft.Logging.IncludeContent}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Tus datos" />
+            <c:SettingsCard Icon="{StaticResource Icon.FolderOpen}" Header="Dónde están" Description="{Binding DataFolder}">
+              <Button Content="Abrir" Command="{Binding OpenDataFolderCommand}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Delete}" Header="Borrar todos mis datos" Description="Conversaciones, recuerdos, notas, recordatorios y el historial de acciones. No se puede deshacer.">
+              <Button Classes="danger" Content="{Binding DeleteDataLabel}" Command="{Binding DeleteAllDataCommand}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Regenerate}" Header="Volver a los ajustes de fábrica" Description="Tus datos se quedan; solo cambian los ajustes.">
+              <Button Content="Restablecer" Command="{Binding ResetToDefaultsCommand}" />
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- Memory -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Memoria}">
+            <TextBlock Classes="secondary wrap" Text="Lo que me has pedido que recuerde («recuerda que estudio DAM»). Lo uso en todas las conversaciones." />
+            <Border Classes="card" IsVisible="{Binding HasNoMemories}" Margin="{StaticResource Gap.T8}">
+              <StackPanel Spacing="{StaticResource Space.8}" HorizontalAlignment="Center">
+                <c:FluentIcon Data="{StaticResource Icon.Memory}" Classes="large tertiary" HorizontalAlignment="Center" />
+                <TextBlock Classes="secondary" Text="Todavía no recuerdo nada de ti." HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <ItemsControl ItemsSource="{Binding Memories}" Margin="{StaticResource Gap.T8}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="storage:MemoryItem">
+                  <c:SettingsCard Icon="{StaticResource Icon.Memory}" Header="{Binding Text}" Margin="{StaticResource Gap.B4}">
+                    <Button Classes="subtle" Content="Olvidar" Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).DeleteMemoryCommand}" CommandParameter="{Binding}" />
+                  </c:SettingsCard>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="subtle" Content="Olvidarlo todo" Command="{Binding ClearMemoriesCommand}" IsVisible="{Binding !HasNoMemories}" Margin="{StaticResource Gap.T8}" />
+          </StackPanel>
+
+          <!-- Experimental -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Experimental}">
+            <Border Classes="infobar warning">
+              <Grid ColumnDefinitions="Auto,*">
+                <c:FluentIcon Data="{StaticResource Icon.Beaker}" Classes="warning" Margin="{StaticResource Gap.R8}" VerticalAlignment="Top" />
+                <TextBlock Grid.Column="1" Classes="wrap" Text="Funcionan, pero aún no están pulidas: pueden equivocarse más o gastar más. Todas vienen apagadas." />
+              </Grid>
+            </Border>
+            <TextBlock Classes="group" Text="Voz" />
+            <c:SettingsCard Icon="{StaticResource Icon.Mic}" Header="Escuchar siempre «Carvis»" Description="El micrófono queda abierto y solo reacciono si empiezas con «Carvis…». Nunca con el PC bloqueado.">
+              <ToggleSwitch IsChecked="{Binding Draft.Voice.WakeWord}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Chat}" Header="Conversación seguida" Description="Después de contestar vuelvo a escuchar, sin pulsar nada.">
+              <ToggleSwitch IsChecked="{Binding Draft.Voice.ContinuousConversation}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Speaker}" Header="Cortarme si hablas" Description="Va mejor con auriculares; si no, puedo oírme a mí mismo.">
+              <ToggleSwitch IsChecked="{Binding Draft.Voice.InterruptByVoice}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Respuestas" />
+            <c:SettingsCard Icon="{StaticResource Icon.Lightbulb}" Header="Pensar antes de responder" Description="qwen3 razona primero. Responde mejor a preguntas difíciles, pero tarda más.">
+              <ToggleSwitch IsChecked="{Binding Draft.Ollama.EnableThinking}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <TextBlock Classes="group" Text="Más herramientas" />
+            <c:SettingsCard Icon="{StaticResource Icon.Globe}" Header="Usar Internet" Description="El tiempo, el cambio de moneda y buscar en la web. Sin esto no salgo a Internet.">
+              <ToggleSwitch IsChecked="{Binding Draft.Permissions.AllowInternet}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Search}" Header="Buscador (SearXNG)" Description="Para leer resultados de búsqueda hace falta un SearXNG propio. Sin él, abro la búsqueda en el navegador.">
+              <TextBox Classes="narrow" Text="{Binding Draft.Permissions.SearchUrl}" Watermark="http://localhost:8080" IsEnabled="{Binding Draft.Permissions.AllowInternet}" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Console}" Header="Ejecutar scripts de PowerShell" Description="Para lo que no cubren las demás herramientas. Siempre te enseño el script entero y bloqueo lo peligroso.">
+              <ToggleSwitch IsChecked="{Binding Draft.Experimental.PowerShell}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Plug}" Header="Plugins" Description="DLL de %AppData%\Carvis\plugins. Pueden hacer cualquier cosa con tus permisos: usa solo los que conozcas. Se cargan al reiniciar.">
+              <ToggleSwitch IsChecked="{Binding Draft.Permissions.EnablePlugins}" OnContent="Sí" OffContent="No" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Plug}" Header="Servidores MCP" Description="Añaden herramientas de otros programas. Te pregunto antes de cada acción, salvo las de solo lectura si lo permites. Se conectan al reiniciar.">
+              <ToggleSwitch IsChecked="{Binding Draft.Experimental.Mcp}" OnContent="Sí" OffContent="No" />
+              <c:SettingsCard.Footer>
+                <StackPanel Spacing="{StaticResource Space.8}" IsEnabled="{Binding Draft.Experimental.Mcp}">
+                  <ItemsControl ItemsSource="{Binding McpServers}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="config:McpServerSettings">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" Margin="{StaticResource Inset.H0V4}">
+                          <c:FluentIcon Data="{StaticResource Icon.Plug}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+                          <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}" />
+                            <TextBlock Classes="caption" Text="{Binding Target}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Target}" />
+                          </StackPanel>
+                          <ComboBox Grid.Column="2" ToolTip.Tip="«Lecturas sin preguntar» solo vale para las herramientas que el servidor marca como de solo lectura. Lo demás siempre pregunta."
+                                    ItemsSource="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).McpPermissions}"
+                                    DisplayMemberBinding="{Binding Label, x:DataType=vm:McpPermissionOption}"
+                                    SelectedValueBinding="{Binding Key, x:DataType=vm:McpPermissionOption}"
+                                    SelectedValue="{Binding Permission}" Margin="{StaticResource Gap.R8}" />
+                          <ToggleSwitch Grid.Column="3" IsChecked="{Binding Enabled}" OnContent="" OffContent="" />
+                          <Button Grid.Column="4" Classes="icon" ToolTip.Tip="Quitar" AutomationProperties.Name="Quitar servidor"
+                                  Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveMcpServerCommand}" CommandParameter="{Binding}">
+                            <c:FluentIcon Data="{StaticResource Icon.Delete}" />
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <TextBlock Classes="caption secondary wrap" Text="{Binding McpStatus}" IsVisible="{Binding McpStatus, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                  <TextBlock Classes="caption tertiary wrap" Text="Un servidor MCP es un programa de otra persona que funciona con tus permisos. Añade solo los que conozcas."
+                             IsVisible="{Binding !McpServers.Count}" />
+                  <Grid ColumnDefinitions="*,Auto,2*,Auto" ColumnSpacing="{StaticResource Space.8}">
+                    <TextBox Text="{Binding NewMcpName}" Watermark="Nombre" />
+                    <ComboBox Grid.Column="1" ItemsSource="{Binding McpTransports}" SelectedItem="{Binding NewMcpTransport}" />
+                    <TextBox Grid.Column="2" Text="{Binding NewMcpTarget}" Watermark="npx -y servidor…   o   http://localhost:3001/mcp" />
+                    <Button Grid.Column="3" Content="Añadir" Command="{Binding AddMcpServerCommand}" />
+                  </Grid>
+                </StackPanel>
+              </c:SettingsCard.Footer>
+            </c:SettingsCard>
+          </StackPanel>
+
+          <!-- About -->
+          <StackPanel Classes="page" IsVisible="{Binding SelectedPage.Key, Converter={x:Static ObjectConverters.Equal}, ConverterParameter=Acerca}">
+            <Border Classes="card">
+              <Grid ColumnDefinitions="Auto,*">
+                <Image Source="/Assets/carvis.png" Width="{StaticResource Space.32}" Height="{StaticResource Space.32}" VerticalAlignment="Top" />
+                <StackPanel Grid.Column="1" Margin="{StaticResource Gap.L12}" Spacing="{StaticResource Space.4}">
+                  <TextBlock Classes="subtitle" Text="Carvis" />
+                  <TextBlock Classes="secondary" Text="{Binding Version, StringFormat='Versión {0}'}" />
+                  <TextBlock Classes="caption wrap" Text="Un asistente que funciona entero en tu PC con Ollama. Hecho por Carlos Vidal Marín. Licencia MIT." />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <c:SettingsCard Icon="{StaticResource Icon.Open}" Header="Código y novedades" Description="github.com/carvima07eng-dot/Carvis">
+              <Button Content="Abrir" Click="OnOpenRepositoryClick" />
+            </c:SettingsCard>
+            <c:SettingsCard Icon="{StaticResource Icon.Bug}" Header="¿Algo no va bien?" Description="Cuéntamelo en GitHub con lo que estabas haciendo.">
+              <Button Content="Avisar de un fallo" Click="OnReportIssueClick" />
+            </c:SettingsCard>
+          </StackPanel>
+        </Panel>
+      </ScrollViewer>
+    </DockPanel>
+  </Grid>
+</Window>

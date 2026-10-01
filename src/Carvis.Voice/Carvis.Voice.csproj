@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Speech recognition with Whisper.net. Vulkan uses the NVIDIA card with just the driver
+       (no CUDA toolkit needed); the CPU runtime is the fallback. -->
+  <ItemGroup>
+    <PackageReference Include="Whisper.net" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.9.1" />
+    <PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.9.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Carvis.Core\Carvis.Core.csproj" />
+  </ItemGroup>
+
+</Project>
