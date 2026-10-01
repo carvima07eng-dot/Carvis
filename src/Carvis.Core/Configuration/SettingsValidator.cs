@@ -46,6 +46,12 @@ public static class SettingsValidator
             settings.Ollama.KeepAlive = defaults.Ollama.KeepAlive;
         }
 
+        if (!IsValidKeepAlive(settings.Ollama.VisionKeepAlive))
+        {
+            problems.Add($"VisionKeepAlive «{settings.Ollama.VisionKeepAlive}» no es válido; uso {defaults.Ollama.VisionKeepAlive}.");
+            settings.Ollama.VisionKeepAlive = defaults.Ollama.VisionKeepAlive;
+        }
+
         if (!HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out _))
         {
             problems.Add($"El atajo «{settings.Hotkey.ToggleWindow}» no es válido; uso {defaults.Hotkey.ToggleWindow}.");

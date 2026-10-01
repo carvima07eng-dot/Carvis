@@ -25,7 +25,7 @@ public class SettingsValidatorTests
         Assert.Equal(5, problems.Count);
         Assert.Equal("http://localhost:11434", settings.Ollama.BaseUrl);
         Assert.Equal(16384, settings.Ollama.ContextLength);
-        Assert.Equal("30m", settings.Ollama.KeepAlive);
+        Assert.Equal("-1", settings.Ollama.KeepAlive);
         Assert.Equal("Alt+Space", settings.Hotkey.ToggleWindow);
         Assert.Equal("Solid", settings.Window.Backdrop);
     }

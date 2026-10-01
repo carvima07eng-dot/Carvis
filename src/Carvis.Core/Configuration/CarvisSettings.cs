@@ -45,8 +45,15 @@ public sealed class OllamaSettings
     /// <summary>qwen3 can "think" before answering; off by default for snappier replies.</summary>
     public bool EnableThinking { get; set; }
 
-    /// <summary>How long Ollama keeps the model loaded after the last message (e.g. "30m", "-1" = forever).</summary>
-    public string KeepAlive { get; set; } = "30m";
+    /// <summary>How long Ollama keeps the chat model loaded after the last message (e.g. "30m", "-1" = forever).</summary>
+    public string KeepAlive { get; set; } = "-1";
+
+    /// <summary>Same for the vision model; "0" frees the graphics card as soon as it answers.</summary>
+    public string VisionKeepAlive { get; set; } = "0";
+
+    /// <summary>One multimodal model (e.g. qwen3-vl) does both jobs: it is never unloaded after a picture.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool VisionIsChatModel => Carvis.Core.Ollama.ModelNames.AreSame(VisionModel, ChatModel);
 
     public int RequestTimeoutSeconds { get; set; } = 300;
 

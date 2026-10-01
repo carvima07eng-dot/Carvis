@@ -50,7 +50,7 @@ public sealed class OllamaVisionService(IChatModelClient client, OllamaSettings 
         ])
         {
             Model = settings.VisionModel,
-            KeepAlive = "2m",
+            KeepAlive = settings.VisionIsChatModel ? settings.KeepAlive : settings.VisionKeepAlive,
             Temperature = 0.2,
         };
 

@@ -13,6 +13,36 @@ public class ChatServiceTests
     private ChatService CreateService(params IChatContextProvider[] providers) => new(_client, _settings, providers);
 
     [Fact]
+    public async Task SendAsync_WithImage_UsesVisionModelThenFreesItAndReloadsChat()
+    {
+        _client.Reply("Se ve un error.");
+        var ollama = new OllamaSettings { VisionModel = "qwen2.5vl:7b" };
+        var service = new ChatService(_client, _settings, ollamaSettings: ollama);
+
+        await service.SendAsync(new ChatInput("¿qué es esto?") { Images = [[1, 2, 3]] }).ToListAsync();
+
+        var request = _client.Requests.Single();
+        Assert.Equal("qwen2.5vl:7b", request.Model);
+        Assert.Equal("0", request.KeepAlive);
+        Assert.Equal(1, _client.WarmUps);
+    }
+
+    [Fact]
+    public async Task SendAsync_WithImage_KeepsAMultimodalChatModelLoaded()
+    {
+        _client.Reply("Se ve un error.");
+        var ollama = new OllamaSettings { ChatModel = "qwen3-vl:8b", VisionModel = "qwen3-vl:8b" };
+        var service = new ChatService(_client, _settings, ollamaSettings: ollama);
+
+        await service.SendAsync(new ChatInput("¿qué es esto?") { Images = [[1, 2, 3]] }).ToListAsync();
+
+        var request = _client.Requests.Single();
+        Assert.Null(request.Model);
+        Assert.Null(request.KeepAlive);
+        Assert.Equal(0, _client.WarmUps);
+    }
+
+    [Fact]
     public async Task SendAsync_StreamsChunksInOrder()
     {
         _client.Reply("Ho", "la", ", ¿qué tal?");

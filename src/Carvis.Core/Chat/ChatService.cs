@@ -166,7 +166,10 @@ public sealed class ChatService : IChatService
                 yield return new SourcesAttached(sources);
             var maxSteps = Math.Max(1, _settings.MaxToolSteps);
             // Pictures go to the vision model when one is configured.
-            var model = user.Images is { Count: > 0 } && _ollamaSettings?.VisionModel is { Length: > 0 } vision ? vision : null;
+            // A multimodal chat model (VisionIsChatModel) sees them itself, with its tools.
+            var model = user.Images is { Count: > 0 } && _ollamaSettings is { VisionModel.Length: > 0, VisionIsChatModel: false }
+                ? _ollamaSettings.VisionModel
+                : null;
 
             for (var step = 0; step < maxSteps; step++)
             {
@@ -176,8 +179,8 @@ public sealed class ChatService : IChatService
                 var request = new ModelRequest(messages)
                 {
                     Model = model,
-                    // The vision model leaves the graphics card soon, to give the room back to the chat model.
-                    KeepAlive = model is null ? null : "2m",
+                    // The vision model leaves the graphics card as soon as it answers, to give the room back to the chat model.
+                    KeepAlive = model is null ? null : _ollamaSettings!.VisionKeepAlive,
                     Tools = tools.Count > 0 && model is null ? tools : null,
                     // After the first tool result the model is filling in arguments: be precise.
                     Temperature = step == 0 ? _ollamaSettings?.Temperature : _ollamaSettings?.ToolTemperature,
@@ -246,6 +249,9 @@ public sealed class ChatService : IChatService
                 if (step == maxSteps - 1)
                     yield return new TextDelta("\n\n(Me he detenido: la tarea necesitaba demasiados pasos seguidos. Dime si quieres que continúe.)");
             }
+
+            if (model is not null)
+                _ = RewarmChatModelAsync();
         }
         finally
         {
@@ -255,6 +261,20 @@ public sealed class ChatService : IChatService
             if (!failed)
                 Commit(turn);
             Volatile.Write(ref _isSending, 0);
+        }
+    }
+
+    // The vision model may have pushed the chat model out of the graphics card: load it again
+    // in the background so the next question doesn't wait for it.
+    private async Task RewarmChatModelAsync()
+    {
+        try
+        {
+            await _client.WarmUpAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not reload the chat model after the vision model");
         }
     }
 
