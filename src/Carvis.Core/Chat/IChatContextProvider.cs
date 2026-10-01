@@ -2,7 +2,7 @@ namespace Carvis.Core.Chat;
 
 /// <summary>
 /// Adds extra context for a user question before it reaches the model.
-/// Phase 2 (RAG) plugs in here with the relevant document fragments.
+/// The RAG provider adds the relevant document fragments here; others add the date, the system and the memory.
 /// </summary>
 public interface IChatContextProvider
 {

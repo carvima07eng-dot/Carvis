@@ -1,6 +1,6 @@
 namespace Carvis.Core.Indexing;
 
-// Phase 2: index chosen folders and answer with RAG, citing the source files.
+// Index the chosen folders and answer with RAG, citing the source files.
 // Flow: IDocumentReader -> TextChunker -> IEmbeddingService -> DocumentIndex (SQLite + sqlite-vec + FTS5),
 // and RagContextProvider, which adds the best fragments to the conversation.
 
