@@ -3,6 +3,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="using:Carvis.App.ViewModels"
+        xmlns:controls="using:Carvis.App.Views.Controls"
         mc:Ignorable="d" d:DesignWidth="760" d:DesignHeight="420"
         x:Class="Carvis.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -91,7 +92,7 @@
       <Setter Property="Padding" Value="14,10" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Margin" Value="0,4" />
-      <Setter Property="MaxWidth" Value="600" />
+      <Setter Property="MaxWidth" Value="640" />
       <Setter Property="HorizontalAlignment" Value="Left" />
       <Setter Property="Background" Value="{StaticResource Surface}" />
     </Style>
@@ -144,11 +145,8 @@
         <TextBox x:Name="PromptBox" Grid.Column="0" Classes="prompt" Margin="0,0,10,0"
                  Watermark="Pregúntale algo a Carvis…"
                  Text="{Binding Input}"
-                 TextWrapping="Wrap" MaxHeight="120">
-          <TextBox.KeyBindings>
-            <KeyBinding Gesture="Enter" Command="{Binding SendCommand}" />
-          </TextBox.KeyBindings>
-        </TextBox>
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap" MaxHeight="120" />
         <Panel Grid.Column="1" VerticalAlignment="Center">
           <Button Classes="primary" Content="Enviar"
                   Command="{Binding SendCommand}"
@@ -193,13 +191,19 @@
                 <Border Classes="bubble"
                         Classes.user="{Binding IsUser}"
                         Classes.error="{Binding IsError}">
-                  <Panel>
-                    <SelectableTextBlock Text="{Binding Content}" TextWrapping="Wrap"
-                                         FontSize="14" LineHeight="21"
+                  <StackPanel Spacing="4">
+                    <SelectableTextBlock Text="{Binding Content}" IsVisible="{Binding IsUser}"
+                                         TextWrapping="Wrap" FontSize="14" LineHeight="21"
                                          Foreground="{StaticResource TextPrimary}" />
+                    <controls:MarkdownView Markdown="{Binding Content}" IsVisible="{Binding !IsUser}" />
                     <TextBlock Text="Pensando…" IsVisible="{Binding IsWaiting}"
                                FontStyle="Italic" Foreground="{StaticResource TextMuted}" />
-                  </Panel>
+                    <Button Classes="ghost" Content="{Binding CopyLabel}"
+                            IsVisible="{Binding CanCopy}"
+                            HorizontalAlignment="Right" Margin="0,0,-8,-6"
+                            Padding="8,2" FontSize="11"
+                            Click="OnCopyMessageClick" />
+                  </StackPanel>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -222,7 +226,9 @@
           </StackPanel>
           <TextBlock Grid.Column="1" FontSize="12" Foreground="{StaticResource TextMuted}"
                      HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Run Text="Enter enviar · Esc ocultar · " />
+            <Run Text="Enter enviar · Shift+Enter nueva línea · " />
+            <Run Text="{Binding DismissHint}" />
+            <Run Text=" · " />
             <Run Text="{Binding HotkeyText}" />
           </TextBlock>
           <Button Grid.Column="2" Classes="ghost" Content="Nueva conversación"

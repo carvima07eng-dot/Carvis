@@ -14,6 +14,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     private readonly IOllamaHealthCheck _healthCheck;
     private CancellationTokenSource? _sendCancellation;
     private bool _isModelLoaded;
+    private string? _lastSentMessage;
 
     public MainWindowViewModel(IChatService chat, IOllamaHealthCheck healthCheck, CarvisSettings settings)
     {
@@ -23,6 +24,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
         HotkeyGesture.TryParse(settings.Hotkey.ToggleWindow, out var gesture);
         HotkeyText = ToDisplay(gesture);
+        DismissHint = settings.Window.HideOnFocusLost ? "Esc ocultar" : "Esc minimizar";
 
         Messages.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasMessages));
     }
@@ -32,6 +34,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     public string ModelName { get; }
     public string HotkeyText { get; }
+    public string DismissHint { get; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SendCommand))]
@@ -92,6 +95,7 @@ public sealed partial class MainWindowViewModel : ViewModelBase
     {
         var text = Input.Trim();
         Input = string.Empty;
+        _lastSentMessage = text;
 
         Messages.Add(new MessageViewModel(ChatRole.User, text));
         var reply = new MessageViewModel(ChatRole.Assistant) { IsStreaming = true };
@@ -130,6 +134,16 @@ public sealed partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand]
     private void Cancel() => _sendCancellation?.Cancel();
+
+    /// <summary>Puts the last message back in the prompt (arrow up on an empty prompt).</summary>
+    public bool RecallLastMessage()
+    {
+        if (!string.IsNullOrEmpty(Input) || _lastSentMessage is null)
+            return false;
+
+        Input = _lastSentMessage;
+        return true;
+    }
 
     [RelayCommand(CanExecute = nameof(CanStartNewConversation))]
     private void NewConversation()

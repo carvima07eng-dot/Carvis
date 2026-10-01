@@ -10,11 +10,16 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsWaiting))]
+    [NotifyPropertyChangedFor(nameof(CanCopy))]
     private string _content = content;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsWaiting))]
+    [NotifyPropertyChangedFor(nameof(CanCopy))]
     private bool _isStreaming;
+
+    [ObservableProperty]
+    private string _copyLabel = "Copiar";
 
     [ObservableProperty]
     private bool _isError;
@@ -22,5 +27,14 @@ public sealed partial class MessageViewModel(ChatRole role, string content = "")
     /// <summary>Waiting for the first token.</summary>
     public bool IsWaiting => IsStreaming && Content.Length == 0;
 
+    public bool CanCopy => !IsUser && !IsStreaming && Content.Length > 0;
+
     public void Append(string text) => Content += text;
+
+    public async Task ShowCopiedAsync()
+    {
+        CopyLabel = "Copiado";
+        await Task.Delay(1500);
+        CopyLabel = "Copiar";
+    }
 }

@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Carvis.App.Platform;
+using Carvis.App.ViewModels;
 
 namespace Carvis.App.Views;
 
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
         InitializeComponent();
 
         AddHandler(KeyDownEvent, OnPreviewKeyDown, RoutingStrategies.Tunnel);
+        PromptBox.AddHandler(KeyDownEvent, OnPromptKeyDown, RoutingStrategies.Tunnel);
         TitleBar.PointerPressed += OnTitleBarPointerPressed;
         MessagesScroll.PropertyChanged += OnMessagesScrollPropertyChanged;
         Deactivated += (_, _) =>
@@ -95,6 +97,34 @@ public partial class MainWindow : Window
             Dismiss();
             e.Handled = true;
         }
+    }
+
+    // Enter sends, Shift+Enter adds a line, arrow up recalls the last message.
+    private void OnPromptKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel viewModel)
+            return;
+
+        if (e.Key == Key.Enter && !e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+        {
+            if (viewModel.SendCommand.CanExecute(null))
+                viewModel.SendCommand.Execute(null);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Up && viewModel.RecallLastMessage())
+        {
+            PromptBox.CaretIndex = PromptBox.Text?.Length ?? 0;
+            e.Handled = true;
+        }
+    }
+
+    private async void OnCopyMessageClick(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is not MessageViewModel message || Clipboard is null)
+            return;
+
+        await Clipboard.SetTextAsync(message.Content);
+        await message.ShowCopiedAsync();
     }
 
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
