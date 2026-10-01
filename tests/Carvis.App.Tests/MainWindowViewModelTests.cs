@@ -46,8 +46,24 @@ public sealed class MainWindowViewModelTests : IDisposable
     public void Dispose()
     {
         _services.Dispose();
-        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
-        Directory.Delete(_dir, recursive: true);
+        // Background saves (titles, the conversation) may still hold the database for a moment on Windows.
+        for (var attempt = 0; ; attempt++)
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try
+            {
+                Directory.Delete(_dir, recursive: true);
+                return;
+            }
+            catch (IOException) when (attempt < 20)
+            {
+                Thread.Sleep(100);
+            }
+            catch (IOException)
+            {
+                return; // a temp folder; not worth failing the test over
+            }
+        }
     }
 
     private static async Task SendAsync(MainWindowViewModel vm, string text)
