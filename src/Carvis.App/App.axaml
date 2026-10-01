@@ -2,6 +2,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Carvis.App.App"
              RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <FontFamily x:Key="CarvisFont">fonts:Inter#Inter, $Default</FontFamily>
+    <SolidColorBrush x:Key="Background" Color="#F20B1220" />
+    <SolidColorBrush x:Key="Surface" Color="#162133" />
+    <SolidColorBrush x:Key="Accent" Color="#22D3EE" />
+    <SolidColorBrush x:Key="TextPrimary" Color="#E5E7EB" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#9CA3AF" />
+    <SolidColorBrush x:Key="TextMuted" Color="#6B7280" />
+  </Application.Resources>
+
   <Application.Styles>
     <FluentTheme />
   </Application.Styles>
