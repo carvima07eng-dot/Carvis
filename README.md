@@ -1,6 +1,6 @@
 # Carvis
 
-Asistente de IA local para Windows, estilo Jarvis. Se abre con **Alt+Espacio** como una barra tipo Spotlight y responde en streaming usando un modelo que corre en tu propio PC con [Ollama](https://ollama.com). Sin APIs de pago y sin enviar nada a Internet.
+Asistente de IA local para Windows, estilo Jarvis. Se abre con **Alt+Espacio** y responde en streaming usando un modelo que corre en tu propio PC con [Ollama](https://ollama.com). Sin APIs de pago y sin enviar nada a Internet.
 
 ![Carvis](docs/screenshot.png)
 
@@ -31,16 +31,24 @@ cd src/Carvis.App
 dotnet run
 ```
 
-Al arrancar aparece la ventana y un icono en la bandeja del sistema.
+Al arrancar aparece la ventana, con su botón en la barra de tareas y un icono en la bandeja del sistema (en Windows 11 puede estar dentro de la flecha **^**; arrástralo a la barra para tenerlo siempre a mano). Solo hay una instancia: si vuelves a ejecutar Carvis, se muestra la que ya está abierta.
 
 | Acción | Cómo |
 |---|---|
-| Mostrar / ocultar | **Alt+Espacio** (o clic en el icono de la bandeja) |
+| Mostrar / traer al frente | **Alt+Espacio**, el botón de la barra de tareas o el icono de la bandeja |
 | Enviar mensaje | **Enter** |
+| Nueva línea | **Shift+Enter** |
+| Recuperar el último mensaje | **↑** con la caja vacía |
 | Detener la respuesta | Botón **Detener** |
-| Ocultar | **Esc** o hacer clic fuera de la ventana |
+| Minimizar | **Esc**, **Alt+Espacio** o el botón **—** |
+| Ocultar en la bandeja | Botón **✕** |
+| Mover la ventana | Arrastra la barra superior |
+| Copiar una respuesta o un bloque de código | Botón **Copiar** |
 | Empezar de cero | **Nueva conversación** |
+| Arrancar con Windows | Icono de la bandeja → **Iniciar con Windows** |
 | Salir | Icono de la bandeja → **Salir** |
+
+Las respuestas se muestran con formato (negritas, listas, tablas, bloques de código). Al arrancar Carvis carga el modelo en memoria para que la primera respuesta no tarde, y lo mantiene cargado 30 minutos.
 
 Si Ollama no está abierto o falta el modelo, Carvis lo indica en la propia ventana con el comando para solucionarlo y un botón **Reintentar**.
 
@@ -55,6 +63,7 @@ Si Ollama no está abierto o falta el modelo, Carvis lo indica en la propia vent
     "ChatModel": "qwen3:8b",
     "EmbeddingModel": "nomic-embed-text",
     "EnableThinking": false,
+    "KeepAlive": "30m",
     "RequestTimeoutSeconds": 300
   },
   "Hotkey": { "ToggleWindow": "Alt+Space" },
@@ -62,13 +71,17 @@ Si Ollama no está abierto o falta el modelo, Carvis lo indica en la propia vent
     "SystemPrompt": "Eres Carvis, ...",
     "MaxHistoryMessages": 40
   },
-  "Window": { "StartHidden": false, "HideOnFocusLost": true }
+  "Window": { "StartHidden": false, "HideOnFocusLost": false }
 }
 ```
 
 - `Hotkey.ToggleWindow`: modificadores `Ctrl`, `Alt`, `Shift`, `Win` + una tecla (`Space`, `J`, `F1`...). Ejemplo: `"Ctrl+Shift+J"`.
 - `EnableThinking`: deja que qwen3 "piense" antes de responder (más lento; el razonamiento no se muestra).
+- `KeepAlive`: cuánto tiempo mantiene Ollama el modelo en la GPU tras la última pregunta (`"-1"` = siempre).
 - `StartHidden`: arranca solo en la bandeja.
+- `HideOnFocusLost`: modo Spotlight. Con `true` la ventana va siempre encima y se oculta al hacer clic fuera; con `false` (por defecto) se comporta como una app normal.
+
+Si Alt+Espacio no hace nada, puede que otro programa lo esté usando (por ejemplo PowerToys Run). Cambia `Hotkey.ToggleWindow` a otro atajo, como `"Ctrl+Shift+Space"`.
 
 ## Tests
 
