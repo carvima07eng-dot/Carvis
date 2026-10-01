@@ -7,7 +7,7 @@ Carvis escribe estas líneas en el registro (`%LOCALAPPDATA%\Carvis\logs`). Empi
 | Línea | Qué mide |
 |---|---|
 | `window visible … ms after the process started` | Arranque: desde que se lanza el proceso hasta que la ventana se dibuja. Si arranca oculto, aparece `ready in the tray` |
-| `window visible … ms after the hotkey` | Desde que pulsas Alt+Espacio hasta que la ventana está en pantalla. Pasa a `WARN` si tarda más de 300 ms |
+| `window visible … ms after the hotkey` | Desde que pulsas Alt+Espacio hasta que la ventana está en pantalla. Pasa a `WRN` si tarda más de 300 ms |
 | `first token after … ms (load …, prompt …)` | Tiempo hasta la primera palabra de cada respuesta, cuánto tardó Ollama en cargar el modelo y en leer el prompt, y la velocidad en tokens/s |
 | `uses … GB of VRAM (… % on the GPU)` | Memoria de la gráfica que ocupa cada modelo cargado |
 

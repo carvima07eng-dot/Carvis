@@ -79,17 +79,7 @@ public static class CrashReporter
     }
 
     /// <summary>Removes what identifies the user: the profile path and the user name.</summary>
-    public static string Sanitize(string text)
-    {
-        var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        if (profile.Length > 3)
-            text = text.Replace(profile, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
-        var user = Environment.UserName;
-        if (user.Length >= 3)
-            text = System.Text.RegularExpressions.Regex.Replace(text, $@"\b{System.Text.RegularExpressions.Regex.Escape(user)}\b", "<usuario>",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-        return text;
-    }
+    public static string Sanitize(string text) => Logging.PrivacyScrubber.Scrub(text);
 
     private static IEnumerable<string> LastLogLines(AppPaths paths)
     {

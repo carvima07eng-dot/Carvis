@@ -1,13 +1,14 @@
 using Carvis.App.Logging;
 using Carvis.Core.Configuration;
 using Microsoft.Extensions.Logging;
+using Serilog.Extensions.Logging;
 
 namespace Carvis.App;
 
 /// <summary>What has to exist before Avalonia starts: data folders, settings and the log.</summary>
 public sealed class Bootstrap
 {
-    private Bootstrap(AppPaths paths, SettingsStore store, CarvisSettings settings, IReadOnlyList<string> warnings, FileLoggerProvider log)
+    private Bootstrap(AppPaths paths, SettingsStore store, CarvisSettings settings, IReadOnlyList<string> warnings, SerilogLoggerProvider log)
     {
         Paths = paths;
         SettingsStore = store;
@@ -20,7 +21,7 @@ public sealed class Bootstrap
     public SettingsStore SettingsStore { get; }
     public CarvisSettings Settings { get; }
     public IReadOnlyList<string> Warnings { get; }
-    public FileLoggerProvider Log { get; }
+    public SerilogLoggerProvider Log { get; }
 
     public static Bootstrap Create()
     {
@@ -38,7 +39,8 @@ public sealed class Bootstrap
             warnings.Add(privacy);
 
         var level = Enum.TryParse<LogLevel>(settings.Logging.Level, ignoreCase: true, out var parsed) ? parsed : LogLevel.Information;
-        var log = new FileLoggerProvider(paths.LogsDirectory, level, settings.Logging.RetainDays);
+        PrivacyScrubber.AddName(settings.Assistant.UserName);
+        var log = CarvisLog.Create(paths.LogsDirectory, level, settings.Logging.RetainDays);
 
         return new Bootstrap(paths, store, settings, warnings, log);
     }
