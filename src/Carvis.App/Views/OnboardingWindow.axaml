@@ -1,0 +1,145 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Carvis.App.ViewModels"
+        xmlns:c="using:Carvis.App.Views.Controls"
+        x:Class="Carvis.App.Views.OnboardingWindow"
+        x:DataType="vm:OnboardingViewModel"
+        Title="Bienvenido a Carvis"
+        Icon="/Assets/carvis.ico"
+        Width="640" Height="560" CanResize="False"
+        WindowStartupLocation="CenterScreen">
+
+  <Window.Styles>
+    <Style Selector="StackPanel.step">
+      <Setter Property="Spacing" Value="{StaticResource Space.12}" />
+    </Style>
+    <Style Selector="Border.hero">
+      <Setter Property="Width" Value="{StaticResource Control.HeightLarge}" />
+      <Setter Property="Height" Value="{StaticResource Control.HeightLarge}" />
+      <Setter Property="CornerRadius" Value="{StaticResource Radius.8}" />
+      <Setter Property="Background" Value="{DynamicResource AccentSubtle}" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+  </Window.Styles>
+
+  <DockPanel x:Name="Root">
+    <ProgressBar DockPanel.Dock="Top" Value="{Binding StepProgress}" Maximum="100" CornerRadius="0" />
+    <Border DockPanel.Dock="Bottom" BorderBrush="{DynamicResource Stroke}" BorderThickness="{StaticResource Border.Top1}" Padding="{StaticResource Inset.H24V16}">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Classes="caption" Text="{Binding StepText}" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Content="Atrás" Margin="{StaticResource Gap.R8}" IsVisible="{Binding CanGoBack}" Command="{Binding BackCommand}" />
+        <Button Grid.Column="2" Classes="primary" Content="{Binding NextLabel}" Command="{Binding NextCommand}" />
+      </Grid>
+    </Border>
+
+    <Panel Margin="{StaticResource Inset.H32V24}">
+      <!-- 0: welcome -->
+      <StackPanel Classes="step" IsVisible="{Binding IsStep0}">
+        <Image Source="/Assets/carvis.png" Width="{StaticResource Control.HeightLarge}" Height="{StaticResource Control.HeightLarge}" HorizontalAlignment="Left" />
+        <TextBlock Classes="title" Text="Hola, soy Carvis" />
+        <TextBlock Classes="secondary wrap" Text="Un asistente que funciona entero en tu PC. Converso contigo, busco en tus apuntes, te pongo recordatorios, miro tu pantalla y hago cosas por ti. Siempre te pregunto antes de cambiar algo." />
+        <TextBlock Text="¿Cómo quieres que te llame?" Margin="{StaticResource Gap.T12}" />
+        <TextBox Text="{Binding UserName}" Watermark="Tu nombre" />
+      </StackPanel>
+
+      <!-- 1: Ollama -->
+      <StackPanel Classes="step" IsVisible="{Binding IsStep1}">
+        <Border Classes="hero"><c:FluentIcon Data="{StaticResource Icon.Model}" Classes="medium accent" HorizontalAlignment="Center" /></Border>
+        <TextBlock Classes="title" Text="Ollama" />
+        <TextBlock Classes="secondary wrap" Text="Es el programa gratuito que hace funcionar la IA en tu tarjeta gráfica. Tiene que estar abierto para que yo pueda pensar." />
+        <Border Classes="infobar" Classes.success="{Binding IsOllamaRunning}" Classes.warning="{Binding !IsOllamaRunning}">
+          <Grid ColumnDefinitions="Auto,*">
+            <Panel Margin="{StaticResource Gap.R8}" VerticalAlignment="Top">
+              <c:FluentIcon Data="{StaticResource Icon.Success}" Classes="success" IsVisible="{Binding IsOllamaRunning}" />
+              <c:FluentIcon Data="{StaticResource Icon.Warning}" Classes="warning" IsVisible="{Binding !IsOllamaRunning}" />
+            </Panel>
+            <TextBlock Grid.Column="1" Classes="wrap" Text="{Binding OllamaStatus}" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" IsVisible="{Binding !IsOllamaRunning}">
+          <Button Classes="primary" Content="Instalar" Command="{Binding InstallOllamaWithWingetCommand}" IsVisible="{Binding IsWindows}" />
+          <Button Content="Descargar desde ollama.com" Command="{Binding OpenOllamaDownloadCommand}" />
+        </StackPanel>
+        <Button Classes="subtle" Content="Comprobar otra vez" Command="{Binding CheckCommand}" />
+      </StackPanel>
+
+      <!-- 2: models -->
+      <StackPanel Classes="step" IsVisible="{Binding IsStep2}">
+        <Border Classes="hero"><c:FluentIcon Data="{StaticResource Icon.Download}" Classes="medium accent" HorizontalAlignment="Center" /></Border>
+        <TextBlock Classes="title" Text="Modelos" />
+        <TextBlock Classes="secondary wrap" Text="Se descargan una sola vez. Después funciono sin Internet." />
+        <ItemsControl ItemsSource="{Binding Models}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ModelSetupViewModel">
+              <c:SettingsCard Header="{Binding Name}" Description="{Binding Purpose}" Icon="{StaticResource Icon.Model}" Margin="{StaticResource Gap.B4}">
+                <Panel>
+                  <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" IsVisible="{Binding IsInstalled}">
+                    <c:FluentIcon Data="{StaticResource Icon.Success}" Classes="success" />
+                    <TextBlock Text="{Binding StateText}" VerticalAlignment="Center" />
+                  </StackPanel>
+                  <Button Content="Descargar" IsVisible="{Binding !IsInstalled}"
+                          Command="{Binding $parent[Window].((vm:OnboardingViewModel)DataContext).DownloadCommand}" CommandParameter="{Binding}" />
+                </Panel>
+                <c:SettingsCard.Footer>
+                  <StackPanel Spacing="{StaticResource Space.4}" IsVisible="{Binding IsDownloading}">
+                    <ProgressBar Value="{Binding Progress}" />
+                    <TextBlock Classes="caption" Text="{Binding Status}" />
+                  </StackPanel>
+                </c:SettingsCard.Footer>
+              </c:SettingsCard>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- 3: documents -->
+      <StackPanel Classes="step" IsVisible="{Binding IsStep3}">
+        <Border Classes="hero"><c:FluentIcon Data="{StaticResource Icon.DocumentSearch}" Classes="medium accent" HorizontalAlignment="Center" /></Border>
+        <TextBlock Classes="title" Text="Tus apuntes" />
+        <TextBlock Classes="secondary wrap" Text="Si eliges carpetas, leo sus PDF, Word, Excel y textos para contestarte con ellos y decirte de dónde sale cada cosa. Es opcional y puedes cambiarlo en Ajustes." />
+        <ItemsControl ItemsSource="{Binding DocumentFolders}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Grid ColumnDefinitions="Auto,*,Auto" Margin="{StaticResource Inset.H0V4}">
+                <c:FluentIcon Data="{StaticResource Icon.Folder}" Classes="accent" Margin="{StaticResource Gap.R8}" />
+                <TextBlock Grid.Column="1" Text="{Binding}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="2" Classes="icon" ToolTip.Tip="Quitar" AutomationProperties.Name="Quitar carpeta"
+                        Command="{Binding $parent[Window].((vm:OnboardingViewModel)DataContext).RemoveDocumentFolderCommand}" CommandParameter="{Binding}">
+                  <c:FluentIcon Data="{StaticResource Icon.Delete}" />
+                </Button>
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Content="Añadir carpeta" Click="OnAddFolderClick" HorizontalAlignment="Left" />
+      </StackPanel>
+
+      <!-- 4: hotkey -->
+      <StackPanel Classes="step" IsVisible="{Binding IsStep4}">
+        <Border Classes="hero"><c:FluentIcon Data="{StaticResource Icon.Keyboard}" Classes="medium accent" HorizontalAlignment="Center" /></Border>
+        <TextBlock Classes="title" Text="Tu atajo" />
+        <TextBlock Classes="secondary wrap" Text="Desde cualquier programa me abres con este atajo. Pruébalo ahora:" />
+        <Border Classes="card" HorizontalAlignment="Left">
+          <TextBlock Classes="title" Text="{Binding HotkeyText}" Foreground="{DynamicResource Accent}" />
+        </Border>
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space.8}" IsVisible="{Binding HotkeyWorked}">
+          <c:FluentIcon Data="{StaticResource Icon.Success}" Classes="success" />
+          <TextBlock Classes="bodyStrong" Text="¡Funciona!" />
+        </StackPanel>
+        <TextBlock Classes="caption wrap" IsVisible="{Binding !HotkeyWorked}"
+                   Text="Si no pasa nada, otro programa (por ejemplo PowerToys Run) lo está usando. Puedes cambiarlo en Ajustes → General." />
+      </StackPanel>
+
+      <!-- 5: done -->
+      <StackPanel Classes="step" IsVisible="{Binding IsStep5}">
+        <Border Classes="hero"><c:FluentIcon Data="{StaticResource Icon.Sparkle}" Classes="medium accent" HorizontalAlignment="Center" /></Border>
+        <TextBlock Classes="title" Text="¡Todo listo!" />
+        <TextBlock Classes="secondary wrap" Text="Algunas cosas que puedes pedirme:" />
+        <c:SettingsCard Icon="{StaticResource Icon.DocumentSearch}" Header="«¿Qué dicen mis apuntes sobre las clases abstractas?»" />
+        <c:SettingsCard Icon="{StaticResource Icon.Alarm}" Header="«Recuérdame en 20 minutos que saque la ropa»" />
+        <c:SettingsCard Icon="{StaticResource Icon.Screenshot}" Header="«¿Qué significa este error?» con Ctrl+Alt+S" />
+        <c:SettingsCard Icon="{StaticResource Icon.Folder}" Header="«Créame una carpeta en el escritorio llamada Clase»" />
+      </StackPanel>
+    </Panel>
+  </DockPanel>
+</Window>

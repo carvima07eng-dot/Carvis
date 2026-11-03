@@ -1,0 +1,68 @@
+name: Informe de fallo
+description: Algo no funciona como debería
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por avisar. Si Carvis se cerró solo, al volver a abrirlo te ofrece **Copiar informe**: pégalo abajo.
+        ¿Es un problema de seguridad? No lo publiques aquí, sigue [SECURITY.md](https://github.com/carvima07eng-dot/Carvis/blob/main/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: Qué ha pasado
+      description: Lo que viste, con el mensaje de error si salió alguno.
+      placeholder: Le pedí «recuérdame en 10 minutos que saque la ropa» y no apareció ningún aviso.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Qué esperabas
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Parte de Carvis
+      options:
+        - Chat
+        - Mis documentos
+        - Recordatorios y rutinas
+        - Capturas, OCR o visión
+        - Voz
+        - Acciones en el PC
+        - Ajustes o primer arranque
+        - Experimental (PowerShell, MCP, complementos)
+        - Otra
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Versión de Carvis
+      description: Ajustes → Acerca de Carvis
+      placeholder: "1.1.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows, gráfica y modelo
+      placeholder: Windows 11 24H2 · RTX 5070 12 GB · qwen3:8b
+  - type: textarea
+    id: report
+    attributes:
+      label: Informe de fallo o registro
+      description: El informe copiado, o las últimas líneas del registro (Ajustes → Privacidad → Carpeta de registros). Ya van sin tu nombre ni tus rutas.
+      render: text
